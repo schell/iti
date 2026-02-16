@@ -1,0 +1,26 @@
+[package]
+name = "iti"
+description = "A small mogwai WASM UI component library"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["library"]
+library = []
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+console_error_panic_hook.workspace = true
+console_log.workspace = true
+fern.workspace = true
+futures-lite.workspace = true
+js-sys.workspace = true
+log.workspace = true
+mogwai.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+snafu.workspace = true
+wasm-bindgen = { workspace = true, features = ["std"] }
+web-sys.workspace = true
