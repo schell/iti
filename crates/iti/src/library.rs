@@ -7,6 +7,7 @@ use crate::components::{
     alert::library::AlertLibraryItem,
     badge::library::BadgeLibraryItem,
     button::library::ButtonLibraryItem,
+    button_group::library::ButtonGroupLibraryItem,
     card::library::CardLibraryItem,
     dropdown::library::DropdownLibraryItem,
     icon::library::IconLibraryItem,
@@ -44,6 +45,7 @@ pub enum LibraryListPane<V: View> {
     Alert(AlertLibraryItem<V>),
     Badge(BadgeLibraryItem<V>),
     Button(ButtonLibraryItem<V>),
+    ButtonGroup(ButtonGroupLibraryItem<V>),
     Card(CardLibraryItem<V>),
     Dropdown(DropdownLibraryItem<V>),
     Icon(IconLibraryItem<V>),
@@ -72,6 +74,7 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::Alert(item) => item.as_boxed_append_arg(),
             LibraryListPane::Badge(item) => item.as_boxed_append_arg(),
             LibraryListPane::Button(item) => item.as_boxed_append_arg(),
+            LibraryListPane::ButtonGroup(item) => item.as_boxed_append_arg(),
             LibraryListPane::Card(item) => item.as_boxed_append_arg(),
             LibraryListPane::Dropdown(item) => item.as_boxed_append_arg(),
             LibraryListPane::Icon(item) => item.as_boxed_append_arg(),
@@ -90,15 +93,15 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::Alert(item) => item.step().await,
             LibraryListPane::Badge(item) => item.step().await,
             LibraryListPane::Button(item) => item.step().await,
+            LibraryListPane::ButtonGroup(item) => item.step().await,
             LibraryListPane::Dropdown(item) => item.step().await,
             LibraryListPane::List(item) => item.step().await,
             LibraryListPane::Modal(item) => item.step().await,
             LibraryListPane::Progress(item) => item.step().await,
             LibraryListPane::TabList(item) => item.step().await,
             LibraryListPane::Toast(item) => item.step().await,
-            LibraryListPane::Default(_) | LibraryListPane::Card(_) | LibraryListPane::Icon(_) => {
-                std::future::pending().await
-            }
+            LibraryListPane::Icon(item) => item.step().await,
+            LibraryListPane::Default(_) | LibraryListPane::Card(_) => std::future::pending().await,
         }
     }
 }
@@ -151,6 +154,10 @@ impl<V: View> Default for Library<V> {
 
         lib.add_item("components::Button", || {
             LibraryListPane::Button(Default::default())
+        });
+
+        lib.add_item("components::ButtonGroup<T>", || {
+            LibraryListPane::ButtonGroup(Default::default())
         });
 
         lib.add_item("components::Card", || {
@@ -229,6 +236,7 @@ impl<V: View> Library<V> {
     }
 }
 
+/// Main loop of the component library web app.
 pub async fn main() {
     use mogwai::web::prelude::*;
 

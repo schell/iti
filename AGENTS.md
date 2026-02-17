@@ -118,13 +118,57 @@ contain a `*LibraryItem<V: View>` struct with `Default` impl and `step()` method
 
 ### Async Patterns
 
-- Async event loops use `step()` methods called inside `loop { }` blocks.
-- Use `futures_lite::FutureExt::or()` to race multiple futures (e.g., a pane
-  future vs. a list click future).
-- Use `futures_lite::stream::unfold` for creating stateful event streams.
-- Use `mogwai::future::race_all` when racing a collection of homogeneous futures.
-- Pin boxed streams as `Pin<Box<dyn Stream<Item = T>>>` when storing them in structs.
+#### The `step()` convention
+
+- Every public async method is named **`step`** — no `next`, `poll`, `events`,
+  or other names. This is a hard convention across the entire codebase.
+- `step()` takes **`&self`** (immutable borrow) in almost all cases. This works
+  because mogwai's `EventListener::next()` uses interior mutability. The sole
+  exception is `Widget::step(&mut self)`, which advances a mutable `Stream`.
+- Not every component has `step()`. Purely presentational components (Alert,
+  Badge, Card, Icon, Progress) have only synchronous setters. Only components
+  with user-initiated events expose `step()`.
+- Callers drive the event loop: `loop { component.step().await }`.
+
+#### Event return types
+
+- **Raw event:** `Button::step() -> V::Event` — simplest case.
+- **Single-variant enum:** `Modal::step() -> ModalEvent` (with `ModalEvent::Closed`)
+  — provides future extensibility.
+- **Index + event struct:** `List::step() -> ListEvent<V>` (with fields
+  `index: usize`, `event: V::Event`) — used by collection components
+  (`List`, `ButtonGroup`, `TabList`).
+- **Optional event:** `Dropdown::step() -> Option<DropdownEvent<V>>` — `None`
+  for toggle clicks, `Some` for item clicks.
+
+#### No streams in public APIs
+
+- Components do **not** expose `Stream` types publicly. `step()` is the
+  stream — one event at a time, pull-based.
+- No callbacks, no channels (`mpsc`, `Sender`/`Receiver`).
+- `Pin<Box<dyn Stream<Item = T>>>` may appear internally (e.g., in `Widget` or
+  library sandbox modules) but is never part of a component's public API.
+
+#### Racing and composition
+
+- Use `futures_lite::FutureExt::or()` to race a small, fixed set of
+  heterogeneous futures (e.g., a pane future vs. a list click future).
+  Distinguish winners with `.map(Ok)` / `.map(Err)` or discriminant enums.
+- Use `mogwai::future::race_all` when racing a collection of homogeneous
+  futures (e.g., all button clicks in a `ButtonGroup`).
 - Use `.boxed_local()` for locally-pinned futures (WASM is single-threaded).
+
+#### Private async helpers
+
+- Collection components that race N children use a private method named
+  **`item_click_events`** (or `item_events` for `TabList`), returning
+  `impl Future<Output = Event> + '_`.
+
+#### Stream utilities (internal / library sandboxes only)
+
+- Use `futures_lite::stream::unfold` for creating stateful event streams.
+- Pin boxed streams as `Pin<Box<dyn Stream<Item = T>>>` when storing them
+  in structs.
 
 ### DOM Construction
 

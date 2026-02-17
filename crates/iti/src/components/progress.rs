@@ -89,7 +89,11 @@ pub mod library {
     use std::pin::Pin;
 
     use futures_lite::{FutureExt, Stream, StreamExt};
-    use mogwai::future::MogwaiFutureExt;
+
+    use crate::components::{
+        button::Button,
+        button_group::{ButtonGroup, ButtonGroupEvent},
+    };
 
     use super::*;
 
@@ -98,55 +102,33 @@ pub mod library {
         #[child]
         pub wrapper: V::Element,
         progress: Progress<V>,
+        control_group: ButtonGroup<V>,
         value: u8,
         is_striped: bool,
         is_animated: bool,
-        inc_click: V::EventListener,
-        dec_click: V::EventListener,
-        stripe_click: V::EventListener,
-        animate_click: V::EventListener,
         timer: Pin<Box<dyn Stream<Item = ()>>>,
     }
 
     impl<V: View> Default for ProgressLibraryItem<V> {
         fn default() -> Self {
             let progress = Progress::new(25, super::Flavor::Primary);
+            let mut control_group = ButtonGroup::<V>::default();
+            control_group.extend([
+                Button::new("+10", Some(Flavor::Primary)),
+                Button::new("-10", Some(Flavor::Primary)),
+                Button::new("Toggle striped", Some(Flavor::Secondary)),
+                Button::new("Toggle animated", Some(Flavor::Secondary)),
+            ]);
+            for button in control_group.iter_mut() {
+                button.set_has_icon(false);
+            }
 
             rsx! {
                 let wrapper = div() {
                     div(class = "mb-3") {
                         {&progress}
                     }
-                    div(class = "btn-group") {
-                        button(
-                            type = "button",
-                            class = "btn btn-sm btn-outline-primary",
-                            on:click = inc_click,
-                        ) {
-                            "+10"
-                        }
-                        button(
-                            type = "button",
-                            class = "btn btn-sm btn-outline-primary",
-                            on:click = dec_click,
-                        ) {
-                            "-10"
-                        }
-                        button(
-                            type = "button",
-                            class = "btn btn-sm btn-outline-secondary",
-                            on:click = stripe_click,
-                        ) {
-                            "Toggle striped"
-                        }
-                        button(
-                            type = "button",
-                            class = "btn btn-sm btn-outline-secondary",
-                            on:click = animate_click,
-                        ) {
-                            "Toggle animated"
-                        }
-                    }
+                    {&control_group}
                 }
             }
 
@@ -158,56 +140,52 @@ pub mod library {
             Self {
                 wrapper,
                 progress,
+                control_group,
                 value: 25,
                 is_striped: false,
                 is_animated: false,
-                inc_click,
-                dec_click,
-                stripe_click,
-                animate_click,
                 timer,
             }
         }
     }
 
-    enum ProgressAction {
-        Inc,
-        Dec,
-        Stripe,
-        Animate,
-        Tick,
-    }
-
     impl<V: View> ProgressLibraryItem<V> {
         pub async fn step(&mut self) {
-            let action = self
-                .inc_click
-                .next()
-                .map(|_| ProgressAction::Inc)
-                .or(self.dec_click.next().map(|_| ProgressAction::Dec))
-                .or(self.stripe_click.next().map(|_| ProgressAction::Stripe))
-                .or(self.animate_click.next().map(|_| ProgressAction::Animate))
-                .or(self.timer.next().map(|_| ProgressAction::Tick))
-                .await;
+            #[derive(Debug)]
+            enum Action {
+                Control(usize),
+                Tick,
+            }
+            let control = async {
+                let ButtonGroupEvent { index, event: _ } = self.control_group.step().await;
+                Action::Control(index)
+            };
+            let tick = async {
+                self.timer.next().await;
+                Action::Tick
+            };
+            let event = control.or(tick).await;
+            log::info!("event: {event:#?}");
 
-            match action {
-                ProgressAction::Inc => {
+            match event {
+                Action::Control(0) => {
                     self.value = self.value.saturating_add(10).min(100);
                     self.progress.set_value(self.value);
                 }
-                ProgressAction::Dec => {
+                Action::Control(1) => {
                     self.value = self.value.saturating_sub(10);
                     self.progress.set_value(self.value);
                 }
-                ProgressAction::Stripe => {
+                Action::Control(2) => {
                     self.is_striped = !self.is_striped;
                     self.progress.set_striped(self.is_striped);
                 }
-                ProgressAction::Animate => {
+                Action::Control(3) => {
                     self.is_animated = !self.is_animated;
                     self.progress.set_animated(self.is_animated);
                 }
-                ProgressAction::Tick => {
+                Action::Control(_) => unreachable!(),
+                Action::Tick => {
                     // Auto-increment wrapping around
                     self.value = if self.value >= 100 { 0 } else { self.value + 1 };
                     self.progress.set_value(self.value);

@@ -1,11 +1,11 @@
 //! A button component.
 //!
-//! May have an icon.
+//! May have an icon, which can be removed or inserted.
 //! The text can be set.
 //! The button can be enabled/disabled.
 //! It has a progress spinner.
 //! It has a flavor.
-//! It has an "onclick" event stream.
+//! It has a `step` method that returns the click event.
 use mogwai::prelude::*;
 
 use crate::components::{
@@ -24,6 +24,8 @@ pub struct Button<V: View> {
     on_click: V::EventListener,
     spinner: V::Element,
     spinner_attached: bool,
+    icon_wrapper: V::Element,
+    has_icon: bool,
 }
 
 impl<V: View> Button<V> {
@@ -47,7 +49,7 @@ impl<V: View> Button<V> {
                 style:cursor = "pointer",
                 on:click = on_click,
             ) {
-                span() {
+                let icon_wrapper = span() {
                     {&icon}
                 }
                 span() {
@@ -66,12 +68,14 @@ impl<V: View> Button<V> {
 
         Button {
             button,
-            icon,
             flavor,
             text,
             on_click,
             spinner,
             spinner_attached: false,
+            icon,
+            icon_wrapper,
+            has_icon: true,
         }
     }
 
@@ -111,6 +115,16 @@ impl<V: View> Button<V> {
 
     pub fn set_flavor(&mut self, flavor: Option<Flavor>) {
         self.flavor.set(flavor);
+    }
+
+    /// Show or hide the icon, reclaiming the layout space.
+    pub fn set_has_icon(&mut self, has_icon: bool) {
+        self.has_icon = has_icon;
+        if self.has_icon {
+            self.icon_wrapper.append_child(&self.icon);
+        } else {
+            self.icon_wrapper.remove_child(&self.icon);
+        }
     }
 
     pub async fn step(&self) -> V::Event {
