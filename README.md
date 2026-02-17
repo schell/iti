@@ -17,6 +17,50 @@ Add `iti` as a dependency with the gallery feature disabled:
 iti = { git = "https://github.com/schell/iti", default-features = false }
 ```
 
+### Loading CSS and fonts
+
+iti components depend on Bootstrap 5, Bootstrap Icons, and Font Awesome 6.
+The `iti::assets` module provides helpers to load these stylesheets.
+
+**Option A — CDN (simplest):**
+
+```rust
+iti::assets::inject_cdn_links();
+```
+
+This adds `<link>` tags for all three stylesheets (served from jsdelivr and
+cdnjs) plus iti's own small custom stylesheet. Requires an internet connection.
+
+**Option B — Embedded Bootstrap + CDN icon fonts:**
+
+```toml
+[dependencies]
+iti = { git = "https://github.com/schell/iti", default-features = false, features = ["embed-assets"] }
+```
+
+```rust
+iti::assets::embedded::inject_styles();
+```
+
+Bootstrap CSS (~227 KB) is compiled into the WASM binary and injected as a
+`<style>` element — no network fetch. Icon font stylesheets (Bootstrap Icons,
+Font Awesome) are still loaded from CDN because their CSS contains relative
+`@font-face` URLs that only resolve when served from the CDN origin.
+
+**Option C — Manual / Trunk:**
+
+Ignore the `assets` module and wire up stylesheets yourself. For example, with
+Trunk you can reference the vendored files in iti's `assets/` directory:
+
+```html
+<link data-trunk rel="css" href="path/to/bootstrap.min.css" />
+<link data-trunk rel="css" href="path/to/bootstrap-icons.min.css" />
+<link data-trunk rel="copy-dir" href="path/to/fontawesome" />
+<link rel="stylesheet" href="fontawesome/css/all.min.css" />
+```
+
+This is what the built-in component gallery uses.
+
 ## Component Gallery
 
 To run the built-in component gallery locally:
