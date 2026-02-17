@@ -1,11 +1,17 @@
 //! Reusable UI components built on mogwai and Bootstrap 5.
 
 pub mod alert;
+pub mod badge;
 pub mod button;
+pub mod card;
+pub mod dropdown;
 pub mod icon;
 pub mod list;
+pub mod modal;
 pub mod pane;
+pub mod progress;
 pub mod tab;
+pub mod toast;
 pub mod widget;
 
 /// Bootstrap 5 color variant.

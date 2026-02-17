@@ -4,11 +4,18 @@ use js_sys::wasm_bindgen::UnwrapThrowExt;
 use mogwai::prelude::*;
 
 use crate::components::{
-    button::library::*,
-    icon::library::*,
-    list::{List, ListEvent},
+    alert::library::AlertLibraryItem,
+    badge::library::BadgeLibraryItem,
+    button::library::ButtonLibraryItem,
+    card::library::CardLibraryItem,
+    dropdown::library::DropdownLibraryItem,
+    icon::library::IconLibraryItem,
+    list::{library::ListLibraryItem, List, ListEvent},
+    modal::library::ModalLibraryItem,
     pane::RestartPanes,
+    progress::library::ProgressLibraryItem,
     tab::library::TabListLibraryItem,
+    toast::library::ToastLibraryItem,
 };
 
 #[derive(ViewChild)]
@@ -34,9 +41,17 @@ impl<V: View> LibraryListItem<V> {
 
 pub enum LibraryListPane<V: View> {
     Default(V::Element),
-    Icon(IconLibraryItem<V>),
+    Alert(AlertLibraryItem<V>),
+    Badge(BadgeLibraryItem<V>),
     Button(ButtonLibraryItem<V>),
+    Card(CardLibraryItem<V>),
+    Dropdown(DropdownLibraryItem<V>),
+    Icon(IconLibraryItem<V>),
+    List(ListLibraryItem<V>),
+    Modal(ModalLibraryItem<V>),
+    Progress(ProgressLibraryItem<V>),
     TabList(TabListLibraryItem<V>),
+    Toast(ToastLibraryItem<V>),
 }
 
 impl<V: View> Default for LibraryListPane<V> {
@@ -54,9 +69,17 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
     ) -> AppendArg<V, impl Iterator<Item = std::borrow::Cow<'_, <V as View>::Node>>> {
         match self {
             LibraryListPane::Default(el) => el.as_boxed_append_arg(),
-            LibraryListPane::Icon(i) => i.as_boxed_append_arg(),
-            LibraryListPane::Button(b) => b.as_boxed_append_arg(),
+            LibraryListPane::Alert(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Badge(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Button(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Card(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Dropdown(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Icon(item) => item.as_boxed_append_arg(),
+            LibraryListPane::List(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Modal(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Progress(item) => item.as_boxed_append_arg(),
             LibraryListPane::TabList(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Toast(item) => item.as_boxed_append_arg(),
         }
     }
 }
@@ -64,9 +87,18 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
 impl<V: View> LibraryListPane<V> {
     pub async fn step(&mut self) {
         match self {
+            LibraryListPane::Alert(item) => item.step().await,
+            LibraryListPane::Badge(item) => item.step().await,
             LibraryListPane::Button(item) => item.step().await,
+            LibraryListPane::Dropdown(item) => item.step().await,
+            LibraryListPane::List(item) => item.step().await,
+            LibraryListPane::Modal(item) => item.step().await,
+            LibraryListPane::Progress(item) => item.step().await,
             LibraryListPane::TabList(item) => item.step().await,
-            LibraryListPane::Default(_) | LibraryListPane::Icon(_) => std::future::pending().await,
+            LibraryListPane::Toast(item) => item.step().await,
+            LibraryListPane::Default(_) | LibraryListPane::Card(_) | LibraryListPane::Icon(_) => {
+                std::future::pending().await
+            }
         }
     }
 }
@@ -109,16 +141,48 @@ impl<V: View> Default for Library<V> {
             right_column,
         };
 
-        lib.add_item("components::Icon", || {
-            LibraryListPane::Icon(IconLibraryItem::default())
+        lib.add_item("components::Alert", || {
+            LibraryListPane::Alert(Default::default())
+        });
+
+        lib.add_item("components::Badge", || {
+            LibraryListPane::Badge(Default::default())
         });
 
         lib.add_item("components::Button", || {
             LibraryListPane::Button(Default::default())
         });
 
+        lib.add_item("components::Card", || {
+            LibraryListPane::Card(Default::default())
+        });
+
+        lib.add_item("components::Dropdown", || {
+            LibraryListPane::Dropdown(Default::default())
+        });
+
+        lib.add_item("components::Icon", || {
+            LibraryListPane::Icon(Default::default())
+        });
+
+        lib.add_item("components::List<T>", || {
+            LibraryListPane::List(Default::default())
+        });
+
+        lib.add_item("components::Modal", || {
+            LibraryListPane::Modal(Default::default())
+        });
+
+        lib.add_item("components::Progress", || {
+            LibraryListPane::Progress(Default::default())
+        });
+
         lib.add_item("components::TabList<T>", || {
             LibraryListPane::TabList(Default::default())
+        });
+
+        lib.add_item("components::Toast", || {
+            LibraryListPane::Toast(Default::default())
         });
 
         lib
