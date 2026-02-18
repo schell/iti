@@ -31,7 +31,7 @@ iti::assets::inject_cdn_links();
 This adds `<link>` tags for all three stylesheets (served from jsdelivr and
 cdnjs) plus iti's own small custom stylesheet. Requires an internet connection.
 
-**Option B — Embedded Bootstrap + CDN icon fonts:**
+**Option B — Fully embedded (offline-capable):**
 
 ```toml
 [dependencies]
@@ -42,10 +42,13 @@ iti = { git = "https://github.com/schell/iti", default-features = false, feature
 iti::assets::embedded::inject_styles();
 ```
 
-Bootstrap CSS (~227 KB) is compiled into the WASM binary and injected as a
-`<style>` element — no network fetch. Icon font stylesheets (Bootstrap Icons,
-Font Awesome) are still loaded from CDN because their CSS contains relative
-`@font-face` URLs that only resolve when served from the CDN origin.
+All CSS and icon fonts (~720 KB) are compiled into the WASM binary. At
+runtime, fonts are served via Blob URLs created from the embedded woff2
+bytes, and the CSS `@font-face` declarations are rewritten to reference
+those URLs. No network connection required.
+
+Font Awesome Brands icons are not included to save space. Only Solid,
+Regular, and v4-compatibility fonts are embedded.
 
 **Option C — Manual / Trunk:**
 
