@@ -130,15 +130,6 @@ let list_event = list.step().map(Err);
 match pane_event.or(list_event).await { ... }
 ```
 
-### Event return types
-
-| Pattern | Example | Used by |
-|---|---|---|
-| Raw DOM event | `V::Event` | `Button` |
-| Single-variant enum | `ModalEvent::Closed` | `Modal`, `Toast` |
-| Index + event struct | `ListEvent { index, event }` | `List`, `ButtonGroup`, `TabList` |
-| Optional event | `Option<DropdownEvent>` | `Dropdown` (None = toggle) |
-
 ### Generic vs. concrete children
 
 Some container components are generic over their child type (`List<V, T>` accepts
