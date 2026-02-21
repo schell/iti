@@ -82,6 +82,8 @@ impl<V: View, T: ViewChild<V>> Panes<V, T> {
     pub fn new_retained(wrapper: V::Element, pane: T) -> Self {
         let default_slot = V::Element::new("div");
         default_slot.append_child(&pane);
+        wrapper.set_style("display", "flex");
+        wrapper.set_style("flex-direction", "column");
         wrapper.append_child(&default_slot);
 
         // ProxyChild is unused in Retain mode but we need a value for the
@@ -115,6 +117,8 @@ impl<V: View, T: ViewChild<V>> Panes<V, T> {
         if self.mode == PaneMode::Retain {
             let slot = V::Element::new("div");
             slot.set_style("display", "none");
+            slot.set_style("flex", "1");
+            slot.set_style("min-height", "0");
             slot.append_child(&pane);
             self.wrapper.append_child(&slot);
             self.slots.push(slot);
