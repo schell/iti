@@ -13,7 +13,7 @@ use crate::components::{
     icon::library::IconLibraryItem,
     list::{library::ListLibraryItem, List, ListEvent},
     modal::library::ModalLibraryItem,
-    pane::RestartPanes,
+    pane::{library::PaneRetainLibraryItem, RestartPanes},
     progress::library::ProgressLibraryItem,
     tab::library::TabListLibraryItem,
     toast::library::ToastLibraryItem,
@@ -51,6 +51,7 @@ pub enum LibraryListPane<V: View> {
     Icon(IconLibraryItem<V>),
     List(ListLibraryItem<V>),
     Modal(ModalLibraryItem<V>),
+    PaneRetain(PaneRetainLibraryItem<V>),
     Progress(ProgressLibraryItem<V>),
     TabList(TabListLibraryItem<V>),
     Toast(ToastLibraryItem<V>),
@@ -80,6 +81,7 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::Icon(item) => item.as_boxed_append_arg(),
             LibraryListPane::List(item) => item.as_boxed_append_arg(),
             LibraryListPane::Modal(item) => item.as_boxed_append_arg(),
+            LibraryListPane::PaneRetain(item) => item.as_boxed_append_arg(),
             LibraryListPane::Progress(item) => item.as_boxed_append_arg(),
             LibraryListPane::TabList(item) => item.as_boxed_append_arg(),
             LibraryListPane::Toast(item) => item.as_boxed_append_arg(),
@@ -97,6 +99,7 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::Dropdown(item) => item.step().await,
             LibraryListPane::List(item) => item.step().await,
             LibraryListPane::Modal(item) => item.step().await,
+            LibraryListPane::PaneRetain(item) => item.step().await,
             LibraryListPane::Progress(item) => item.step().await,
             LibraryListPane::TabList(item) => item.step().await,
             LibraryListPane::Toast(item) => item.step().await,
@@ -182,6 +185,10 @@ impl<V: View> Default for Library<V> {
 
         lib.add_item("components::Progress", || {
             LibraryListPane::Progress(Default::default())
+        });
+
+        lib.add_item("components::Panes<T> (Retain)", || {
+            LibraryListPane::PaneRetain(Default::default())
         });
 
         lib.add_item("components::TabList<T>", || {
