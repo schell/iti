@@ -101,6 +101,9 @@ pub mod embedded {
 
     // ── CSS ──────────────────────────────────────────────────────
 
+    /// System9 (retro) styles.
+    pub const SYSTEM9_CSS: &str = include_str!("../../../assets/system9.css");
+
     /// Bootstrap 5.3.3 minified CSS, embedded at compile time.
     pub const BOOTSTRAP_CSS: &str = include_str!("../../../assets/bootstrap.min.css");
 
@@ -116,7 +119,7 @@ pub mod embedded {
     /// [`inject_styles`] to point at Blob URLs.
     const FONTAWESOME_CSS: &str = include_str!("../../../assets/fontawesome/css/all.min.css");
 
-    // ── Fonts (woff2 only) ──────────────────────────────────────
+    // ── Fonts (woff2) ──────────────────────────────────────
 
     const FA_SOLID_WOFF2: &[u8] =
         include_bytes!("../../../assets/fontawesome/webfonts/fa-solid-900.woff2");
@@ -126,6 +129,9 @@ pub mod embedded {
         include_bytes!("../../../assets/fontawesome/webfonts/fa-v4compatibility.woff2");
     const BOOTSTRAP_ICONS_WOFF2: &[u8] =
         include_bytes!("../../../assets/fonts/bootstrap-icons.woff2");
+
+    // -- Fonts (ttf)
+    const CHICAGO_TTF: &[u8] = include_bytes!("../../../assets/fonts/ChicagoFLF.ttf");
 
     // ── Blob URL helper ─────────────────────────────────────────
 
@@ -201,6 +207,16 @@ pub mod embedded {
         )
     }
 
+    /// Rewrite system-9 fonts to use a Blob URL for the embedded font.
+    ///
+    /// Replaces the ttf path with a Blob URL.
+    fn rewrite_system_9_css(css: &str, chicago_url: &str) -> String {
+        css.replace(
+            "url('fonts/ChicagoFLF.ttf')",
+            &format!("url(\"{chicago_url}\")"),
+        )
+    }
+
     // ── Public API ──────────────────────────────────────────────
 
     /// Inject all required styles from the embedded assets.
@@ -222,6 +238,7 @@ pub mod embedded {
         let fa_regular_url = create_blob_url(FA_REGULAR_WOFF2, "font/woff2");
         let fa_v4compat_url = create_blob_url(FA_V4COMPAT_WOFF2, "font/woff2");
         let bi_url = create_blob_url(BOOTSTRAP_ICONS_WOFF2, "font/woff2");
+        let chicago_url = create_blob_url(CHICAGO_TTF, "font/ttf");
 
         // Rewrite CSS @font-face declarations to use Blob URLs
         let fa_css = rewrite_fontawesome_css(
@@ -231,11 +248,13 @@ pub mod embedded {
             &fa_v4compat_url,
         );
         let bi_css = rewrite_bootstrap_icons_css(BOOTSTRAP_ICONS_CSS, &bi_url);
+        let system9 = rewrite_system_9_css(SYSTEM9_CSS, &chicago_url);
 
         // Inject everything as <style> elements — zero network requests
         append_style(BOOTSTRAP_CSS);
         append_style(&bi_css);
         append_style(&fa_css);
+        append_style(&system9);
         append_style(ITI_CSS);
     }
 }

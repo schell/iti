@@ -5,7 +5,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["library"]
+default = ["library", "embed-assets"]
 library = []
 embed-assets = []
 

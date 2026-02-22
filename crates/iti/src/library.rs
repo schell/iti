@@ -120,6 +120,10 @@ pub struct Library<V: View> {
     pub main: V::Element,
     library_list: List<V, LibraryListItem<V>>,
     right_column: RestartPanes<V, LibraryListPane<V>>,
+    theme_toggle_click: V::EventListener,
+    #[allow(dead_code)]
+    theme_checkbox: V::Element,
+    theme_enabled: bool,
 }
 
 impl<V: View> Default for Library<V> {
@@ -131,9 +135,21 @@ impl<V: View> Default for Library<V> {
         let right_column = RestartPanes::new(right_column_wrapper, LibraryListPane::default());
 
         rsx! {
+            let theme_checkbox = input(
+                type = "checkbox",
+                id = "system-9-toggle",
+                on:click = theme_toggle_click
+            ) {}
+        }
+
+        rsx! {
             let main = main(class = "container-fluid mt-3") {
                 div(class = "row") {
                     div(class = "col-auto") {
+                        label(class = "system-9-toggle") {
+                            {&theme_checkbox}
+                            "System 9 Theme"
+                        }
                         let library_list = {List::default()}
                     }
                     {&right_column}
@@ -145,6 +161,9 @@ impl<V: View> Default for Library<V> {
             main,
             library_list,
             right_column,
+            theme_toggle_click,
+            theme_checkbox,
+            theme_enabled: false,
         };
 
         lib.add_item("components::Alert", || {
@@ -210,6 +229,55 @@ impl<V: View> Library<V> {
         self.right_column.add_pane(f);
     }
 
+    /// Apply or remove the System 9 theme class on `<body>`.
+    ///
+    /// This is a static method because it operates on the global DOM body element.
+    /// Only call when `V` is `Web`.
+    fn apply_theme(enabled: bool) {
+        let body = web_sys::window()
+            .unwrap_throw()
+            .document()
+            .unwrap_throw()
+            .body()
+            .unwrap_throw();
+        let current = body.class_name();
+        if enabled {
+            if !current.contains("system-9") {
+                let new_class = if current.is_empty() {
+                    "system-9".to_string()
+                } else {
+                    format!("{current} system-9")
+                };
+                body.set_class_name(&new_class);
+            }
+        } else {
+            let new_class = current
+                .split_whitespace()
+                .filter(|c| *c != "system-9")
+                .collect::<Vec<_>>()
+                .join(" ");
+            body.set_class_name(&new_class);
+        }
+    }
+
+    /// Set the theme toggle state (checkbox + body class + internal flag).
+    pub fn set_theme_enabled(&mut self, enabled: bool) {
+        use js_sys::wasm_bindgen::JsCast;
+
+        self.theme_enabled = enabled;
+        if V::is_view::<mogwai::web::Web>() {
+            Self::apply_theme(enabled);
+            // Set the checkbox checked state via web_sys DOM query
+            if let Some(input) = web_sys::window()
+                .and_then(|w| w.document())
+                .and_then(|d| d.get_element_by_id("system-9-toggle"))
+                .and_then(|el| el.dyn_into::<web_sys::HtmlInputElement>().ok())
+            {
+                input.set_checked(enabled);
+            }
+        }
+    }
+
     pub fn deselect_all(&mut self) {
         for item in self.library_list.iter_mut() {
             item.set_is_active(false);
@@ -227,18 +295,33 @@ impl<V: View> Library<V> {
     pub async fn step(&mut self) {
         let pane_fut = async {
             self.right_column.get_pane_mut().step().await;
-            None
+            Err(None)
         };
         let list_fut = async {
             let event = self.library_list.step().await;
-            Some(event)
+            Err(Some(event))
         };
-        if let Some(ListEvent { index, event: _ }) = pane_fut.or(list_fut).await {
-            log::info!("loading index {index}");
-            self.select_item(index);
-            if V::is_view::<mogwai::web::Web>() {
-                crate::storage::set_item("selected-item", &index).unwrap_throw();
+        let theme_fut = async {
+            self.theme_toggle_click.next().await;
+            Ok(())
+        };
+        match pane_fut.or(list_fut).or(theme_fut).await {
+            Err(Some(ListEvent { index, event: _ })) => {
+                log::info!("loading index {index}");
+                self.select_item(index);
+                if V::is_view::<mogwai::web::Web>() {
+                    crate::storage::set_item("selected-item", &index).unwrap_throw();
+                }
             }
+            Ok(()) => {
+                self.theme_enabled = !self.theme_enabled;
+                log::info!("theme toggle: {}", self.theme_enabled);
+                if V::is_view::<mogwai::web::Web>() {
+                    Self::apply_theme(self.theme_enabled);
+                    crate::storage::set_item("system-9-theme", &self.theme_enabled).unwrap_throw();
+                }
+            }
+            _ => {}
         }
     }
 }
@@ -258,7 +341,14 @@ pub async fn main() {
         let index: usize = item_index_str.parse().unwrap_throw();
         lib.select_item(index);
     }
+
     mogwai::web::body().append_child(&lib);
+
+    // Restore theme state from localStorage (must happen after append_child
+    // so the checkbox element is in the DOM for get_element_by_id).
+    if let Ok(Some(theme_enabled)) = crate::storage::get_item::<bool>("system-9-theme") {
+        lib.set_theme_enabled(theme_enabled);
+    }
 
     wasm_bindgen_futures::spawn_local(async move {
         loop {

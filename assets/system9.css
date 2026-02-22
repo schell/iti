@@ -1,0 +1,675 @@
+/*
+ * system9.css — Mac OS 9 "Platinum" override theme for iti
+ *
+ * All rules are scoped under the `.system-9` class on <body>.
+ * When the class is absent, these rules have no effect.
+ *
+ * Designed to override Bootstrap 5 component styles to evoke
+ * a retro look and feel.
+ *
+ * Font: ChicagoFLF (public domain recreation of Apple's Chicago)
+ */
+
+/* ── Font ──────────────────────────────────────────────────────── */
+
+@font-face {
+	font-family: 'ChicagoFLF';
+	src: url('fonts/ChicagoFLF.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* ── Platinum color palette (CSS custom properties) ──────────── */
+
+.system-9 {
+	--s9-bg:          #DDDDDD;
+	--s9-bg-light:    #EEEEEE;
+	--s9-bg-medium:   #CCCCCC;
+	--s9-bg-dark:     #AAAAAA;
+	--s9-border-light:#FFFFFF;
+	--s9-border-dark: #808080;
+	--s9-border-darker:#555555;
+	--s9-text:        #000000;
+	--s9-text-muted:  #555555;
+	--s9-selection:   #3366CC;
+	--s9-selection-text: #FFFFFF;
+
+	/* Muted flavor colors */
+	--s9-primary:     #3366CC;
+	--s9-secondary:   #999999;
+	--s9-success:     #339933;
+	--s9-danger:      #CC3333;
+	--s9-warning:     #CC9933;
+	--s9-info:        #339999;
+	--s9-light:       #EEEEEE;
+	--s9-dark:        #333333;
+
+	/* Desaturated button tints (medium saturation for buttons) */
+	--s9-primary-tint:   #B8CCE8;
+	--s9-secondary-tint: #C8C8C8;
+	--s9-success-tint:   #B8D8B8;
+	--s9-danger-tint:    #E8B8B8;
+	--s9-warning-tint:   #E8D8B8;
+	--s9-info-tint:      #B8D8D8;
+
+	/* Very light alert backgrounds (low saturation for readability) */
+	--s9-primary-bg:   #D8E4F4;
+	--s9-secondary-bg: #DCDCDC;
+	--s9-success-bg:   #D8ECD8;
+	--s9-danger-bg:    #F4D8D8;
+	--s9-warning-bg:   #F4ECD8;
+	--s9-info-bg:      #D8ECEC;
+}
+
+/* ── Global resets ─────────────────────────────────────────────── */
+
+.system-9 {
+	background-color: var(--s9-bg) !important;
+	color: var(--s9-text);
+	font-family: "Charcoal", "Lucida Grande", "Geneva", "Helvetica Neue", sans-serif;
+	font-size: 13px;
+	-webkit-font-smoothing: none;
+	-moz-osx-font-smoothing: unset;
+}
+
+.system-9 * {
+	border-radius: 0 !important;
+	box-shadow: none !important;
+}
+
+.system-9 h1, .system-9 h2, .system-9 h3,
+.system-9 h4, .system-9 h5, .system-9 h6,
+.system-9 .modal-title,
+.system-9 .card-header,
+.system-9 .toast-header {
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+}
+
+.system-9 ::selection {
+	background-color: var(--s9-selection);
+	color: var(--s9-selection-text);
+}
+
+/* ── Beveled border mixins (via classes) ──────────────────────── */
+/* Raised: light top-left, dark bottom-right (outset feel)        */
+/* Inset:  dark top-left, light bottom-right (sunken feel)        */
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+
+.system-9 .btn {
+	background-color: var(--s9-bg-medium);
+	color: var(--s9-text);
+	border: 2px solid;
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-size: 12px;
+	padding: 3px 12px;
+	text-shadow: none;
+	transition: none;
+	outline: none;
+}
+
+.system-9 .btn:hover {
+	background-color: var(--s9-bg-light);
+	color: var(--s9-text);
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+}
+
+.system-9 .btn:active,
+.system-9 .btn.active {
+	background-color: var(--s9-bg-dark);
+	border-color: var(--s9-border-dark) var(--s9-border-light) var(--s9-border-light) var(--s9-border-dark);
+}
+
+.system-9 .btn:focus-visible {
+	outline: 1px dotted var(--s9-text);
+	outline-offset: -4px;
+}
+
+.system-9 .btn:disabled,
+.system-9 .btn.disabled {
+	background-color: var(--s9-bg-medium);
+	color: var(--s9-border-dark);
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+	opacity: 1;
+	text-shadow: 1px 1px 0 var(--s9-border-light);
+}
+
+/* Flavor buttons — desaturated tint across entire button background */
+.system-9 .btn-primary {
+	background-color: var(--s9-primary-tint);
+	color: var(--s9-text);
+}
+
+.system-9 .btn-primary:hover {
+	background-color: var(--s9-primary-tint);
+	color: var(--s9-text);
+	filter: brightness(1.06);
+}
+
+.system-9 .btn-secondary {
+	background-color: var(--s9-secondary-tint);
+	color: var(--s9-text);
+}
+
+.system-9 .btn-secondary:hover {
+	background-color: var(--s9-secondary-tint);
+	color: var(--s9-text);
+	filter: brightness(1.06);
+}
+
+.system-9 .btn-success {
+	background-color: var(--s9-success-tint);
+	color: var(--s9-text);
+}
+
+.system-9 .btn-success:hover {
+	background-color: var(--s9-success-tint);
+	color: var(--s9-text);
+	filter: brightness(1.06);
+}
+
+.system-9 .btn-danger {
+	background-color: var(--s9-danger-tint);
+	color: var(--s9-text);
+}
+
+.system-9 .btn-danger:hover {
+	background-color: var(--s9-danger-tint);
+	color: var(--s9-text);
+	filter: brightness(1.06);
+}
+
+.system-9 .btn-warning {
+	background-color: var(--s9-warning-tint);
+	color: var(--s9-text);
+}
+
+.system-9 .btn-warning:hover {
+	background-color: var(--s9-warning-tint);
+	color: var(--s9-text);
+	filter: brightness(1.06);
+}
+
+.system-9 .btn-info {
+	background-color: var(--s9-info-tint);
+	color: var(--s9-text);
+}
+
+.system-9 .btn-info:hover {
+	background-color: var(--s9-info-tint);
+	color: var(--s9-text);
+	filter: brightness(1.06);
+}
+
+.system-9 .btn-light {
+	background-color: var(--s9-bg-light);
+	color: var(--s9-text);
+}
+
+.system-9 .btn-dark {
+	background-color: var(--s9-bg-dark);
+	color: var(--s9-text);
+}
+
+.system-9 .btn-link {
+	background-color: transparent;
+	border-color: transparent;
+	color: var(--s9-primary);
+	text-decoration: underline;
+}
+
+.system-9 .btn-link:hover {
+	background-color: transparent;
+	border-color: transparent;
+	color: var(--s9-primary);
+}
+
+/* Outline variants — same beveled style with thinner left accent */
+.system-9 [class*="btn-outline-"] {
+	background-color: var(--s9-bg-light);
+	color: var(--s9-text);
+	border: 2px solid;
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+}
+
+.system-9 [class*="btn-outline-"]:hover {
+	background-color: var(--s9-bg-medium);
+	color: var(--s9-text);
+}
+
+.system-9 [class*="btn-outline-"]:active,
+.system-9 [class*="btn-outline-"].active {
+	background-color: var(--s9-bg-dark);
+	border-color: var(--s9-border-dark) var(--s9-border-light) var(--s9-border-light) var(--s9-border-dark);
+}
+
+/* ── Button groups ─────────────────────────────────────────────── */
+
+.system-9 .btn-group {
+	border: none;
+}
+
+.system-9 .btn-group > .btn {
+	border-right: 1px solid var(--s9-border-dark);
+}
+
+.system-9 .btn-group > .btn:last-child {
+	border-right: none;
+}
+
+/* Rounded outer edges for horizontal button groups */
+.system-9 .btn-group > .btn:first-child {
+	border-top-left-radius: 4px !important;
+	border-bottom-left-radius: 4px !important;
+}
+
+.system-9 .btn-group > .btn:last-child {
+	border-top-right-radius: 4px !important;
+	border-bottom-right-radius: 4px !important;
+}
+
+/* Rounded outer edges for vertical button groups */
+.system-9 .btn-group-vertical > .btn:first-child {
+	border-top-left-radius: 4px !important;
+	border-top-right-radius: 4px !important;
+}
+
+.system-9 .btn-group-vertical > .btn:last-child {
+	border-bottom-left-radius: 4px !important;
+	border-bottom-right-radius: 4px !important;
+}
+
+/* ── Alerts ────────────────────────────────────────────────────── */
+
+.system-9 .alert {
+	background-color: var(--s9-bg-light);
+	color: var(--s9-text);
+	border: 2px solid;
+	border-color: var(--s9-border-dark) var(--s9-border-light) var(--s9-border-light) var(--s9-border-dark);
+	font-family: inherit;
+	padding: 8px 12px;
+}
+
+/* Flavor accent via left border + desaturated background tint */
+.system-9 .alert-primary   { background-color: var(--s9-primary-bg);   border-left: 5px solid var(--s9-primary); }
+.system-9 .alert-secondary  { background-color: var(--s9-secondary-bg); border-left: 5px solid var(--s9-secondary); }
+.system-9 .alert-success    { background-color: var(--s9-success-bg);   border-left: 5px solid var(--s9-success); }
+.system-9 .alert-danger     { background-color: var(--s9-danger-bg);    border-left: 5px solid var(--s9-danger); }
+.system-9 .alert-warning    { background-color: var(--s9-warning-bg);   border-left: 5px solid var(--s9-warning); }
+.system-9 .alert-info       { background-color: var(--s9-info-bg);      border-left: 5px solid var(--s9-info); }
+.system-9 .alert-light      { background-color: var(--s9-bg-light);     border-left: 5px solid var(--s9-bg-dark); }
+.system-9 .alert-dark       { background-color: var(--s9-bg-dark); color: var(--s9-bg-light); border-left: 5px solid var(--s9-dark); }
+
+/* ── Badges ────────────────────────────────────────────────────── */
+
+.system-9 .badge {
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-size: 11px;
+	font-weight: normal;
+	padding: 2px 6px;
+	border: 1px solid var(--s9-border-dark);
+}
+
+.system-9 .badge.rounded-pill {
+	border-radius: 10px !important;
+	padding: 2px 8px;
+}
+
+.system-9 .text-bg-primary   { background-color: var(--s9-primary) !important; color: #fff !important; }
+.system-9 .text-bg-secondary  { background-color: var(--s9-secondary) !important; color: #fff !important; }
+.system-9 .text-bg-success    { background-color: var(--s9-success) !important; color: #fff !important; }
+.system-9 .text-bg-danger     { background-color: var(--s9-danger) !important; color: #fff !important; }
+.system-9 .text-bg-warning    { background-color: var(--s9-warning) !important; color: #000 !important; }
+.system-9 .text-bg-info       { background-color: var(--s9-info) !important; color: #fff !important; }
+.system-9 .text-bg-light      { background-color: var(--s9-light) !important; color: #000 !important; }
+.system-9 .text-bg-dark       { background-color: var(--s9-dark) !important; color: #fff !important; }
+
+/* ── Cards ─────────────────────────────────────────────────────── */
+
+.system-9 .card {
+	background-color: var(--s9-bg-light);
+	border: 2px solid;
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+}
+
+.system-9 .card-header {
+	background-color: var(--s9-bg-medium);
+	border-bottom: 2px solid var(--s9-border-dark);
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-size: 12px;
+	/* Subtle pinstripe accent */
+	background-image: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 2px,
+		rgba(255, 255, 255, 0.3) 2px,
+		rgba(255, 255, 255, 0.3) 3px
+	);
+}
+
+.system-9 .card-body {
+	background-color: var(--s9-bg-light);
+	padding: 10px 12px;
+}
+
+.system-9 .card-footer {
+	background-color: var(--s9-bg-medium);
+	border-top: 1px solid var(--s9-border-dark);
+}
+
+/* ── Modals ─────────────────────────────────────────────────────── */
+
+.system-9 .modal-content {
+	background-color: var(--s9-bg);
+	border: 2px solid;
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+	/* Double-border effect like a System 9 dialog */
+	outline: 1px solid var(--s9-text);
+}
+
+.system-9 .modal-header .btn-close {
+	margin: -2px -4px -2px auto;
+}
+
+.system-9 .modal-header {
+	background-color: var(--s9-bg-medium);
+	border-bottom: 2px solid var(--s9-border-dark);
+	padding: 4px 8px;
+	/* Horizontal pinstripes in the title bar */
+	background-image: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 1px,
+		rgba(255, 255, 255, 0.4) 1px,
+		rgba(255, 255, 255, 0.4) 2px,
+		transparent 2px,
+		transparent 3px,
+		rgba(0, 0, 0, 0.1) 3px,
+		rgba(0, 0, 0, 0.1) 4px
+	);
+}
+
+.system-9 .modal-title {
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-size: 12px;
+	text-align: center;
+	/* Title text sits on an opaque background to cut through pinstripes */
+	background-color: var(--s9-bg-medium);
+	padding: 0 8px;
+}
+
+.system-9 .modal-body {
+	background-color: var(--s9-bg-light);
+	padding: 12px;
+}
+
+.system-9 .btn-close {
+	background: var(--s9-bg-medium);
+	background-image: none;
+	border: 2px solid;
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	opacity: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+}
+
+.system-9 .btn-close::after {
+	content: "\00D7";
+	font-family: 'ChicagoFLF', "Chicago", sans-serif;
+	font-size: 12px;
+	line-height: 1;
+	color: var(--s9-text);
+}
+
+.system-9 .btn-close:hover {
+	background-color: var(--s9-bg-light);
+	background-image: none;
+}
+
+.system-9 .btn-close:active {
+	background-color: var(--s9-bg-dark);
+	background-image: none;
+	border-color: var(--s9-border-dark) var(--s9-border-light) var(--s9-border-light) var(--s9-border-dark);
+}
+
+.system-9 .modal-backdrop {
+	background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* ── Nav Tabs (folder tabs) ────────────────────────────────────── */
+
+.system-9 .nav-tabs {
+	border-bottom: 2px solid var(--s9-border-dark);
+}
+
+.system-9 .nav-tabs .nav-link {
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-size: 12px;
+	color: var(--s9-text);
+	background-color: var(--s9-bg-dark);
+	border: 2px solid;
+	border-color: var(--s9-border-light) var(--s9-border-dark) transparent var(--s9-border-light);
+	margin-bottom: -2px;
+	padding: 3px 12px;
+	transition: none;
+}
+
+.system-9 .nav-tabs .nav-link:hover {
+	background-color: var(--s9-bg-medium);
+	color: var(--s9-text);
+	border-color: var(--s9-border-light) var(--s9-border-dark) transparent var(--s9-border-light);
+}
+
+.system-9 .nav-tabs .nav-link.active {
+	background-color: var(--s9-bg-light);
+	color: var(--s9-text);
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-bg-light) var(--s9-border-light);
+	font-weight: normal;
+}
+
+/* ── List groups ───────────────────────────────────────────────── */
+
+.system-9 .list-group {
+	border: 2px solid;
+	border-color: var(--s9-border-dark) var(--s9-border-light) var(--s9-border-light) var(--s9-border-dark);
+}
+
+.system-9 .list-group-item {
+	background-color: var(--s9-bg-light);
+	color: var(--s9-text);
+	border: none;
+	border-bottom: 1px solid var(--s9-bg-medium);
+	padding: 4px 8px;
+	font-size: 12px;
+	transition: none;
+}
+
+.system-9 .list-group-item:last-child {
+	border-bottom: none;
+}
+
+.system-9 .list-group-item.active {
+	background-color: var(--s9-selection) !important;
+	color: var(--s9-selection-text) !important;
+	border-color: var(--s9-selection);
+	margin-top: 0 !important;
+	border-top-width: 0 !important;
+}
+
+.system-9 .list-group-item:hover:not(.active) {
+	background-color: var(--s9-bg-medium);
+}
+
+/* Flavor variants for list items */
+.system-9 .list-group-item-primary   { border-left: 3px solid var(--s9-primary) !important; }
+.system-9 .list-group-item-secondary  { border-left: 3px solid var(--s9-secondary) !important; }
+.system-9 .list-group-item-success    { border-left: 3px solid var(--s9-success) !important; }
+.system-9 .list-group-item-danger     { border-left: 3px solid var(--s9-danger) !important; }
+.system-9 .list-group-item-warning    { border-left: 3px solid var(--s9-warning) !important; }
+.system-9 .list-group-item-info       { border-left: 3px solid var(--s9-info) !important; }
+
+/* ── Dropdowns ─────────────────────────────────────────────────── */
+
+.system-9 .dropdown-menu {
+	background-color: var(--s9-bg-light);
+	border: 2px solid;
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+	padding: 0;
+	margin-top: 0;
+}
+
+.system-9 .dropdown-item {
+	color: var(--s9-text);
+	font-size: 12px;
+	padding: 3px 12px;
+	transition: none;
+}
+
+.system-9 .dropdown-item:hover,
+.system-9 .dropdown-item:focus {
+	background-color: var(--s9-selection);
+	color: var(--s9-selection-text);
+}
+
+.system-9 .dropdown-item.active {
+	background-color: var(--s9-selection);
+	color: var(--s9-selection-text);
+}
+
+.system-9 .dropdown-toggle::after {
+	border: none;
+	content: "\25BE"; /* small down-pointing triangle */
+	vertical-align: middle;
+	margin-left: 4px;
+}
+
+/* ── Progress bars ─────────────────────────────────────────────── */
+
+.system-9 .progress {
+	background-color: var(--s9-bg-light);
+	border: 2px solid;
+	border-color: var(--s9-border-dark) var(--s9-border-light) var(--s9-border-light) var(--s9-border-dark);
+	height: 16px;
+	overflow: hidden;
+}
+
+.system-9 .progress-bar {
+	background-color: var(--s9-primary);
+	/* Classic Mac OS "barber pole" stripe pattern */
+	background-image: repeating-linear-gradient(
+		-45deg,
+		transparent,
+		transparent 4px,
+		rgba(255, 255, 255, 0.3) 4px,
+		rgba(255, 255, 255, 0.3) 8px
+	);
+	background-size: auto !important;
+	transition: none;
+}
+
+.system-9 .progress-bar-striped {
+	background-image: repeating-linear-gradient(
+		-45deg,
+		transparent,
+		transparent 4px,
+		rgba(255, 255, 255, 0.3) 4px,
+		rgba(255, 255, 255, 0.3) 8px
+	);
+	background-size: auto !important;
+}
+
+/* Flavor overrides for progress bars */
+.system-9 .bg-primary   { background-color: var(--s9-primary) !important; }
+.system-9 .bg-secondary  { background-color: var(--s9-secondary) !important; }
+.system-9 .bg-success    { background-color: var(--s9-success) !important; }
+.system-9 .bg-danger     { background-color: var(--s9-danger) !important; }
+.system-9 .bg-warning    { background-color: var(--s9-warning) !important; }
+.system-9 .bg-info       { background-color: var(--s9-info) !important; }
+
+/* ── Toasts ────────────────────────────────────────────────────── */
+
+.system-9 .toast {
+	background-color: var(--s9-bg);
+	border: 2px solid;
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+	outline: 1px solid var(--s9-text);
+}
+
+.system-9 .toast-header {
+	background-color: var(--s9-bg-medium);
+	color: var(--s9-text);
+	border-bottom: 1px solid var(--s9-border-dark);
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-size: 12px;
+	padding: 4px 8px;
+}
+
+/* Override flavor-colored toast headers to gray */
+.system-9 .toast-header[class*="text-bg-"] {
+	background-color: var(--s9-bg-medium) !important;
+	color: var(--s9-text) !important;
+}
+
+.system-9 .toast-body {
+	background-color: var(--s9-bg-light);
+	padding: 8px;
+	font-size: 12px;
+}
+
+/* ── Spinners ──────────────────────────────────────────────────── */
+
+.system-9 .spinner-border {
+	border-color: var(--s9-border-dark);
+	border-right-color: transparent;
+}
+
+/* ── Links ─────────────────────────────────────────────────────── */
+
+.system-9 a {
+	color: var(--s9-primary);
+}
+
+.system-9 a:hover {
+	color: var(--s9-primary);
+}
+
+/* ── Miscellaneous Bootstrap utilities ─────────────────────────── */
+
+.system-9 .text-muted {
+	color: var(--s9-text-muted) !important;
+}
+
+.system-9 .text-body-secondary {
+	color: var(--s9-text-muted) !important;
+}
+
+/* ── Theme toggle control ──────────────────────────────────────── */
+
+.system-9-toggle {
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-size: 11px;
+	padding: 4px 8px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	user-select: none;
+	margin-bottom: 8px;
+	color: #555;
+}
+
+.system-9-toggle input[type="checkbox"] {
+	cursor: pointer;
+}
+
+/* When active, style the toggle label itself */
+.system-9 .system-9-toggle {
+	color: var(--s9-text);
+}
