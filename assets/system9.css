@@ -609,6 +609,7 @@
 	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
 	font-size: 12px;
 	padding: 4px 8px;
+	margin: 0 2px 0 0;
 }
 
 /* Override flavor-colored toast headers to gray */

@@ -101,7 +101,8 @@ pub mod embedded {
 
     // ── CSS ──────────────────────────────────────────────────────
 
-    /// System9 (retro) styles.
+    /// System 9 (retro Mac OS Platinum) styles, embedded at compile time.
+    #[cfg(feature = "system9")]
     pub const SYSTEM9_CSS: &str = include_str!("../../../assets/system9.css");
 
     /// Bootstrap 5.3.3 minified CSS, embedded at compile time.
@@ -131,6 +132,7 @@ pub mod embedded {
         include_bytes!("../../../assets/fonts/bootstrap-icons.woff2");
 
     // -- Fonts (ttf)
+    #[cfg(feature = "system9")]
     const CHICAGO_TTF: &[u8] = include_bytes!("../../../assets/fonts/ChicagoFLF.ttf");
 
     // ── Blob URL helper ─────────────────────────────────────────
@@ -210,6 +212,7 @@ pub mod embedded {
     /// Rewrite system-9 fonts to use a Blob URL for the embedded font.
     ///
     /// Replaces the ttf path with a Blob URL.
+    #[cfg(feature = "system9")]
     fn rewrite_system_9_css(css: &str, chicago_url: &str) -> String {
         css.replace(
             "url('fonts/ChicagoFLF.ttf')",
@@ -221,13 +224,17 @@ pub mod embedded {
 
     /// Inject all required styles from the embedded assets.
     ///
-    /// Creates four `<style>` elements in `<head>` — no `<link>` tags,
+    /// Creates `<style>` elements in `<head>` — no `<link>` tags,
     /// no network requests:
     ///
     /// 1. Bootstrap 5 CSS
     /// 2. Bootstrap Icons CSS (with `@font-face` rewritten to Blob URLs)
     /// 3. Font Awesome 6 CSS (with `@font-face` rewritten to Blob URLs)
     /// 4. iti custom styles
+    ///
+    /// When the `system9` feature is enabled, a fifth `<style>` element
+    /// is injected with the System 9 Platinum theme CSS (with its
+    /// `@font-face` rewritten to a Blob URL for the Chicago font).
     ///
     /// Font Awesome Brands icons are **not** embedded to save binary
     /// space. Brand icon classes (`.fa-brands`) will render as blank
@@ -238,7 +245,6 @@ pub mod embedded {
         let fa_regular_url = create_blob_url(FA_REGULAR_WOFF2, "font/woff2");
         let fa_v4compat_url = create_blob_url(FA_V4COMPAT_WOFF2, "font/woff2");
         let bi_url = create_blob_url(BOOTSTRAP_ICONS_WOFF2, "font/woff2");
-        let chicago_url = create_blob_url(CHICAGO_TTF, "font/ttf");
 
         // Rewrite CSS @font-face declarations to use Blob URLs
         let fa_css = rewrite_fontawesome_css(
@@ -248,13 +254,20 @@ pub mod embedded {
             &fa_v4compat_url,
         );
         let bi_css = rewrite_bootstrap_icons_css(BOOTSTRAP_ICONS_CSS, &bi_url);
-        let system9 = rewrite_system_9_css(SYSTEM9_CSS, &chicago_url);
 
         // Inject everything as <style> elements — zero network requests
         append_style(BOOTSTRAP_CSS);
         append_style(&bi_css);
         append_style(&fa_css);
-        append_style(&system9);
+
+        // System 9 theme (conditionally compiled)
+        #[cfg(feature = "system9")]
+        {
+            let chicago_url = create_blob_url(CHICAGO_TTF, "font/ttf");
+            let system9 = rewrite_system_9_css(SYSTEM9_CSS, &chicago_url);
+            append_style(&system9);
+        }
+
         append_style(ITI_CSS);
     }
 }

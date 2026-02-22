@@ -5,9 +5,10 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["library", "embed-assets"]
+default = ["library", "embed-assets", "system9"]
 library = []
 embed-assets = []
+system9 = []
 
 [lib]
 crate-type = ["cdylib", "rlib"]
