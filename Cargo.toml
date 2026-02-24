@@ -29,6 +29,7 @@ features = [
     "HtmlInputElement",
     "HtmlLinkElement",
     "HtmlStyleElement",
+    "KeyboardEvent",
     "Node",
     "Storage",
     "Text",

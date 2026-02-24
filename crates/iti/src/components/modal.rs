@@ -2,11 +2,13 @@
 //!
 //! A Bootstrap modal with title, body slot, and close handling.  The backdrop
 //! and visibility are managed in pure Rust — no Bootstrap JS required.
+//! Pressing Escape while the modal is visible will also close it.
 use mogwai::prelude::*;
+use wasm_bindgen::JsCast;
 
 /// Event emitted by a [`Modal`].
 pub enum ModalEvent {
-    /// The modal was closed (via close button or backdrop click).
+    /// The modal was closed (via close button, backdrop click, or Escape key).
     Closed,
 }
 
@@ -24,6 +26,7 @@ pub struct Modal<V: View> {
     body_child: ProxyChild<V>,
     close_click: V::EventListener,
     backdrop_click: V::EventListener,
+    keydown: V::EventListener,
     visible: Proxy<bool>,
 }
 
@@ -32,7 +35,9 @@ impl<V: View> Modal<V> {
         let mut visible = Proxy::new(false);
 
         rsx! {
-            let wrapper = div() {
+            let wrapper = div(
+                document:keydown = keydown,
+            ) {
                 div(
                     class = visible(v => if *v {
                         "modal-backdrop fade show"
@@ -88,6 +93,7 @@ impl<V: View> Modal<V> {
             body_child,
             close_click,
             backdrop_click,
+            keydown,
             visible,
         }
     }
@@ -111,11 +117,29 @@ impl<V: View> Modal<V> {
         self.visible.set(false);
     }
 
-    /// Await the next modal event (close button or backdrop click).
+    /// Returns `true` if the modal is currently visible.
+    pub fn is_visible(&self) -> bool {
+        *self.visible
+    }
+
+    /// Await the next modal event (close button, backdrop click, or Escape key).
     pub async fn step(&self) -> ModalEvent {
         use futures_lite::FutureExt;
 
-        self.close_click.next().or(self.backdrop_click.next()).await;
+        let close_or_backdrop = self.close_click.next().or(self.backdrop_click.next());
+        let escape = async {
+            loop {
+                let ev = self.keydown.next().await;
+                let is_escape = ev.when_event::<mogwai::web::Web, _>(|e: &web_sys::Event| {
+                    e.dyn_ref::<web_sys::KeyboardEvent>()
+                        .is_some_and(|ke| ke.key() == "Escape")
+                });
+                if is_escape == Some(true) {
+                    return ev;
+                }
+            }
+        };
+        close_or_backdrop.or(escape).await;
         ModalEvent::Closed
     }
 }
