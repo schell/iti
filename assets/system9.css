@@ -60,6 +60,13 @@
 	--s9-danger-bg:    #F4D8D8;
 	--s9-warning-bg:   #F4ECD8;
 	--s9-info-bg:      #D8ECEC;
+
+	/* Blue-purple thumb accent (Platinum scrollbar / slider) */
+	--s9-thumb:             #9999FF;
+	--s9-thumb-light:       #BBBBFF;
+	--s9-thumb-dark:        #6666CC;
+	--s9-thumb-ridge:       #7777DD;
+	--s9-thumb-ridge-light: #BBBBFF;
 }
 
 /* ── Global resets ─────────────────────────────────────────────── */
@@ -649,6 +656,161 @@
 
 .system-9 .text-body-secondary {
 	color: var(--s9-text-muted) !important;
+}
+
+/* ── Sliders ───────────────────────────────────────────────────── */
+
+/* Reset native appearance */
+.system-9 .iti-slider {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 100%;
+	height: 20px;
+	background: transparent;
+	cursor: pointer;
+	transition: none;
+	margin: 4px 0;
+	padding: 0;
+}
+
+.system-9 .iti-slider:focus {
+	outline: none;
+}
+
+.system-9 .iti-slider:focus-visible {
+	outline: 1px dotted var(--s9-text);
+	outline-offset: 2px;
+}
+
+/* ── Track (WebKit) ── */
+.system-9 .iti-slider::-webkit-slider-runnable-track {
+	height: 6px;
+	background-color: var(--s9-bg-medium);
+	border: 2px solid;
+	border-color: var(--s9-border-dark) var(--s9-border-light) var(--s9-border-light) var(--s9-border-dark);
+	border-radius: 0;
+}
+
+/* ── Track (Firefox) ── */
+.system-9 .iti-slider::-moz-range-track {
+	height: 6px;
+	background-color: var(--s9-bg-medium);
+	border: 2px solid;
+	border-color: var(--s9-border-dark) var(--s9-border-light) var(--s9-border-light) var(--s9-border-dark);
+	border-radius: 0;
+}
+
+/* ── Thumb (WebKit) ── */
+.system-9 .iti-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 20px;
+	height: 18px;
+	margin-top: -8px; /* vertically center on the 6px track */
+	background-color: var(--s9-thumb);
+	border: 2px solid;
+	border-color: var(--s9-thumb-light) var(--s9-thumb-dark) var(--s9-thumb-dark) var(--s9-thumb-light);
+	border-radius: 0;
+	/* Three vertical ridge lines in the center (Platinum grip texture) */
+	background-image:
+		linear-gradient(
+			to right,
+			transparent 5px,
+			var(--s9-thumb-ridge) 5px,
+			var(--s9-thumb-ridge) 6px,
+			var(--s9-thumb-ridge-light) 6px,
+			var(--s9-thumb-ridge-light) 7px,
+			transparent 7px,
+			transparent 9px,
+			var(--s9-thumb-ridge) 9px,
+			var(--s9-thumb-ridge) 10px,
+			var(--s9-thumb-ridge-light) 10px,
+			var(--s9-thumb-ridge-light) 11px,
+			transparent 11px,
+			transparent 13px,
+			var(--s9-thumb-ridge) 13px,
+			var(--s9-thumb-ridge) 14px,
+			var(--s9-thumb-ridge-light) 14px,
+			var(--s9-thumb-ridge-light) 15px,
+			transparent 15px
+		);
+	background-size: 100% 10px;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+
+/* ── Thumb (Firefox) ── */
+.system-9 .iti-slider::-moz-range-thumb {
+	width: 20px;
+	height: 18px;
+	background-color: var(--s9-thumb);
+	border: 2px solid;
+	border-color: var(--s9-thumb-light) var(--s9-thumb-dark) var(--s9-thumb-dark) var(--s9-thumb-light);
+	border-radius: 0;
+	/* Three vertical ridge lines in the center (Platinum grip texture) */
+	background-image:
+		linear-gradient(
+			to right,
+			transparent 5px,
+			var(--s9-thumb-ridge) 5px,
+			var(--s9-thumb-ridge) 6px,
+			var(--s9-thumb-ridge-light) 6px,
+			var(--s9-thumb-ridge-light) 7px,
+			transparent 7px,
+			transparent 9px,
+			var(--s9-thumb-ridge) 9px,
+			var(--s9-thumb-ridge) 10px,
+			var(--s9-thumb-ridge-light) 10px,
+			var(--s9-thumb-ridge-light) 11px,
+			transparent 11px,
+			transparent 13px,
+			var(--s9-thumb-ridge) 13px,
+			var(--s9-thumb-ridge) 14px,
+			var(--s9-thumb-ridge-light) 14px,
+			var(--s9-thumb-ridge-light) 15px,
+			transparent 15px
+		);
+	background-size: 100% 10px;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+
+/* ── Hover: lighten the thumb ── */
+.system-9 .iti-slider:hover::-webkit-slider-thumb {
+	background-color: var(--s9-thumb-light);
+}
+
+.system-9 .iti-slider:hover::-moz-range-thumb {
+	background-color: var(--s9-thumb-light);
+}
+
+/* ── Active (dragging): invert the bevel to pressed ── */
+.system-9 .iti-slider:active::-webkit-slider-thumb {
+	background-color: var(--s9-thumb-dark);
+	border-color: var(--s9-thumb-dark) var(--s9-thumb-light) var(--s9-thumb-light) var(--s9-thumb-dark);
+}
+
+.system-9 .iti-slider:active::-moz-range-thumb {
+	background-color: var(--s9-thumb-dark);
+	border-color: var(--s9-thumb-dark) var(--s9-thumb-light) var(--s9-thumb-light) var(--s9-thumb-dark);
+}
+
+/* ── Disabled state ── */
+.system-9 .iti-slider:disabled {
+	cursor: default;
+	opacity: 0.6;
+}
+
+.system-9 .iti-slider:disabled::-webkit-slider-thumb {
+	background-color: var(--s9-bg-medium);
+	background-image: none;
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
+}
+
+.system-9 .iti-slider:disabled::-moz-range-thumb {
+	background-color: var(--s9-bg-medium);
+	background-image: none;
+	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
 }
 
 /* ── Theme toggle control ──────────────────────────────────────── */

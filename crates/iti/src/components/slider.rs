@@ -45,6 +45,7 @@ impl<V: View> Slider<V> {
         rsx! {
             let input = input(
                 type = "range",
+                class = "iti-slider",
                 min = min_s,
                 max = max_s,
                 step = step_s,
