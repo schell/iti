@@ -15,6 +15,7 @@ use crate::components::{
     modal::library::ModalLibraryItem,
     pane::{library::PaneRetainLibraryItem, RestartPanes},
     progress::library::ProgressLibraryItem,
+    select::library::SelectLibraryItem,
     shadow::library::ShadowLibraryItem,
     slider::library::SliderLibraryItem,
     tab::library::TabListLibraryItem,
@@ -55,6 +56,7 @@ pub enum LibraryListPane<V: View> {
     Modal(ModalLibraryItem<V>),
     PaneRetain(PaneRetainLibraryItem<V>),
     Progress(ProgressLibraryItem<V>),
+    Select(SelectLibraryItem<V>),
     Shadow(ShadowLibraryItem<V>),
     Slider(SliderLibraryItem<V>),
     TabList(TabListLibraryItem<V>),
@@ -87,6 +89,7 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::Modal(item) => item.as_boxed_append_arg(),
             LibraryListPane::PaneRetain(item) => item.as_boxed_append_arg(),
             LibraryListPane::Progress(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Select(item) => item.as_boxed_append_arg(),
             LibraryListPane::Shadow(item) => item.as_boxed_append_arg(),
             LibraryListPane::Slider(item) => item.as_boxed_append_arg(),
             LibraryListPane::TabList(item) => item.as_boxed_append_arg(),
@@ -107,6 +110,7 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::Modal(item) => item.step().await,
             LibraryListPane::PaneRetain(item) => item.step().await,
             LibraryListPane::Progress(item) => item.step().await,
+            LibraryListPane::Select(item) => item.step().await,
             LibraryListPane::Shadow(item) => item.step().await,
             LibraryListPane::Slider(item) => item.step().await,
             LibraryListPane::TabList(item) => item.step().await,
@@ -237,6 +241,10 @@ impl<V: View> Default for Library<V> {
 
         lib.add_item("components::Progress", || {
             LibraryListPane::Progress(Default::default())
+        });
+
+        lib.add_item("components::Select", || {
+            LibraryListPane::Select(Default::default())
         });
 
         lib.add_item("components::Shadow", || {

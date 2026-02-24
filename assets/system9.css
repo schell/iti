@@ -813,6 +813,91 @@
 	border-color: var(--s9-border-light) var(--s9-border-dark) var(--s9-border-dark) var(--s9-border-light);
 }
 
+/* ── Selects ───────────────────────────────────────────────────── */
+
+/* Platinum-style arrow indicator as an inline SVG.
+   Draws a small raised-bevel button with up / down triangles. */
+
+.system-9 .form-select {
+	background-color: var(--s9-bg-light);
+	color: var(--s9-text);
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-size: 12px;
+	border: 2px solid;
+	border-color: var(--s9-border-dark) var(--s9-border-light)
+	              var(--s9-border-light) var(--s9-border-dark);
+	padding: 3px 30px 3px 8px;
+	transition: none;
+	line-height: 1.4;
+
+	/* Replace Bootstrap's default chevron with a Platinum arrow button */
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='18'%3E%3Crect width='20' height='18' fill='%23AAAAAA'/%3E%3Crect x='0' y='0' width='20' height='1' fill='%23FFFFFF'/%3E%3Crect x='0' y='0' width='1' height='18' fill='%23FFFFFF'/%3E%3Crect x='0' y='17' width='20' height='1' fill='%23808080'/%3E%3Crect x='19' y='0' width='1' height='18' fill='%23808080'/%3E%3Cpolygon points='10,3 14,8 6,8' fill='%23000000'/%3E%3Cpolygon points='10,15 6,10 14,10' fill='%23000000'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 2px center;
+	background-size: 20px 18px;
+}
+
+.system-9 .form-select:hover {
+	background-color: var(--s9-bg-light);
+	filter: brightness(1.03);
+}
+
+.system-9 .form-select:focus {
+	background-color: var(--s9-selection);
+	color: var(--s9-selection-text);
+	border-color: var(--s9-border-dark) var(--s9-border-light)
+	              var(--s9-border-light) var(--s9-border-dark);
+	outline: none;
+	/* Keep the arrow visible against the dark background */
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='18'%3E%3Crect width='20' height='18' fill='%23AAAAAA'/%3E%3Crect x='0' y='0' width='20' height='1' fill='%23FFFFFF'/%3E%3Crect x='0' y='0' width='1' height='18' fill='%23FFFFFF'/%3E%3Crect x='0' y='17' width='20' height='1' fill='%23808080'/%3E%3Crect x='19' y='0' width='1' height='18' fill='%23808080'/%3E%3Cpolygon points='10,3 14,8 6,8' fill='%23000000'/%3E%3Cpolygon points='10,15 6,10 14,10' fill='%23000000'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 2px center;
+	background-size: 20px 18px;
+}
+
+.system-9 .form-select:focus-visible {
+	outline: 1px dotted var(--s9-text);
+	outline-offset: -4px;
+}
+
+.system-9 .form-select:disabled {
+	background-color: var(--s9-bg-medium);
+	color: var(--s9-border-dark);
+	opacity: 1;
+	text-shadow: 1px 1px 0 var(--s9-border-light);
+	cursor: default;
+}
+
+/* Option styling inside the native dropdown */
+.system-9 .form-select option {
+	background-color: var(--s9-bg-light);
+	color: var(--s9-text);
+	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-size: 12px;
+	padding: 2px 8px;
+}
+
+.system-9 .form-select option:checked {
+	background-color: var(--s9-selection);
+	color: var(--s9-selection-text);
+}
+
+.system-9 .form-select option:hover {
+	background-color: var(--s9-selection);
+	color: var(--s9-selection-text);
+}
+
+/* Flavor border overrides — map Bootstrap's border-{flavor} utilities
+   to the muted System 9 palette. */
+.system-9 .form-select.border-primary   { border-color: var(--s9-primary) !important; }
+.system-9 .form-select.border-secondary  { border-color: var(--s9-secondary) !important; }
+.system-9 .form-select.border-success    { border-color: var(--s9-success) !important; }
+.system-9 .form-select.border-danger     { border-color: var(--s9-danger) !important; }
+.system-9 .form-select.border-warning    { border-color: var(--s9-warning) !important; }
+.system-9 .form-select.border-info       { border-color: var(--s9-info) !important; }
+.system-9 .form-select.border-light      { border-color: var(--s9-bg-dark) !important; }
+.system-9 .form-select.border-dark       { border-color: var(--s9-dark) !important; }
+
 /* ── Theme toggle control ──────────────────────────────────────── */
 
 .system-9-toggle {
