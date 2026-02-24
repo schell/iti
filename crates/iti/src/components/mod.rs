@@ -11,6 +11,7 @@ pub mod list;
 pub mod modal;
 pub mod pane;
 pub mod progress;
+pub mod shadow;
 pub mod tab;
 pub mod toast;
 pub mod widget;
