@@ -16,6 +16,7 @@ use crate::components::{
     pane::{library::PaneRetainLibraryItem, RestartPanes},
     progress::library::ProgressLibraryItem,
     shadow::library::ShadowLibraryItem,
+    slider::library::SliderLibraryItem,
     tab::library::TabListLibraryItem,
     toast::library::ToastLibraryItem,
 };
@@ -55,6 +56,7 @@ pub enum LibraryListPane<V: View> {
     PaneRetain(PaneRetainLibraryItem<V>),
     Progress(ProgressLibraryItem<V>),
     Shadow(ShadowLibraryItem<V>),
+    Slider(SliderLibraryItem<V>),
     TabList(TabListLibraryItem<V>),
     Toast(ToastLibraryItem<V>),
 }
@@ -86,6 +88,7 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::PaneRetain(item) => item.as_boxed_append_arg(),
             LibraryListPane::Progress(item) => item.as_boxed_append_arg(),
             LibraryListPane::Shadow(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Slider(item) => item.as_boxed_append_arg(),
             LibraryListPane::TabList(item) => item.as_boxed_append_arg(),
             LibraryListPane::Toast(item) => item.as_boxed_append_arg(),
         }
@@ -105,6 +108,7 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::PaneRetain(item) => item.step().await,
             LibraryListPane::Progress(item) => item.step().await,
             LibraryListPane::Shadow(item) => item.step().await,
+            LibraryListPane::Slider(item) => item.step().await,
             LibraryListPane::TabList(item) => item.step().await,
             LibraryListPane::Toast(item) => item.step().await,
             LibraryListPane::Icon(item) => item.step().await,
@@ -237,6 +241,10 @@ impl<V: View> Default for Library<V> {
 
         lib.add_item("components::Shadow", || {
             LibraryListPane::Shadow(Default::default())
+        });
+
+        lib.add_item("components::Slider", || {
+            LibraryListPane::Slider(Default::default())
         });
 
         lib.add_item("components::Panes<T> (Retain)", || {
