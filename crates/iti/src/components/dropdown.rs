@@ -3,6 +3,7 @@
 //! A Bootstrap dropdown button with a menu of clickable items.  Open/close and
 //! click-outside-to-dismiss are managed in pure Rust — no Bootstrap JS required.
 use mogwai::prelude::*;
+use wasm_bindgen::JsCast;
 
 use super::Flavor;
 
@@ -10,6 +11,8 @@ use super::Flavor;
 pub enum DropdownEvent<V: View> {
     /// A menu item was clicked.
     ItemClicked { index: usize, event: V::Event },
+    /// The dropdown was dismissed (Escape key or click outside).
+    Dismissed,
 }
 
 /// A single item within a [`Dropdown`] menu.
@@ -49,6 +52,8 @@ pub struct Dropdown<V: View> {
     wrapper: V::Element,
     menu: V::Element,
     toggle_click: V::EventListener,
+    backdrop_click: V::EventListener,
+    keydown: V::EventListener,
     items: Vec<DropdownItem<V>>,
     open: Proxy<bool>,
     is_open: bool,
@@ -62,7 +67,10 @@ impl<V: View> Dropdown<V> {
         let label_text = V::Text::new(label);
 
         rsx! {
-            let wrapper = div(class = "dropdown") {
+            let wrapper = div(
+                class = "dropdown",
+                document:keydown = keydown,
+            ) {
                 button(
                     class = flavor_proxy(
                         f => format!("btn btn-{f} dropdown-toggle")
@@ -72,12 +80,22 @@ impl<V: View> Dropdown<V> {
                 ) {
                     {label_text}
                 }
+                div(
+                    style:position = "fixed",
+                    style:inset = "0",
+                    style:z_index = "1000",
+                    style:display = open(
+                        is_open => if *is_open { "block" } else { "none" }
+                    ),
+                    on:click = backdrop_click,
+                ) {}
                 let menu = ul(
                     class = open(is_open => if *is_open {
                         "dropdown-menu show"
                     } else {
                         "dropdown-menu"
                     }),
+                    style:z_index = "1001",
                 ) {
                     let items = {vec![]}
                 }
@@ -88,6 +106,8 @@ impl<V: View> Dropdown<V> {
             wrapper,
             menu,
             toggle_click,
+            backdrop_click,
+            keydown,
             items,
             open,
             is_open: false,
@@ -149,16 +169,49 @@ impl<V: View> Dropdown<V> {
     /// Await the next dropdown interaction.
     ///
     /// Returns [`None`] when the toggle button was clicked (caller should call
-    /// [`Dropdown::toggle`]), or [`Some`] when a menu item was clicked.
+    /// [`Dropdown::toggle`]), [`Some(ItemClicked)`] when a menu item was
+    /// clicked, or [`Some(Dismissed)`] when the dropdown was dismissed via
+    /// Escape or a click outside.
+    ///
+    /// Escape and click-outside events are only returned when the dropdown is
+    /// open; when closed they are silently ignored.
     pub async fn step(&self) -> Option<DropdownEvent<V>> {
         use futures_lite::FutureExt;
         use mogwai::future::MogwaiFutureExt;
 
-        self.toggle_click
-            .next()
-            .map(|_| None)
-            .or(self.item_click_events().map(Some))
-            .await
+        loop {
+            let escape = async {
+                loop {
+                    let ev = self.keydown.next().await;
+                    let is_escape = ev.when_event::<mogwai::web::Web, _>(|e: &web_sys::Event| {
+                        e.dyn_ref::<web_sys::KeyboardEvent>()
+                            .is_some_and(|ke| ke.key() == "Escape")
+                    });
+                    if is_escape == Some(true) {
+                        return;
+                    }
+                }
+            };
+
+            let result = self
+                .toggle_click
+                .next()
+                .map(|_| None)
+                .or(self.item_click_events().map(Some))
+                .or(self
+                    .backdrop_click
+                    .next()
+                    .map(|_| Some(DropdownEvent::Dismissed)))
+                .or(escape.map(|_| Some(DropdownEvent::Dismissed)))
+                .await;
+
+            // Only return Dismissed when the dropdown is actually open;
+            // otherwise loop back and wait for a meaningful event.
+            match &result {
+                Some(DropdownEvent::Dismissed) if !self.is_open => continue,
+                _ => return result,
+            }
+        }
     }
 }
 
@@ -215,6 +268,9 @@ pub mod library {
                     let labels = ["Action", "Another action", "Something else"];
                     let label = labels.get(index).unwrap_or(&"Unknown");
                     self.status_text.set_text(format!("Selected: {label}"));
+                }
+                Some(DropdownEvent::Dismissed) => {
+                    self.dropdown.hide();
                 }
             }
         }
