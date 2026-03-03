@@ -37,8 +37,10 @@ impl<V: View> Card<V> {
 
         rsx! {
             let div = div(class = "card") {
-                let header = div(class = "card-header") {
-                    {&header_child}
+                div(class = "card-header") {
+                    let header = div(class = "card-header-inner") {
+                        {&header_child}
+                    }
                 }
                 let body = div(class = "card-body") {
                     {&body_child}

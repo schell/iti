@@ -377,9 +377,10 @@
 	background-repeat: no-repeat;
 }
 
-.system-9 .card-header strong {
+.system-9 .card-header-inner  {
 	background-color: #ccc;
   padding: 0.5em;
+  display: inline-flex;
 }
 
 .system-9 .card-body {
