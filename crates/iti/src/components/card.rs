@@ -12,6 +12,7 @@ pub struct Card<V: View> {
     #[child]
     div: V::Element,
     header: V::Element,
+    header_inner: V::Element,
     body: V::Element,
     footer: V::Element,
     header_child: ProxyChild<V>,
@@ -37,8 +38,8 @@ impl<V: View> Card<V> {
 
         rsx! {
             let div = div(class = "card") {
-                div(class = "card-header") {
-                    let header = div(class = "card-header-inner") {
+                let header = div(class = "card-header") {
+                    let header_inner = div(class = "card-header-inner") {
                         {&header_child}
                     }
                 }
@@ -54,6 +55,7 @@ impl<V: View> Card<V> {
         Self {
             div,
             header,
+            header_inner,
             body,
             footer,
             header_child,
@@ -64,7 +66,7 @@ impl<V: View> Card<V> {
 
     /// Replace the header content.
     pub fn set_header(&mut self, content: &impl ViewChild<V>) {
-        self.header_child.replace(&self.header, content);
+        self.header_child.replace(&self.header_inner, content);
     }
 
     /// Replace the body content.
@@ -120,10 +122,7 @@ pub mod library {
         fn default() -> Self {
             let mut card = Card::new();
 
-            rsx! {
-                let header_text = strong() { "Card Header" }
-            }
-            card.set_header(&header_text);
+            card.set_header(&"Card Header".into_text::<V>());
 
             rsx! {
                 let body_content = div() {
