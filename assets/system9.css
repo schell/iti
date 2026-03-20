@@ -88,6 +88,11 @@
 	box-shadow: none !important;
 }
 
+/* Restore the circle for Bootstrap spinners (the wildcard above kills it) */
+.system-9 .spinner-border {
+	border-radius: 50% !important;
+}
+
 .system-9 h1, .system-9 h2, .system-9 h3,
 .system-9 h4, .system-9 h5, .system-9 h6,
 .system-9 .modal-title,
