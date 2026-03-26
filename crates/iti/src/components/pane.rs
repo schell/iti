@@ -209,9 +209,16 @@ pub mod library {
     //! Storybook sandbox for [`Panes`] in [`PaneMode::Retain`] mode.
 
     use futures_lite::FutureExt;
-    use mogwai::prelude::*;
+    use mogwai::{prelude::*, web::WebElement};
 
-    use crate::components::tab::{TabList, TabListEvent};
+    use crate::{
+        components::{
+            button::Button,
+            icon::{Icon, IconGlyph, IconSize, IconStyle},
+            tab::{TabList, TabListEvent},
+        },
+        id::Id,
+    };
 
     use super::Panes;
 
@@ -225,16 +232,37 @@ pub mod library {
         div: V::Element,
         list: TabList<V, V::Element>,
         panes: Panes<V, V::Element>,
+        new_item_input: V::Element,
+        new_item_button: Button<V>,
+        close_icons: Vec<(Id<V::Element>, Icon<V>)>,
         timer_text: V::Text,
         seconds: u32,
     }
 
     impl<V: View> Default for PaneRetainLibraryItem<V> {
         fn default() -> Self {
+            let new_item_button = {
+                let mut b = Button::new("", None);
+                b.set_has_icon(true);
+                b.get_icon_mut()
+                    .set_glyph(crate::components::icon::IconGlyph::Plus);
+                b
+            };
             rsx! {
                 let div = div() {
                     let list = {TabList::default()}
                     let pane_wrapper = div() {}
+
+                    // TODO: use forms here when they are ready
+                    div(class = "row container-fluid border-top") {
+                        fieldset() {
+                            legend() {
+                                "Add a new pane"
+                            }
+                            let new_item_input = input(type = "text") {}
+                            {&new_item_button}
+                        }
+                    }
                 }
             }
 
@@ -322,6 +350,9 @@ pub mod library {
                 panes,
                 timer_text,
                 seconds: 0,
+                new_item_input,
+                new_item_button,
+                close_icons: vec![],
             };
 
             item.list.push({
@@ -351,27 +382,82 @@ pub mod library {
 
     impl<V: View> PaneRetainLibraryItem<V> {
         fn select(&mut self, index: usize) {
-            self.list.select(index);
+            self.list.select_by_index(index);
             self.panes.select(index);
         }
 
         pub async fn step(&mut self) {
+            enum Ev<V: View, T> {
+                Timer,
+                Tab(TabListEvent<V, T>),
+                NewItem(String),
+                Remove(Id<V::Element>),
+            }
             let timer_fut = async {
                 mogwai::time::wait_millis(1000).await;
-                None::<TabListEvent<V>>
+                Ev::Timer
             };
             let list_fut = async {
                 let event = self.list.step().await;
-                Some(event)
+                Ev::Tab(event)
             };
-            match timer_fut.or(list_fut).await {
-                Some(TabListEvent::ItemClicked { index, event: _ }) => {
+            let new_tab_fut = async {
+                let _event = self.new_item_button.step().await;
+                let s = self
+                    .new_item_input
+                    .dyn_el(|el: &web_sys::HtmlInputElement| el.value())
+                    .unwrap();
+                Ev::NewItem(s)
+            };
+            let closes = self
+                .close_icons
+                .iter()
+                .map(|(id, icon)| async {
+                    let _ = icon.listen("click").next().await;
+                    Ev::Remove::<V, V::Element>(id.clone())
+                })
+                .collect::<Vec<_>>();
+            let close_tab_fut = mogwai::future::race_all(closes);
+            let result = timer_fut
+                .or(list_fut)
+                .or(new_tab_fut)
+                .or(close_tab_fut)
+                .await;
+            match result {
+                Ev::Tab(TabListEvent::ItemClicked {
+                    id: _,
+                    index,
+                    event: _,
+                }) => {
                     self.select(index);
                 }
-                None => {
+                Ev::Timer => {
                     self.seconds += 1;
                     self.timer_text
                         .set_text(format!("{} seconds elapsed", self.seconds));
+                }
+                Ev::NewItem(s) => {
+                    let close_icon =
+                        Icon::with_style(IconGlyph::Xmark, IconSize::Regular, IconStyle::Solid);
+                    rsx! {
+                        let item = div() {
+                            {&close_icon}
+                            {format!("Tab {}", self.close_icons.len()).into_text::<V>()}
+                        }
+                    }
+                    let id = self.list.push(item);
+                    self.close_icons.push((id, close_icon));
+                    rsx! {
+                        let pane = div() {
+                            span() {
+                                {s.into_text::<V>()}
+                            }
+                        }
+                    }
+                    self.panes.add_pane(pane);
+                }
+                Ev::Remove(id) => {
+                    let _ = self.list.remove_by_id(&id);
                 }
             }
         }

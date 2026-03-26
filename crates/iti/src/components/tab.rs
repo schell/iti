@@ -4,6 +4,8 @@ use std::future::Future;
 use futures_lite::FutureExt;
 use mogwai::prelude::*;
 
+use crate::id::{Id, IdPool};
+
 /// A single tab within a [`TabList`].
 #[derive(ViewChild)]
 pub struct TabListItem<V: View, T> {
@@ -13,10 +15,11 @@ pub struct TabListItem<V: View, T> {
     on_click: V::EventListener,
     inner: T,
     is_active: Proxy<bool>,
+    id: Id<T>,
 }
 
 impl<V: View, T: ViewChild<V>> TabListItem<V, T> {
-    pub fn new(inner: T) -> Self {
+    pub fn new(id: Id<T>, inner: T) -> Self {
         let mut is_active = Proxy::new(false);
         rsx! {
             let li = li(class = "nav-item", style:cursor = "pointer") {
@@ -39,6 +42,7 @@ impl<V: View, T: ViewChild<V>> TabListItem<V, T> {
             on_click,
             inner,
             is_active,
+            id,
         }
     }
 
@@ -48,8 +52,12 @@ impl<V: View, T: ViewChild<V>> TabListItem<V, T> {
 }
 
 /// Event emitted by a [`TabList`].
-pub enum TabListEvent<V: View> {
-    ItemClicked { index: usize, event: V::Event },
+pub enum TabListEvent<V: View, T> {
+    ItemClicked {
+        id: Id<T>,
+        index: usize,
+        event: V::Event,
+    },
 }
 
 /// A Bootstrap nav-tabs component.
@@ -58,6 +66,7 @@ pub struct TabList<V: View, T> {
     #[child]
     ul: V::Element,
     items: Vec<TabListItem<V, T>>,
+    id_pool: IdPool<T>,
 }
 
 impl<V: View, T: ViewChild<V>> Default for TabList<V, T> {
@@ -67,7 +76,11 @@ impl<V: View, T: ViewChild<V>> Default for TabList<V, T> {
                 let items = {vec![]}
             }
         }
-        Self { ul, items }
+        Self {
+            ul,
+            items,
+            id_pool: Default::default(),
+        }
     }
 }
 
@@ -91,36 +104,56 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
         self.items.iter()
     }
 
-    /// Push a new tab and return the index of that tab.
-    pub fn push(&mut self, item: T) -> usize {
-        let index = self.items.len();
-        let item = TabListItem::new(item);
+    /// Push a new tab and return a unique identifier for that tab.
+    pub fn push(&mut self, item: T) -> Id<T> {
+        let id = self.id_pool.get_id();
+        let item = TabListItem::new(id.clone(), item);
         self.ul.append_child(&item);
         self.items.push(item);
         if self.items.len() == 1 {
-            self.select(0);
+            self.select_by_index(0);
         }
-        index
+        id
     }
 
-    pub fn pop(&mut self) -> Option<T> {
+    /// Pop the last tab off the end of the list of tabs.
+    pub fn pop(&mut self) -> Option<(Id<T>, T)> {
         let item = self.items.pop()?;
         self.ul.remove_child(&item);
         item.a.remove_child(&item.inner);
-        Some(item.inner)
+        Some((item.id, item.inner))
     }
 
-    pub fn insert(&mut self, index: usize, item: T) {
-        let item = TabListItem::new(item);
+    /// Insert a new tab at the given index and return a unique identifier for that tab.
+    pub fn insert(&mut self, index: usize, item: T) -> Id<T> {
+        let id = self.id_pool.get_id();
+        let item = TabListItem::new(id.clone(), item);
         self.ul.append_child(&item);
         self.items.insert(index, item);
+        id
     }
 
-    pub fn remove(&mut self, index: usize) -> T {
+    /// Remove a tab by its index.
+    ///
+    /// ## Panics
+    /// Panics if there is no tab item at the given index.
+    pub fn remove_by_index(&mut self, index: usize) -> (Id<T>, T) {
         let item = self.items.remove(index);
         self.ul.remove_child(&item);
         item.a.remove_child(&item.inner);
-        item.inner
+        (item.id, item.inner)
+    }
+
+    /// Remove a tab by its [`Id`].
+    pub fn remove_by_id(&mut self, id: &Id<T>) -> Option<T> {
+        let mut found = None;
+        for (i, item) in self.items.iter().enumerate() {
+            if &item.id == id {
+                found = Some(i);
+                break;
+            }
+        }
+        found.map(|i| self.remove_by_index(i).1)
     }
 
     pub fn deselect_all(&mut self) {
@@ -129,26 +162,38 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
         }
     }
 
-    pub fn select(&mut self, index: usize) {
+    /// Select the active tab using an index.
+    pub fn select_by_index(&mut self, index: usize) {
         self.deselect_all();
         if let Some(item) = self.items.get_mut(index) {
             item.is_active.set(true);
         }
     }
 
-    fn item_events(&self) -> impl Future<Output = TabListEvent<V>> + '_ {
+    /// Select the active tab using an [`Id`].
+    pub fn select_by_id(&mut self, id: &Id<T>) {
+        for item in self.items.iter_mut() {
+            item.is_active.set(&item.id == id);
+        }
+    }
+
+    fn item_events(&self) -> impl Future<Output = TabListEvent<V, T>> + '_ {
         let mut race = std::future::pending().boxed_local();
         for (index, item) in self.items.iter().enumerate() {
             let click = async move {
                 let event = item.on_click.next().await;
-                TabListEvent::ItemClicked { index, event }
+                TabListEvent::ItemClicked {
+                    id: item.id.clone(),
+                    index,
+                    event,
+                }
             };
             race = race.or(click).boxed_local();
         }
         race
     }
 
-    pub async fn step(&self) -> TabListEvent<V> {
+    pub async fn step(&self) -> TabListEvent<V, T> {
         self.item_events().await
     }
 }
@@ -275,20 +320,24 @@ pub mod library {
 
         pub fn select(&mut self, index: usize) {
             log::info!("selecting pane {index}");
-            self.list.select(index);
+            self.list.select_by_index(index);
             self.panes.select(index);
         }
 
         pub async fn step(&mut self) {
             let pane_fut = async {
                 self.panes.get_pane_mut().step().await;
-                None::<TabListEvent<V>>
+                None::<TabListEvent<V, _>>
             };
             let list_fut = async {
                 let event = self.list.step().await;
                 Some(event)
             };
-            if let Some(TabListEvent::ItemClicked { index, event: _ }) = pane_fut.or(list_fut).await
+            if let Some(TabListEvent::ItemClicked {
+                id: _,
+                index,
+                event: _,
+            }) = pane_fut.or(list_fut).await
             {
                 self.select(index);
             }

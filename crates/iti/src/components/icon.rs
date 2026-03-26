@@ -363,6 +363,12 @@ pub struct Icon<V: View> {
     state: Proxy<IconState>,
 }
 
+impl<V: View> ViewEventTarget<V> for Icon<V> {
+    fn listen(&self, event_name: impl Into<std::borrow::Cow<'static, str>>) -> V::EventListener {
+        self.i.listen(event_name)
+    }
+}
+
 impl<V: View> Icon<V> {
     /// Create an icon with the given glyph and size, using [`IconStyle::Solid`].
     pub fn new(glyph: IconGlyph, size: IconSize) -> Self {

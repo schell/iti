@@ -15,6 +15,7 @@ use wasm_bindgen::prelude::*;
 
 pub mod assets;
 pub mod components;
+pub mod id;
 pub mod storage;
 
 #[cfg(feature = "library")]
