@@ -6,7 +6,11 @@
 //! one item in that collection is visible at a time.
 //!
 //! Think of the content represented by a tab.
+use std::collections::HashMap;
+
 use mogwai::prelude::*;
+
+use crate::id::{Id, IdPool};
 
 /// Controls how [`Panes`] shows and hides pane content.
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
@@ -28,6 +32,16 @@ pub enum PaneMode {
     Retain,
 }
 
+/// Result of removing an item from [`Panes`].
+pub struct PaneItemRemoval<T> {
+    /// [`Id`] of the item removed.
+    pub id: Id<T>,
+    /// The item that was removed.
+    pub item: T,
+    /// Whether or not the pane was active when it was removed.
+    pub was_selected: bool,
+}
+
 /// Static panes container.
 ///
 /// Stores panes as concrete values. Visibility is controlled by the
@@ -42,12 +56,13 @@ pub struct Panes<V: View, T> {
     #[child]
     wrapper: V::Element,
     mode: PaneMode,
-    index: Option<usize>,
+    id_pool: IdPool<T>,
+    current_id: Option<Id<T>>,
     child: ProxyChild<V>,
-    slots: Vec<V::Element>,
+    slots: HashMap<Id<T>, V::Element>,
     default_slot: Option<V::Element>,
     default_pane: T,
-    panes: Vec<T>,
+    panes: HashMap<Id<T>, T>,
 }
 
 impl<V: View, T: ViewChild<V>> Panes<V, T> {
@@ -64,12 +79,13 @@ impl<V: View, T: ViewChild<V>> Panes<V, T> {
         Self {
             wrapper,
             mode: PaneMode::Replace,
-            index: None,
+            id_pool: IdPool::default(),
+            current_id: None,
             child,
-            slots: vec![],
+            slots: HashMap::new(),
             default_slot: None,
             default_pane: pane,
-            panes: vec![],
+            panes: HashMap::new(),
         }
     }
 
@@ -95,12 +111,13 @@ impl<V: View, T: ViewChild<V>> Panes<V, T> {
         Self {
             wrapper,
             mode: PaneMode::Retain,
-            index: None,
+            id_pool: IdPool::default(),
+            current_id: None,
             child,
-            slots: vec![],
+            slots: HashMap::new(),
             default_slot: Some(default_slot),
             default_pane: pane,
-            panes: vec![],
+            panes: HashMap::new(),
         }
     }
 
@@ -113,7 +130,13 @@ impl<V: View, T: ViewChild<V>> Panes<V, T> {
     ///
     /// In [`PaneMode::Retain`], the pane is immediately appended to the DOM
     /// inside a hidden wrapper `div`.
-    pub fn add_pane(&mut self, pane: T) {
+    ///
+    /// Returns the [`Id`] allocated for this pane, which can be used with
+    /// [`select`] to show or access this pane later.
+    ///
+    /// [`select`]: Panes::select
+    pub fn add_pane(&mut self, pane: T) -> Id<T> {
+        let id = self.id_pool.get_id();
         if self.mode == PaneMode::Retain {
             let slot = V::Element::new("div");
             slot.set_style("display", "none");
@@ -121,92 +144,104 @@ impl<V: View, T: ViewChild<V>> Panes<V, T> {
             slot.set_style("min-height", "0");
             slot.append_child(&pane);
             self.wrapper.append_child(&slot);
-            self.slots.push(slot);
+            self.slots.insert(id.clone(), slot);
         }
-        self.panes.push(pane);
+        self.panes.insert(id.clone(), pane);
+        id
     }
 
-    /// Show the pane at `index`, hiding the previously active pane.
+    /// Show the pane with the given `id`, hiding the previously active pane.
     ///
     /// In [`PaneMode::Replace`], the selected pane's DOM nodes replace the
     /// current content via [`ProxyChild::replace`].
     ///
     /// In [`PaneMode::Retain`], the previously active slot gets
     /// `display: none` and the newly active slot has that style removed.
-    pub fn select(&mut self, index: usize) {
-        if Some(index) != self.index {
+    ///
+    /// Returns `true` if the pane was found and selection changed, `false` otherwise.
+    pub fn select(&mut self, id: &Id<T>) -> bool {
+        if Some(id) != self.current_id.as_ref() {
             match self.mode {
                 PaneMode::Replace => {
-                    if let Some(pane) = self.panes.get(index) {
-                        self.index = Some(index);
+                    if let Some(pane) = self.panes.get(id) {
+                        self.current_id = Some(id.clone());
                         self.child.replace(&self.wrapper, pane);
+                        return true;
                     }
                 }
                 PaneMode::Retain => {
-                    if index < self.panes.len() {
+                    if self.panes.contains_key(id) {
                         // Hide the currently active slot.
-                        self.active_slot().set_style("display", "none");
+                        if let Some(old_id) = &self.current_id {
+                            if let Some(slot) = self.slots.get(old_id) {
+                                slot.set_style("display", "none");
+                            }
+                        } else if let Some(default_slot) = &self.default_slot {
+                            default_slot.set_style("display", "none");
+                        }
 
                         // Show the newly selected slot.
-                        self.slots[index].remove_style("display");
-                        self.index = Some(index);
+                        if let Some(slot) = self.slots.get(id) {
+                            slot.remove_style("display");
+                        }
+                        self.current_id = Some(id.clone());
+                        return true;
                     }
                 }
             }
         }
+        false
     }
 
     /// Returns a reference to the currently visible pane.
-    pub fn get_pane(&self) -> &T {
-        match self.index {
-            Some(n) => self.panes.get(n).unwrap_or(&self.default_pane),
-            None => &self.default_pane,
+    pub fn current_pane(&self) -> Option<&T> {
+        match &self.current_id {
+            Some(id) => self.panes.get(id).or(Some(&self.default_pane)),
+            None => Some(&self.default_pane),
         }
     }
 
     /// Returns a mutable reference to the currently visible pane.
-    pub fn get_pane_mut(&mut self) -> &mut T {
-        match self.index {
-            Some(n) => {
-                if let Some(pane) = self.panes.get_mut(n) {
-                    pane
+    pub fn current_pane_mut(&mut self) -> Option<&mut T> {
+        match &self.current_id {
+            Some(id) => {
+                if self.panes.contains_key(id) {
+                    Some(self.panes.get_mut(id).unwrap())
                 } else {
-                    &mut self.default_pane
+                    Some(&mut self.default_pane)
                 }
             }
-            None => &mut self.default_pane,
+            None => Some(&mut self.default_pane),
         }
     }
 
-    /// Returns a reference to the pane at `index`, if it exists.
-    pub fn get_pane_at(&self, index: usize) -> Option<&T> {
-        self.panes.get(index)
+    /// Returns a reference to the pane with the given `id`, if it exists.
+    pub fn get_pane(&self, id: &Id<T>) -> Option<&T> {
+        self.panes.get(id)
     }
 
-    /// Returns a mutable reference to the pane at `index`, if it exists.
-    pub fn get_pane_at_mut(&mut self, index: usize) -> Option<&mut T> {
-        self.panes.get_mut(index)
+    /// Returns a mutable reference to the pane with the given `id`, if it exists.
+    pub fn get_pane_mut(&mut self, id: &Id<T>) -> Option<&mut T> {
+        self.panes.get_mut(id)
     }
 
-    /// Returns the slot element that is currently visible.
-    ///
-    /// In [`PaneMode::Retain`] this is the wrapper `div` for the active pane
-    /// (or the default slot if no pane has been selected). In
-    /// [`PaneMode::Replace`] this method is not called.
-    fn active_slot(&self) -> &V::Element {
-        match self.index {
-            Some(n) => &self.slots[n],
-            None => self
-                .default_slot
-                .as_ref()
-                .expect("Retain mode has a default slot"),
-        }
+    /// Remove the pane with the given [`Id`], if any.
+    pub fn remove_by_id(&mut self, id: &Id<T>) -> Option<PaneItemRemoval<T>> {
+        let pane = self.panes.remove(id)?;
+        let was_selected = self.current_id.as_ref() == Some(id);
+        Some(PaneItemRemoval {
+            id: id.clone(),
+            item: pane,
+            was_selected,
+        })
     }
 }
 
 #[cfg(feature = "library")]
 pub mod library {
     //! Storybook sandbox for [`Panes`] in [`PaneMode::Retain`] mode.
+
+    use std::collections::HashMap;
 
     use futures_lite::FutureExt;
     use mogwai::{prelude::*, web::WebElement};
@@ -215,7 +250,7 @@ pub mod library {
         components::{
             button::Button,
             icon::{Icon, IconGlyph, IconSize, IconStyle},
-            tab::{TabList, TabListEvent},
+            tab::{TabItemRemoval, TabList, TabListEvent},
         },
         id::Id,
     };
@@ -230,8 +265,9 @@ pub mod library {
     pub struct PaneRetainLibraryItem<V: View> {
         #[child]
         div: V::Element,
-        list: TabList<V, V::Element>,
+        tabs: TabList<V, V::Element>,
         panes: Panes<V, V::Element>,
+        tab_ids_to_pane_ids: HashMap<Id<V::Element>, Id<V::Element>>,
         new_item_input: V::Element,
         new_item_button: Button<V>,
         close_icons: Vec<(Id<V::Element>, Icon<V>)>,
@@ -346,44 +382,65 @@ pub mod library {
 
             let mut item = Self {
                 div,
-                list,
+                tabs: list,
                 panes,
                 timer_text,
                 seconds: 0,
                 new_item_input,
                 new_item_button,
                 close_icons: vec![],
+                tab_ids_to_pane_ids: Default::default(),
             };
 
-            item.list.push({
-                rsx! { let s = span() { "Scrollable A" } }
-                s
-            });
-            item.panes.add_pane(pane_a);
+            let (tab_a_id, _) = item.add(
+                {
+                    rsx! { let s = span() { "Scrollable A" } }
+                    s
+                },
+                pane_a,
+            );
 
-            item.list.push({
-                rsx! { let s = span() { "Scrollable B" } }
-                s
-            });
-            item.panes.add_pane(pane_b);
+            let _ = item.add(
+                {
+                    rsx! { let s = span() { "Scrollable B" } }
+                    s
+                },
+                pane_b,
+            );
 
-            item.list.push({
-                rsx! { let s = span() { "Timer" } }
-                s
-            });
-            item.panes.add_pane(pane_timer);
+            let _ = item.add(
+                {
+                    rsx! { let s = span() { "Timer" } }
+                    s
+                },
+                pane_timer,
+            );
 
             // Show the first pane by default.
-            item.select(0);
+            item.select(&tab_a_id);
 
             item
         }
     }
 
     impl<V: View> PaneRetainLibraryItem<V> {
-        fn select(&mut self, index: usize) {
-            self.list.select_by_index(index);
-            self.panes.select(index);
+        fn add(
+            &mut self,
+            tab_item: V::Element,
+            pane_item: V::Element,
+        ) -> (Id<V::Element>, Id<V::Element>) {
+            let tab_id = self.tabs.push(tab_item);
+            let pane_id = self.panes.add_pane(pane_item);
+            self.tab_ids_to_pane_ids
+                .insert(tab_id.clone(), pane_id.clone());
+            (tab_id, pane_id)
+        }
+
+        fn select(&mut self, id: &Id<V::Element>) {
+            self.tabs.select_by_id(id);
+            if let Some(id) = self.tab_ids_to_pane_ids.get(id) {
+                let _ = self.panes.select(id);
+            }
         }
 
         pub async fn step(&mut self) {
@@ -398,7 +455,7 @@ pub mod library {
                 Ev::Timer
             };
             let list_fut = async {
-                let event = self.list.step().await;
+                let event = self.tabs.step().await;
                 Ev::Tab(event)
             };
             let new_tab_fut = async {
@@ -425,11 +482,11 @@ pub mod library {
                 .await;
             match result {
                 Ev::Tab(TabListEvent::ItemClicked {
-                    id: _,
-                    index,
+                    id,
+                    index: _,
                     event: _,
                 }) => {
-                    self.select(index);
+                    self.select(&id);
                 }
                 Ev::Timer => {
                     self.seconds += 1;
@@ -445,8 +502,6 @@ pub mod library {
                             {format!("Tab {}", self.close_icons.len()).into_text::<V>()}
                         }
                     }
-                    let id = self.list.push(item);
-                    self.close_icons.push((id, close_icon));
                     rsx! {
                         let pane = div() {
                             span() {
@@ -454,10 +509,28 @@ pub mod library {
                             }
                         }
                     }
-                    self.panes.add_pane(pane);
+                    let (tab_id, pane_id) = self.add(item, pane);
+                    self.close_icons.push((tab_id.clone(), close_icon));
+
+                    self.tabs.select_by_id(&tab_id);
+                    let _ = self.panes.select(&pane_id);
                 }
                 Ev::Remove(id) => {
-                    let _ = self.list.remove_by_id(&id);
+                    if let Some(TabItemRemoval {
+                        id: _,
+                        index,
+                        item: _,
+                        was_selected: true,
+                    }) = self.tabs.remove_by_id(&id)
+                    {
+                        if let Some(pane_id) = self.tab_ids_to_pane_ids.remove(&id) {
+                            let _ = self.panes.remove_by_id(&pane_id);
+                        }
+
+                        let selected_index = index.min(self.tab_ids_to_pane_ids.len() - 1);
+                        let id = self.tabs.get(selected_index).unwrap().id().clone();
+                        self.select(&id);
+                    }
                 }
             }
         }
@@ -472,49 +545,77 @@ pub mod library {
 pub struct RestartPanes<V: View, T> {
     #[child]
     wrapper: V::Element,
-    index: Option<usize>,
+    id_pool: IdPool<T>,
+    current_id: Option<Id<T>>,
     child: ProxyChild<V>,
     pane: T,
-    panes: Vec<Box<dyn FnMut() -> T>>,
+    panes: HashMap<Id<T>, Box<dyn FnMut() -> T>>,
 }
 
 impl<V: View, T: ViewChild<V>> RestartPanes<V, T> {
+    /// Create a new factory-based panes container.
+    ///
+    /// The given `default_pane` is shown initially. Use [`add_pane`] to add
+    /// pane factories that will be recreated each time they are selected.
+    ///
+    /// [`add_pane`]: RestartPanes::add_pane
     pub fn new(wrapper: V::Element, default_pane: T) -> Self {
         let child = ProxyChild::new(&default_pane);
         wrapper.append_child(&child);
         Self {
             wrapper,
-            index: None,
+            id_pool: IdPool::default(),
+            current_id: None,
             child,
             pane: default_pane,
-            panes: vec![],
+            panes: HashMap::new(),
         }
     }
 
-    pub fn add_pane(&mut self, create: impl FnMut() -> T + 'static) {
-        self.panes.push(Box::new(create));
-        if self.panes.len() == 1 {
-            log::info!("selecting tab 0");
-            self.select(0);
+    /// Add a pane factory to the container.
+    ///
+    /// The factory is a closure that creates a new pane each time this pane is
+    /// selected. If this is the first pane added, it is automatically selected.
+    ///
+    /// Returns the [`Id`] allocated for this pane factory, which can be used
+    /// with [`select`] to show this pane.
+    ///
+    /// [`select`]: RestartPanes::select
+    pub fn add_pane(&mut self, create: impl FnMut() -> T + 'static) -> Id<T> {
+        let id = self.id_pool.get_id();
+        let was_empty = self.panes.is_empty();
+        self.panes.insert(id.clone(), Box::new(create));
+        if was_empty {
+            log::info!("selecting first pane");
+            let _ = self.select(&id);
         }
+        id
     }
 
-    pub fn select(&mut self, index: usize) {
-        if Some(index) != self.index {
-            if let Some(f) = self.panes.get_mut(index) {
+    /// Show the pane with the given `id`, hiding the previously active pane.
+    ///
+    /// The pane is recreated fresh from its factory. Returns `true` if the
+    /// pane was found and selected, `false` otherwise.
+    pub fn select(&mut self, id: &Id<T>) -> bool {
+        if Some(id) != self.current_id.as_ref() {
+            if let Some(f) = self.panes.get_mut(id) {
                 let pane = f();
                 self.pane = pane;
                 self.child.replace(&self.wrapper, &self.pane);
-                self.index = Some(index);
+                self.current_id = Some(id.clone());
+                return true;
             }
         }
+        false
     }
 
-    pub fn get_pane(&self) -> &T {
+    /// Returns a reference to the currently displayed pane.
+    pub fn current_pane(&self) -> &T {
         &self.pane
     }
 
-    pub fn get_pane_mut(&mut self) -> &mut T {
+    /// Returns a mutable reference to the currently displayed pane.
+    pub fn current_pane_mut(&mut self) -> &mut T {
         &mut self.pane
     }
 }

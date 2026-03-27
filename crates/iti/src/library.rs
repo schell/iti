@@ -54,7 +54,7 @@ pub enum LibraryListPane<V: View> {
     Icon(IconLibraryItem<V>),
     List(ListLibraryItem<V>),
     Modal(ModalLibraryItem<V>),
-    PaneRetain(PaneRetainLibraryItem<V>),
+    PaneRetain(Box<PaneRetainLibraryItem<V>>),
     Progress(ProgressLibraryItem<V>),
     Select(SelectLibraryItem<V>),
     Shadow(ShadowLibraryItem<V>),
@@ -132,6 +132,7 @@ pub struct Library<V: View> {
     pub main: V::Element,
     library_list: List<V, LibraryListItem<V>>,
     right_column: RestartPanes<V, LibraryListPane<V>>,
+    right_column_pane_ids: Vec<crate::id::Id<LibraryListPane<V>>>,
     #[cfg(feature = "system9")]
     theme_toggle_click: V::EventListener,
     #[cfg(feature = "system9")]
@@ -191,6 +192,7 @@ impl<V: View> Default for Library<V> {
             main,
             library_list,
             right_column,
+            right_column_pane_ids: vec![],
             theme_toggle_click,
             theme_checkbox,
             theme_enabled: false,
@@ -201,6 +203,7 @@ impl<V: View> Default for Library<V> {
             main,
             library_list,
             right_column,
+            right_column_pane_ids: vec![],
         };
 
         lib.add_item("components::Alert", || {
@@ -275,7 +278,8 @@ impl<V: View> Library<V> {
     pub fn add_item(&mut self, name: &str, f: impl FnMut() -> LibraryListPane<V> + 'static) {
         let item = LibraryListItem::new(name);
         self.library_list.push(item);
-        self.right_column.add_pane(f);
+        let id = self.right_column.add_pane(f);
+        self.right_column_pane_ids.push(id);
     }
 
     /// Apply or remove the System 9 theme class on `<body>`.
@@ -339,7 +343,9 @@ impl<V: View> Library<V> {
         self.deselect_all();
         if let Some(item) = self.library_list.get_mut(index) {
             item.set_is_active(true);
-            self.right_column.select(index);
+            if let Some(id) = self.right_column_pane_ids.get(index) {
+                let _ = self.right_column.select(id);
+            }
         }
     }
 
@@ -347,7 +353,7 @@ impl<V: View> Library<V> {
         #[cfg(feature = "system9")]
         {
             let pane_fut = async {
-                self.right_column.get_pane_mut().step().await;
+                self.right_column.current_pane_mut().step().await;
                 Err(None)
             };
             let list_fut = async {
@@ -382,7 +388,7 @@ impl<V: View> Library<V> {
         #[cfg(not(feature = "system9"))]
         {
             let pane_fut = async {
-                self.right_column.get_pane_mut().step().await;
+                self.right_column.current_pane_mut().step().await;
                 None
             };
             let list_fut = async {

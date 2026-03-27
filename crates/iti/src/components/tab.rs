@@ -49,6 +49,11 @@ impl<V: View, T: ViewChild<V>> TabListItem<V, T> {
     pub fn inner(&self) -> &T {
         &self.inner
     }
+
+    /// Get a reference to this item's [`Id`].
+    pub fn id(&self) -> &Id<T> {
+        &self.id
+    }
 }
 
 /// Event emitted by a [`TabList`].
@@ -58,6 +63,18 @@ pub enum TabListEvent<V: View, T> {
         index: usize,
         event: V::Event,
     },
+}
+
+/// Result of removing an item from the [`TabList`].
+pub struct TabItemRemoval<T> {
+    /// [`Id`] of the item removed.
+    pub id: Id<T>,
+    /// The index of the item before it was removed.
+    pub index: usize,
+    /// The item that was removed.
+    pub item: T,
+    /// Whether or not the tab was active when it was removed.
+    pub was_selected: bool,
 }
 
 /// A Bootstrap nav-tabs component.
@@ -133,27 +150,26 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
         id
     }
 
-    /// Remove a tab by its index.
-    ///
-    /// ## Panics
-    /// Panics if there is no tab item at the given index.
-    pub fn remove_by_index(&mut self, index: usize) -> (Id<T>, T) {
-        let item = self.items.remove(index);
-        self.ul.remove_child(&item);
-        item.a.remove_child(&item.inner);
-        (item.id, item.inner)
-    }
-
     /// Remove a tab by its [`Id`].
-    pub fn remove_by_id(&mut self, id: &Id<T>) -> Option<T> {
+    pub fn remove_by_id(&mut self, id: &Id<T>) -> Option<TabItemRemoval<T>> {
         let mut found = None;
         for (i, item) in self.items.iter().enumerate() {
             if &item.id == id {
-                found = Some(i);
+                found = Some((i, *item.is_active));
                 break;
             }
         }
-        found.map(|i| self.remove_by_index(i).1)
+        let (index, was_selected) = found?;
+        // Does not panic as we already know it exists
+        let item = self.items.remove(index);
+        self.ul.remove_child(&item);
+        item.a.remove_child(&item.inner);
+        Some(TabItemRemoval {
+            id: item.id,
+            index,
+            item: item.inner,
+            was_selected,
+        })
     }
 
     pub fn deselect_all(&mut self) {
@@ -163,11 +179,19 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
     }
 
     /// Select the active tab using an index.
-    pub fn select_by_index(&mut self, index: usize) {
-        self.deselect_all();
-        if let Some(item) = self.items.get_mut(index) {
-            item.is_active.set(true);
+    ///
+    /// Returns the [`Id`] of the select tab, if any.
+    ///
+    /// Returns `None` if the given `index` was out of bounds.
+    pub fn select_by_index(&mut self, index: usize) -> Option<Id<T>> {
+        let mut id = None;
+        for (i, item) in self.items.iter_mut().enumerate() {
+            item.is_active.set(i == index);
+            if i == index {
+                id = Some(item.id.clone());
+            }
         }
+        id
     }
 
     /// Select the active tab using an [`Id`].
@@ -211,6 +235,7 @@ pub mod library {
         pub div: V::Element,
         list: TabList<V, V::Element>,
         panes: RestartPanes<V, Widget<V, ()>>,
+        pane_ids: Vec<crate::id::Id<Widget<V, ()>>>,
     }
 
     impl<V: View> Default for TabListLibraryItem<V> {
@@ -230,10 +255,11 @@ pub mod library {
                     }
                     Widget::new(html, futures_lite::stream::pending())
                 }),
+                pane_ids: vec![],
             };
 
             item.list.push(Self::new_html_for_tab("Tab Zero"));
-            item.panes.add_pane(|| {
+            let id_0 = item.panes.add_pane(|| {
                 rsx! {
                     let wrapper = div(class = "container") {
                         div(class = "row") {
@@ -242,7 +268,7 @@ pub mod library {
                             p() { let count_text = "0 seconds" }
                             p() { let loop_text = "0 loops" }
                         }
-                   }
+                    }
                 }
                 Widget::new(
                     wrapper,
@@ -259,9 +285,10 @@ pub mod library {
                     ),
                 )
             });
+            item.pane_ids.push(id_0);
 
             item.list.push(Self::new_html_for_tab("Tab 1"));
-            item.panes.add_pane(|| {
+            let id_1 = item.panes.add_pane(|| {
                 rsx! {
                     let html = div(class = "container") {
                         div(class = "row") {
@@ -289,9 +316,10 @@ pub mod library {
                     ),
                 )
             });
+            item.pane_ids.push(id_1);
 
             item.list.push(Self::new_html_for_tab("Tabbity Too"));
-            item.panes.add_pane(|| {
+            let id_2 = item.panes.add_pane(|| {
                 rsx! {
                     let html = div(class = "container") {
                         div(class = "row") {
@@ -302,6 +330,7 @@ pub mod library {
                 }
                 Widget::new(html, futures_lite::stream::pending())
             });
+            item.pane_ids.push(id_2);
 
             item
         }
@@ -321,12 +350,14 @@ pub mod library {
         pub fn select(&mut self, index: usize) {
             log::info!("selecting pane {index}");
             self.list.select_by_index(index);
-            self.panes.select(index);
+            if let Some(id) = self.pane_ids.get(index) {
+                let _ = self.panes.select(id);
+            }
         }
 
         pub async fn step(&mut self) {
             let pane_fut = async {
-                self.panes.get_pane_mut().step().await;
+                self.panes.current_pane_mut().step().await;
                 None::<TabListEvent<V, _>>
             };
             let list_fut = async {
