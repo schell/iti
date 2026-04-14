@@ -380,6 +380,7 @@
 	background-size: calc(100% - var(--s9-title-bar-inset)) 20px;
 	background-position: center;
 	background-repeat: no-repeat;
+	padding: 0 var(--bs-card-cap-padding-x);
 }
 
 .system-9 .card-header-inner  {
