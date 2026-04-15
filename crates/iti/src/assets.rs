@@ -77,7 +77,7 @@ pub fn inject_cdn_links() {
 /// are rewritten to reference those URLs before injection. No network
 /// connection is required.
 ///
-/// **Binary size cost:** approximately 500 KB (CSS + woff2/ttf fonts).
+/// **Binary size cost:** approximately 1.2 MB (CSS + woff2/ttf fonts).
 /// Only woff2 fonts are included for Font Awesome — all WASM-capable
 /// browsers support woff2. Font Awesome Brands icons are excluded to
 /// save space; only Solid, Regular, and v4-compatibility fonts are
@@ -104,14 +104,13 @@ pub mod embedded {
         include_bytes!("../../../assets/fontawesome/webfonts/fa-regular-400.woff2");
     const FA_V4COMPAT_WOFF2: &[u8] =
         include_bytes!("../../../assets/fontawesome/webfonts/fa-v4compatibility.woff2");
-
     // -- Fonts (ttf)
     const CHICAGO_TTF: &[u8] = include_bytes!("../../../assets/fonts/ChicagoFLF.ttf");
+    const GENEVA_TTF: &[u8] = include_bytes!("../../../assets/fonts/Geneva.ttf");
     const GARAMOND_LIGHT_TTF: &[u8] =
         include_bytes!("../../../assets/fonts/AppleGaramond-Light.ttf");
     const GARAMOND_REGULAR_TTF: &[u8] = include_bytes!("../../../assets/fonts/AppleGaramond.ttf");
     const GARAMOND_BOLD_TTF: &[u8] = include_bytes!("../../../assets/fonts/AppleGaramond-Bold.ttf");
-
     // ── Blob URL helper ─────────────────────────────────────────
 
     /// Create a `blob:` URL from raw bytes with the given MIME type.
@@ -172,11 +171,12 @@ pub mod embedded {
 
     /// Rewrite iti CSS to use Blob URLs for the embedded fonts.
     ///
-    /// Replaces the ttf paths for ChicagoFLF and Apple Garamond with
-    /// Blob URLs.
+    /// Replaces the ttf paths for Geneva, ChicagoFLF, and Apple Garamond
+    /// with Blob URLs.
     fn rewrite_iti_css(
         css: &str,
         chicago_url: &str,
+        geneva_url: &str,
         garamond_light_url: &str,
         garamond_regular_url: &str,
         garamond_bold_url: &str,
@@ -185,6 +185,7 @@ pub mod embedded {
             "url('fonts/ChicagoFLF.ttf')",
             &format!("url(\"{chicago_url}\")"),
         )
+        .replace("url('fonts/Geneva.ttf')", &format!("url(\"{geneva_url}\")"))
         .replace(
             "url('fonts/AppleGaramond-Light.ttf')",
             &format!("url(\"{garamond_light_url}\")"),
@@ -219,6 +220,7 @@ pub mod embedded {
         let fa_regular_url = create_blob_url(FA_REGULAR_WOFF2, "font/woff2");
         let fa_v4compat_url = create_blob_url(FA_V4COMPAT_WOFF2, "font/woff2");
         let chicago_url = create_blob_url(CHICAGO_TTF, "font/ttf");
+        let geneva_url = create_blob_url(GENEVA_TTF, "font/ttf");
         let garamond_light_url = create_blob_url(GARAMOND_LIGHT_TTF, "font/ttf");
         let garamond_regular_url = create_blob_url(GARAMOND_REGULAR_TTF, "font/ttf");
         let garamond_bold_url = create_blob_url(GARAMOND_BOLD_TTF, "font/ttf");
@@ -233,6 +235,7 @@ pub mod embedded {
         let iti_css = rewrite_iti_css(
             ITI_CSS,
             &chicago_url,
+            &geneva_url,
             &garamond_light_url,
             &garamond_regular_url,
             &garamond_bold_url,

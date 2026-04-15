@@ -9,7 +9,10 @@
  * reference the tokens so that the entire palette can be updated
  * by changing a handful of values.
  *
- * Font: ChicagoFLF (public domain recreation of Apple's Chicago)
+ * Fonts:
+ *   - Geneva (Apple system font) — body text
+ *   - ChicagoFLF (public domain recreation of Apple's Chicago) — UI chrome
+ *   - Apple Garamond (Light, Regular, Bold) — editorial titles
  */
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -44,6 +47,14 @@
 	font-family: 'Apple Garamond';
 	src: url('fonts/AppleGaramond-Bold.ttf') format('truetype');
 	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Geneva';
+	src: url('fonts/Geneva.ttf') format('truetype');
+	font-weight: normal;
 	font-style: normal;
 	font-display: swap;
 }
@@ -131,7 +142,8 @@
 
 	/* ── Fonts ──────────────────────────────────────────────────── */
 
-	--iti-font-ui: 'ChicagoFLF', "Chicago", "Charcoal", "Lucida Grande", "Geneva", "Helvetica Neue", sans-serif;
+	--iti-font-body: 'Geneva', "Lucida Grande", "Helvetica Neue", sans-serif;
+	--iti-font-ui: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
 	--iti-font-editorial: 'Apple Garamond', "Garamond", "Georgia", serif;
 
 	/* ── Title bar pinstripe inset ──────────────────────────────── */
@@ -163,7 +175,7 @@ html {
 body {
 	background-color: var(--iti-bg);
 	color: var(--iti-text);
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", "Lucida Grande", "Geneva", "Helvetica Neue", sans-serif;
+	font-family: var(--iti-font-body);
 	font-size: 13px;
 	line-height: 1.4;
 	min-height: 100vh;
@@ -202,7 +214,7 @@ a:hover {
    ═══════════════════════════════════════════════════════════════════ */
 
 h1, h2, h3, h4, h5, h6 {
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-family: var(--iti-font-ui);
 	line-height: 1.2;
 	margin-bottom: 0.5em;
 }
@@ -409,7 +421,7 @@ pre {
 	color: var(--iti-text);
 	border: 2px solid;
 	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-border-dark) var(--iti-border-light);
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	padding: 3px 12px;
 	text-shadow: none;
@@ -645,7 +657,7 @@ pre {
 .card-header {
 	background-color: var(--iti-bg-medium);
 	border-bottom: 2px solid var(--iti-border-dark);
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	padding: 0 8px;
 	/* Eight shadowed ridges (pinstripe title bar) */
@@ -831,7 +843,7 @@ pre {
 
 .btn-close::after {
 	content: "\00D7";
-	font-family: 'ChicagoFLF', "Chicago", sans-serif;
+	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	line-height: 1;
 	color: var(--iti-text);
@@ -886,7 +898,7 @@ pre {
 
 .badge {
 	display: inline-block;
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-family: var(--iti-font-ui);
 	font-size: 11px;
 	font-weight: normal;
 	padding: 2px 6px;
@@ -992,7 +1004,7 @@ pre {
 
 .nav-tabs .nav-link {
 	display: block;
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	color: var(--iti-text);
 	background-color: var(--iti-bg-dark);
@@ -1161,7 +1173,7 @@ pre {
 	background-color: var(--iti-bg-medium);
 	color: var(--iti-text);
 	border-bottom: 1px solid var(--iti-border-dark);
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	padding: 4px 8px;
 	margin: 0 2px 0 0;
@@ -1243,8 +1255,8 @@ pre {
 	width: 100%;
 	background-color: var(--iti-bg-light);
 	color: var(--iti-text);
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
-	font-size: 12px;
+	font-family: inherit;
+	font-size: 13px;
 	border: 2px solid;
 	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
 	padding: 3px 8px;
@@ -1284,7 +1296,7 @@ pre {
 
 .form-label {
 	display: inline-block;
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	margin-bottom: 4px;
 }
@@ -1305,8 +1317,8 @@ pre {
 	width: 100%;
 	background-color: var(--iti-bg-light);
 	color: var(--iti-text);
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
-	font-size: 12px;
+	font-family: inherit;
+	font-size: 13px;
 	border: 2px solid;
 	border-color: var(--iti-border-dark) var(--iti-border-light)
 	              var(--iti-border-light) var(--iti-border-dark);
@@ -1356,8 +1368,8 @@ pre {
 .form-select option {
 	background-color: var(--iti-bg-light);
 	color: var(--iti-text);
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
-	font-size: 12px;
+	font-family: inherit;
+	font-size: 13px;
 	padding: 2px 8px;
 }
 
@@ -1437,7 +1449,7 @@ pre {
 }
 
 .form-check-label {
-	font-family: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
+	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	cursor: pointer;
 }
