@@ -101,8 +101,8 @@
 
 	--iti-primary:        var(--azul);
 	--iti-accent:         var(--lavender);
-	--iti-selection:      var(--azul);
-	--iti-selection-text: var(--white100);
+	--iti-selection:      var(--lavender);
+	--iti-selection-text: var(--black900);
 
 	/* ── Semantic: Flavors ──────────────────────────────────────── */
 
@@ -1103,7 +1103,7 @@ pre {
 	text-align: center;
 	white-space: nowrap;
 	background-color: var(--iti-primary);
-	color: var(--iti-selection-text);
+	color: var(--white100);
 	font-size: 11px;
 	transition: none;
 	/* Barber pole stripe pattern */
