@@ -1736,6 +1736,20 @@ pre {
 	background-size: 8px 8px;
 }
 
+/* ── Platinum bevel shadows ── */
+
+.window-shadow {
+	box-shadow:
+		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
+		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		2px 2px 0 #262626;
+}
+
+.inner-stroke {
+	outline: 1px solid var(--black900);
+	outline-offset: -1px;
+}
+
 /* ── Validation feedback helper ── */
 
 .validation-feedback {
