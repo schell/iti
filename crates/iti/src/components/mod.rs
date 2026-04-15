@@ -1,4 +1,4 @@
-//! Reusable UI components built on mogwai and Bootstrap 5.
+//! Reusable UI components with a Mac OS 9 Platinum aesthetic.
 
 pub mod alert;
 pub mod badge;
@@ -9,6 +9,7 @@ pub mod dropdown;
 pub mod icon;
 pub mod list;
 pub mod modal;
+pub mod overhaul;
 pub mod pane;
 pub mod progress;
 pub mod select;

@@ -13,6 +13,7 @@ use crate::components::{
     icon::library::IconLibraryItem,
     list::{library::ListLibraryItem, List, ListEvent},
     modal::library::ModalLibraryItem,
+    overhaul::library::OverhaulLibraryItem,
     pane::{library::PaneRetainLibraryItem, RestartPanes},
     progress::library::ProgressLibraryItem,
     select::library::SelectLibraryItem,
@@ -54,6 +55,7 @@ pub enum LibraryListPane<V: View> {
     Icon(IconLibraryItem<V>),
     List(ListLibraryItem<V>),
     Modal(ModalLibraryItem<V>),
+    Overhaul(OverhaulLibraryItem<V>),
     PaneRetain(Box<PaneRetainLibraryItem<V>>),
     Progress(ProgressLibraryItem<V>),
     Select(SelectLibraryItem<V>),
@@ -87,6 +89,7 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::Icon(item) => item.as_boxed_append_arg(),
             LibraryListPane::List(item) => item.as_boxed_append_arg(),
             LibraryListPane::Modal(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Overhaul(item) => item.as_boxed_append_arg(),
             LibraryListPane::PaneRetain(item) => item.as_boxed_append_arg(),
             LibraryListPane::Progress(item) => item.as_boxed_append_arg(),
             LibraryListPane::Select(item) => item.as_boxed_append_arg(),
@@ -116,7 +119,9 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::TabList(item) => item.step().await,
             LibraryListPane::Toast(item) => item.step().await,
             LibraryListPane::Icon(item) => item.step().await,
-            LibraryListPane::Default(_) | LibraryListPane::Card(_) => std::future::pending().await,
+            LibraryListPane::Default(_)
+            | LibraryListPane::Card(_)
+            | LibraryListPane::Overhaul(_) => std::future::pending().await,
         }
     }
 }
@@ -223,6 +228,10 @@ impl<V: View> Default for Library<V> {
 
         lib.add_item("components::Toast", || {
             LibraryListPane::Toast(Default::default())
+        });
+
+        lib.add_item("Platinum Kit", || {
+            LibraryListPane::Overhaul(Default::default())
         });
 
         lib
