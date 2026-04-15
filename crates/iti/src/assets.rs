@@ -77,7 +77,7 @@ pub fn inject_cdn_links() {
 /// are rewritten to reference those URLs before injection. No network
 /// connection is required.
 ///
-/// **Binary size cost:** approximately 350 KB (CSS + woff2/ttf fonts).
+/// **Binary size cost:** approximately 500 KB (CSS + woff2/ttf fonts).
 /// Only woff2 fonts are included for Font Awesome — all WASM-capable
 /// browsers support woff2. Font Awesome Brands icons are excluded to
 /// save space; only Solid, Regular, and v4-compatibility fonts are
@@ -107,6 +107,10 @@ pub mod embedded {
 
     // -- Fonts (ttf)
     const CHICAGO_TTF: &[u8] = include_bytes!("../../../assets/fonts/ChicagoFLF.ttf");
+    const GARAMOND_LIGHT_TTF: &[u8] =
+        include_bytes!("../../../assets/fonts/AppleGaramond-Light.ttf");
+    const GARAMOND_REGULAR_TTF: &[u8] = include_bytes!("../../../assets/fonts/AppleGaramond.ttf");
+    const GARAMOND_BOLD_TTF: &[u8] = include_bytes!("../../../assets/fonts/AppleGaramond-Bold.ttf");
 
     // ── Blob URL helper ─────────────────────────────────────────
 
@@ -166,11 +170,32 @@ pub mod embedded {
             )
     }
 
-    /// Rewrite iti CSS to use a Blob URL for the embedded Chicago font.
-    fn rewrite_iti_css(css: &str, chicago_url: &str) -> String {
+    /// Rewrite iti CSS to use Blob URLs for the embedded fonts.
+    ///
+    /// Replaces the ttf paths for ChicagoFLF and Apple Garamond with
+    /// Blob URLs.
+    fn rewrite_iti_css(
+        css: &str,
+        chicago_url: &str,
+        garamond_light_url: &str,
+        garamond_regular_url: &str,
+        garamond_bold_url: &str,
+    ) -> String {
         css.replace(
             "url('fonts/ChicagoFLF.ttf')",
             &format!("url(\"{chicago_url}\")"),
+        )
+        .replace(
+            "url('fonts/AppleGaramond-Light.ttf')",
+            &format!("url(\"{garamond_light_url}\")"),
+        )
+        .replace(
+            "url('fonts/AppleGaramond.ttf')",
+            &format!("url(\"{garamond_regular_url}\")"),
+        )
+        .replace(
+            "url('fonts/AppleGaramond-Bold.ttf')",
+            &format!("url(\"{garamond_bold_url}\")"),
         )
     }
 
@@ -194,6 +219,9 @@ pub mod embedded {
         let fa_regular_url = create_blob_url(FA_REGULAR_WOFF2, "font/woff2");
         let fa_v4compat_url = create_blob_url(FA_V4COMPAT_WOFF2, "font/woff2");
         let chicago_url = create_blob_url(CHICAGO_TTF, "font/ttf");
+        let garamond_light_url = create_blob_url(GARAMOND_LIGHT_TTF, "font/ttf");
+        let garamond_regular_url = create_blob_url(GARAMOND_REGULAR_TTF, "font/ttf");
+        let garamond_bold_url = create_blob_url(GARAMOND_BOLD_TTF, "font/ttf");
 
         // Rewrite CSS @font-face declarations to use Blob URLs
         let fa_css = rewrite_fontawesome_css(
@@ -202,7 +230,13 @@ pub mod embedded {
             &fa_regular_url,
             &fa_v4compat_url,
         );
-        let iti_css = rewrite_iti_css(ITI_CSS, &chicago_url);
+        let iti_css = rewrite_iti_css(
+            ITI_CSS,
+            &chicago_url,
+            &garamond_light_url,
+            &garamond_regular_url,
+            &garamond_bold_url,
+        );
 
         // Inject everything as <style> elements — zero network requests
         append_style(&iti_css);
