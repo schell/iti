@@ -101,8 +101,10 @@
 
 	--iti-primary:        var(--azul);
 	--iti-accent:         var(--lavender);
-	--iti-selection:      var(--lavender);
-	--iti-selection-text: var(--black900);
+	--iti-selection:      var(--azul);
+	--iti-selection-text: var(--white100);
+	--iti-highlight:      var(--lavender);
+	--iti-highlight-text: var(--black900);
 
 	/* ── Semantic: Flavors ──────────────────────────────────────── */
 
@@ -973,8 +975,8 @@ pre {
 
 .dropdown-item:hover,
 .dropdown-item:focus {
-	background-color: var(--iti-selection);
-	color: var(--iti-selection-text);
+	background-color: var(--iti-highlight);
+	color: var(--iti-highlight-text);
 }
 
 .dropdown-item.active {
@@ -1069,7 +1071,8 @@ pre {
 }
 
 .list-group-item:hover:not(.active) {
-	background-color: var(--iti-bg-medium);
+	background-color: var(--iti-highlight);
+	color: var(--iti-highlight-text);
 }
 
 /* Flavor variants */
@@ -1340,8 +1343,8 @@ pre {
 }
 
 .form-select:focus {
-	background-color: var(--iti-selection);
-	color: var(--iti-selection-text);
+	background-color: var(--iti-highlight);
+	color: var(--iti-highlight-text);
 	border-color: var(--iti-border-dark) var(--iti-border-light)
 	              var(--iti-border-light) var(--iti-border-dark);
 	outline: none;
@@ -1379,8 +1382,8 @@ pre {
 }
 
 .form-select option:hover {
-	background-color: var(--iti-selection);
-	color: var(--iti-selection-text);
+	background-color: var(--iti-highlight);
+	color: var(--iti-highlight-text);
 }
 
 /* ── Checkboxes & Radios ── */
