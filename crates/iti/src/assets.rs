@@ -1,15 +1,16 @@
-//! Static asset helpers for Bootstrap 5, Bootstrap Icons, and Font Awesome 6.
+//! Static asset helpers for iti's custom CSS and Font Awesome 6.
 //!
 //! Provides three ways for consumers to load the CSS and fonts that iti
 //! components depend on:
 //!
-//! 1. **CDN links** — [`inject_cdn_links`] adds `<link>` tags pointing to
-//!    public CDNs. Simplest approach; requires an internet connection.
+//! 1. **CDN links** — [`inject_cdn_links`] adds a `<link>` tag for Font
+//!    Awesome from a public CDN and injects iti's CSS as a `<style>` tag.
+//!    Requires an internet connection for the icon font.
 //!
 //! 2. **Fully embedded** — With the `embed-assets` feature enabled,
 //!    [`embedded::inject_styles`] injects all CSS and fonts directly from
 //!    the WASM binary. No network connection required. Fonts are served
-//!    via Blob URLs created at runtime from compiled-in woff2 bytes.
+//!    via Blob URLs created at runtime from compiled-in woff2/ttf bytes.
 //!
 //! 3. **Manual / Trunk** — Consumers can ignore this module entirely and
 //!    wire up assets themselves (e.g. with Trunk `data-trunk` directives
@@ -17,22 +18,14 @@
 
 use js_sys::wasm_bindgen::{JsCast, UnwrapThrowExt};
 
-/// Custom iti styles (always embedded — only a few bytes).
-pub const ITI_CSS: &str = include_str!("../../../assets/style.css");
+/// iti's unified stylesheet (always embedded — includes all component styles).
+pub const ITI_CSS: &str = include_str!("../../../assets/iti.css");
 
-/// CDN URLs for the stylesheets iti depends on.
+/// CDN URLs for external dependencies.
 ///
-/// These point to the same versions that are vendored in the `assets/`
-/// directory of the iti repository.
+/// Only Font Awesome is loaded from a CDN. All other styles are provided
+/// by `iti.css`.
 pub mod cdn {
-    /// Bootstrap 5.3.3 minified CSS.
-    pub const BOOTSTRAP_CSS: &str =
-        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css";
-
-    /// Bootstrap Icons 1.13.1 CSS (includes `@font-face` for icon fonts).
-    pub const BOOTSTRAP_ICONS_CSS: &str =
-        "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css";
-
     /// Font Awesome 6.6.0 Free — all styles (includes `@font-face` for
     /// Solid, Regular, and Brands webfonts).
     pub const FONTAWESOME_CSS: &str =
@@ -64,19 +57,14 @@ fn append_style(css: &str) {
     head.append_child(&style).unwrap_throw();
 }
 
-/// Inject all required stylesheets as CDN `<link>` tags.
+/// Inject all required stylesheets using a CDN `<link>` for Font Awesome.
 ///
-/// Creates four elements in `<head>`:
-/// - `<link>` for Bootstrap 5 CSS
-/// - `<link>` for Bootstrap Icons CSS (with fonts)
-/// - `<link>` for Font Awesome 6 CSS (with fonts)
-/// - `<style>` for iti's own custom styles
+/// Creates two elements in `<head>`:
+/// - `<link>` for Font Awesome 6 CSS (with fonts from CDN)
+/// - `<style>` for iti's unified stylesheet
 ///
-/// This is the simplest setup — one function call and you're done.
-/// Requires an internet connection to reach the CDNs.
+/// Requires an internet connection to reach the Font Awesome CDN.
 pub fn inject_cdn_links() {
-    append_link(cdn::BOOTSTRAP_CSS);
-    append_link(cdn::BOOTSTRAP_ICONS_CSS);
     append_link(cdn::FONTAWESOME_CSS);
     append_style(ITI_CSS);
 }
@@ -89,10 +77,11 @@ pub fn inject_cdn_links() {
 /// are rewritten to reference those URLs before injection. No network
 /// connection is required.
 ///
-/// **Binary size cost:** approximately 720 KB (CSS + woff2 fonts). Only
-/// woff2 fonts are included — all WASM-capable browsers support woff2.
-/// Font Awesome Brands icons are excluded to save space; only Solid,
-/// Regular, and v4-compatibility fonts are embedded.
+/// **Binary size cost:** approximately 350 KB (CSS + woff2/ttf fonts).
+/// Only woff2 fonts are included for Font Awesome — all WASM-capable
+/// browsers support woff2. Font Awesome Brands icons are excluded to
+/// save space; only Solid, Regular, and v4-compatibility fonts are
+/// embedded.
 #[cfg(feature = "embed-assets")]
 pub mod embedded {
     use js_sys::wasm_bindgen::UnwrapThrowExt;
@@ -100,19 +89,6 @@ pub mod embedded {
     use super::*;
 
     // ── CSS ──────────────────────────────────────────────────────
-
-    /// System 9 (retro Mac OS Platinum) styles, embedded at compile time.
-    #[cfg(feature = "system9")]
-    pub const SYSTEM9_CSS: &str = include_str!("../../../assets/system9.css");
-
-    /// Bootstrap 5.3.3 minified CSS, embedded at compile time.
-    pub const BOOTSTRAP_CSS: &str = include_str!("../../../assets/bootstrap.min.css");
-
-    /// Bootstrap Icons 1.13.1 minified CSS, embedded at compile time.
-    ///
-    /// The `@font-face` URLs are rewritten at runtime by
-    /// [`inject_styles`] to point at Blob URLs.
-    const BOOTSTRAP_ICONS_CSS: &str = include_str!("../../../assets/bootstrap-icons.min.css");
 
     /// Font Awesome 6.6.0 Free minified CSS, embedded at compile time.
     ///
@@ -128,11 +104,8 @@ pub mod embedded {
         include_bytes!("../../../assets/fontawesome/webfonts/fa-regular-400.woff2");
     const FA_V4COMPAT_WOFF2: &[u8] =
         include_bytes!("../../../assets/fontawesome/webfonts/fa-v4compatibility.woff2");
-    const BOOTSTRAP_ICONS_WOFF2: &[u8] =
-        include_bytes!("../../../assets/fonts/bootstrap-icons.woff2");
 
     // -- Fonts (ttf)
-    #[cfg(feature = "system9")]
     const CHICAGO_TTF: &[u8] = include_bytes!("../../../assets/fonts/ChicagoFLF.ttf");
 
     // ── Blob URL helper ─────────────────────────────────────────
@@ -193,27 +166,8 @@ pub mod embedded {
             )
     }
 
-    /// Rewrite Bootstrap Icons CSS to use a Blob URL for the embedded
-    /// font.
-    ///
-    /// Replaces the woff2 path with a Blob URL and strips the woff
-    /// fallback.
-    fn rewrite_bootstrap_icons_css(css: &str, woff2_url: &str) -> String {
-        css.replace(
-            "url(\"fonts/bootstrap-icons.woff2?e34853135f9e39acf64315236852cd5a\")",
-            &format!("url(\"{woff2_url}\")"),
-        )
-        .replace(
-            ",url(\"fonts/bootstrap-icons.woff?e34853135f9e39acf64315236852cd5a\") format(\"woff\")",
-            "",
-        )
-    }
-
-    /// Rewrite system-9 fonts to use a Blob URL for the embedded font.
-    ///
-    /// Replaces the ttf path with a Blob URL.
-    #[cfg(feature = "system9")]
-    fn rewrite_system_9_css(css: &str, chicago_url: &str) -> String {
+    /// Rewrite iti CSS to use a Blob URL for the embedded Chicago font.
+    fn rewrite_iti_css(css: &str, chicago_url: &str) -> String {
         css.replace(
             "url('fonts/ChicagoFLF.ttf')",
             &format!("url(\"{chicago_url}\")"),
@@ -227,14 +181,9 @@ pub mod embedded {
     /// Creates `<style>` elements in `<head>` — no `<link>` tags,
     /// no network requests:
     ///
-    /// 1. Bootstrap 5 CSS
-    /// 2. Bootstrap Icons CSS (with `@font-face` rewritten to Blob URLs)
-    /// 3. Font Awesome 6 CSS (with `@font-face` rewritten to Blob URLs)
-    /// 4. iti custom styles
-    ///
-    /// When the `system9` feature is enabled, a fifth `<style>` element
-    /// is injected with the System 9 Platinum theme CSS (with its
-    /// `@font-face` rewritten to a Blob URL for the Chicago font).
+    /// 1. iti unified CSS (with `@font-face` rewritten to a Blob URL
+    ///    for the Chicago font)
+    /// 2. Font Awesome 6 CSS (with `@font-face` rewritten to Blob URLs)
     ///
     /// Font Awesome Brands icons are **not** embedded to save binary
     /// space. Brand icon classes (`.fa-brands`) will render as blank
@@ -244,7 +193,7 @@ pub mod embedded {
         let fa_solid_url = create_blob_url(FA_SOLID_WOFF2, "font/woff2");
         let fa_regular_url = create_blob_url(FA_REGULAR_WOFF2, "font/woff2");
         let fa_v4compat_url = create_blob_url(FA_V4COMPAT_WOFF2, "font/woff2");
-        let bi_url = create_blob_url(BOOTSTRAP_ICONS_WOFF2, "font/woff2");
+        let chicago_url = create_blob_url(CHICAGO_TTF, "font/ttf");
 
         // Rewrite CSS @font-face declarations to use Blob URLs
         let fa_css = rewrite_fontawesome_css(
@@ -253,21 +202,10 @@ pub mod embedded {
             &fa_regular_url,
             &fa_v4compat_url,
         );
-        let bi_css = rewrite_bootstrap_icons_css(BOOTSTRAP_ICONS_CSS, &bi_url);
+        let iti_css = rewrite_iti_css(ITI_CSS, &chicago_url);
 
         // Inject everything as <style> elements — zero network requests
-        append_style(BOOTSTRAP_CSS);
-        append_style(&bi_css);
+        append_style(&iti_css);
         append_style(&fa_css);
-
-        // System 9 theme (conditionally compiled)
-        #[cfg(feature = "system9")]
-        {
-            let chicago_url = create_blob_url(CHICAGO_TTF, "font/ttf");
-            let system9 = rewrite_system_9_css(SYSTEM9_CSS, &chicago_url);
-            append_style(&system9);
-        }
-
-        append_style(ITI_CSS);
     }
 }

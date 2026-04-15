@@ -3,7 +3,8 @@
 ## Project Overview
 
 `iti` is a Rust/WebAssembly UI component library built on [mogwai](https://crates.io/crates/mogwai) v0.7
-and Bootstrap 5. It compiles to `wasm32-unknown-unknown` and runs in the browser.
+with a custom CSS stylesheet (`iti.css`) providing a Mac OS 9 Platinum aesthetic.
+It compiles to `wasm32-unknown-unknown` and runs in the browser.
 
 The workspace lives at the repo root (`Cargo.toml`) with a single crate at `crates/iti/`.
 The crate produces both an `rlib` (for use as a library dependency) and a `cdylib` (for WASM).
@@ -200,6 +201,8 @@ contain a `*LibraryItem<V: View>` struct with `Default` impl and `step()` method
 
 - `"library"` (default): enables the component gallery and per-component sandbox
   modules. Disable with `default-features = false` when using iti as a dependency.
+- `"embed-assets"` (default): compiles all CSS and fonts into the WASM binary.
+  Disable to load assets via CDN or manual `<link>` tags instead.
 - Gate all gallery-only code with `#[cfg(feature = "library")]`.
 
 ### Files and Structure

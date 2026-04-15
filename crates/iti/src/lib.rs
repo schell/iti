@@ -1,6 +1,6 @@
 //! # iti
 //!
-//! A small mogwai WASM UI component library built on Bootstrap 5.
+//! A small mogwai WASM UI component library with a Mac OS 9 Platinum aesthetic.
 //!
 //! ## Patterns
 //!
