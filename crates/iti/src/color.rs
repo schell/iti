@@ -3,10 +3,11 @@
 //! All color hex values for the iti design system are defined here as Rust
 //! constants. This module is the **single source of truth** for the palette.
 //!
-//! The corresponding CSS custom properties (e.g. `--azul`, `--gray300`) are
-//! generated at compile time by [`CSS_TOKENS`] and prepended to the
-//! stylesheet at runtime by [`crate::assets`]. Semantic aliases that
-//! reference these tokens via `var()` remain in `iti.css`.
+//! The corresponding CSS custom properties (e.g. `--azul`, `--gray300`) and
+//! background color utility classes (e.g. `.bg-azul`, `.bg-gray300`) are
+//! generated at runtime by [`css_tokens`] and prepended to the stylesheet
+//! by [`crate::assets`]. Semantic aliases that reference these tokens via
+//! `var()` remain in `iti.css`.
 //!
 //! ## Naming
 //!
@@ -75,73 +76,66 @@ pub const WARNING: &str = "#CC9933";
 
 // ── Generated CSS ───────────────────────────────────────────────────
 
-/// CSS `:root` block containing all design token custom properties.
+/// Generate a CSS string containing:
 ///
-/// This string is generated at compile time from the constants above
-/// and prepended to the stylesheet by [`crate::assets`]. Semantic
-/// aliases that use `var()` or `color-mix()` are defined separately
-/// in `iti.css`.
-pub const CSS_TOKENS: &str = concat!(
-    ":root {\n",
-    "\t/* ── Figma Design Tokens (generated from color.rs) ───── */\n",
-    "\n",
-    "\t/* Primary */\n",
-    "\t--black900:  ",
-    "#000000",
-    ";\n",
-    "\t--white100:  ",
-    "#FFFFFF",
-    ";\n",
-    "\n",
-    "\t/* Grays */\n",
-    "\t--gray200:   ",
-    "#EEEEEE",
-    ";\n",
-    "\t--gray300:   ",
-    "#DDDDDD",
-    ";\n",
-    "\t--gray400:   ",
-    "#CCCCCC",
-    ";\n",
-    "\t--gray500:   ",
-    "#BBBBBB",
-    ";\n",
-    "\t--gray600:   ",
-    "#999999",
-    ";\n",
-    "\t--gray700:   ",
-    "#808080",
-    ";\n",
-    "\t--gray800:   ",
-    "#666666",
-    ";\n",
-    "\n",
-    "\t/* Colors */\n",
-    "\t--azul:      ",
-    "#333399",
-    ";\n",
-    "\t--lavender:  ",
-    "#CCCCFF",
-    ";\n",
-    "\t--cream:     ",
-    "#FFFFCC",
-    ";\n",
-    "\t--thistle:   ",
-    "#E6CCFF",
-    ";\n",
-    "\t--ice:       ",
-    "#CCE6FF",
-    ";\n",
-    "\n",
-    "\t/* Flavors */\n",
-    "\t--iti-success: ",
-    "#339933",
-    ";\n",
-    "\t--iti-danger:  ",
-    "#CC3333",
-    ";\n",
-    "\t--iti-warning: ",
-    "#CC9933",
-    ";\n",
-    "}\n",
-);
+/// 1. A `:root` block with all design token custom properties.
+/// 2. Background color utility classes (`.bg-black900`, `.bg-azul`, etc.)
+///    for each token.
+///
+/// This string is prepended to the stylesheet by [`crate::assets`].
+/// Semantic aliases that use `var()` or `color-mix()` are defined
+/// separately in `iti.css`.
+pub fn css_tokens() -> String {
+    format!(
+        "\
+:root {{
+\t/* ── Figma Design Tokens (generated from color.rs) ───── */
+
+\t/* Primary */
+\t--black900:  {BLACK900};
+\t--white100:  {WHITE100};
+
+\t/* Grays */
+\t--gray200:   {GRAY200};
+\t--gray300:   {GRAY300};
+\t--gray400:   {GRAY400};
+\t--gray500:   {GRAY500};
+\t--gray600:   {GRAY600};
+\t--gray700:   {GRAY700};
+\t--gray800:   {GRAY800};
+
+\t/* Colors */
+\t--azul:      {AZUL};
+\t--lavender:  {LAVENDER};
+\t--cream:     {CREAM};
+\t--thistle:   {THISTLE};
+\t--ice:       {ICE};
+
+\t/* Flavors */
+\t--iti-success: {SUCCESS};
+\t--iti-danger:  {DANGER};
+\t--iti-warning: {WARNING};
+}}
+
+/* ── Background color utilities (generated from color.rs) ───── */
+
+.bg-black900  {{ background-color: {BLACK900} !important; }}
+.bg-white100  {{ background-color: {WHITE100} !important; }}
+.bg-gray200   {{ background-color: {GRAY200} !important; }}
+.bg-gray300   {{ background-color: {GRAY300} !important; }}
+.bg-gray400   {{ background-color: {GRAY400} !important; }}
+.bg-gray500   {{ background-color: {GRAY500} !important; }}
+.bg-gray600   {{ background-color: {GRAY600} !important; }}
+.bg-gray700   {{ background-color: {GRAY700} !important; }}
+.bg-gray800   {{ background-color: {GRAY800} !important; }}
+.bg-azul      {{ background-color: {AZUL} !important; }}
+.bg-lavender  {{ background-color: {LAVENDER} !important; }}
+.bg-cream     {{ background-color: {CREAM} !important; }}
+.bg-thistle   {{ background-color: {THISTLE} !important; }}
+.bg-ice       {{ background-color: {ICE} !important; }}
+.bg-success   {{ background-color: {SUCCESS} !important; }}
+.bg-danger    {{ background-color: {DANGER} !important; }}
+.bg-warning   {{ background-color: {WARNING} !important; }}
+"
+    )
+}

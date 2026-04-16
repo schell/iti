@@ -1,7 +1,7 @@
 //! Sandboxed component gallery for browsing and testing components in isolation.
 use futures_lite::FutureExt;
 use js_sys::wasm_bindgen::UnwrapThrowExt;
-use mogwai::prelude::*;
+use mogwai::{prelude::*, web::body};
 
 use crate::components::{
     alert::library::AlertLibraryItem,
@@ -103,6 +103,8 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
 
 impl<V: View> LibraryListPane<V> {
     pub async fn step(&mut self) {
+        let body = body();
+        body.set_style("background-color", crate::color::GRAY300);
         match self {
             LibraryListPane::Alert(item) => item.step().await,
             LibraryListPane::Badge(item) => item.step().await,
@@ -119,7 +121,10 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::TabList(item) => item.step().await,
             LibraryListPane::Toast(item) => item.step().await,
             LibraryListPane::Icon(item) => item.step().await,
-            LibraryListPane::Overhaul(_) => std::future::pending().await,
+            LibraryListPane::Overhaul(_) => {
+                body.set_style("background-color", crate::color::LAVENDER);
+                std::future::pending().await
+            }
             LibraryListPane::Default(_) | LibraryListPane::Card(_) => std::future::pending().await,
         }
     }

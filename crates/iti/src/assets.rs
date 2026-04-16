@@ -67,7 +67,7 @@ fn append_style(css: &str) {
 /// [`embedded::inject_styles`]. For the Trunk/manual loading path, call
 /// this from your WASM entry point before the stylesheet `<link>` loads.
 pub fn inject_color_tokens() {
-    append_style(crate::color::CSS_TOKENS);
+    append_style(&crate::color::css_tokens());
 }
 
 /// Inject all required stylesheets using a CDN `<link>` for Font Awesome.

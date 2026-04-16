@@ -39,7 +39,7 @@ pub mod library {
                         // ── Window shadow + inner stroke ──
                         div(
                             class = "window-shadow inner-stroke",
-                            style:background_color = "var(--iti-bg-medium)",
+                            style:background_color = crate::color::GRAY200,
                             style:padding = "16px",
                             style:width = "260px"
                         ) {
