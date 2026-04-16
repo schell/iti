@@ -5,6 +5,7 @@ pub mod badge;
 pub mod button;
 pub mod button_group;
 pub mod card;
+pub mod checkbox;
 pub mod dropdown;
 pub mod icon;
 pub mod list;
@@ -12,6 +13,7 @@ pub mod modal;
 pub mod overhaul;
 pub mod pane;
 pub mod progress;
+pub mod radio;
 pub mod select;
 pub mod shadow;
 pub mod slider;
@@ -19,7 +21,7 @@ pub mod tab;
 pub mod toast;
 pub mod widget;
 
-/// Bootstrap 5 color variant.
+/// Contextual color variant.
 ///
 /// Maps to contextual class suffixes used across components (e.g.
 /// `flavor-primary`, `alert-danger`, `list-group-item-success`).

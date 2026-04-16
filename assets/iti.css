@@ -336,6 +336,11 @@ pre {
 	font-family: var(--iti-font-editorial);
 }
 
+.editorial-light {
+	font-family: var(--iti-font-editorial);
+	font-weight: lighter;
+}
+
 .editorial-title {
 	font-family: var(--iti-font-editorial);
 	font-weight: 300;
@@ -1359,59 +1364,93 @@ pre {
 	margin-right: 1rem;
 }
 
+/* Base checkbox input (square) */
 .form-check-input {
 	appearance: none;
 	-webkit-appearance: none;
-	width: 14px;
-	height: 14px;
+	width: 12px;
+	height: 12px;
 	flex-shrink: 0;
-	background-color: var(--iti-bg-light);
-	border: 2px solid;
-	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
+	background-color: var(--gray300);
+	border: 1px solid var(--charcoal);
+	border-radius: 0;
+	box-shadow:
+		inset 1px 1px 0 #FFFFFF,
+		inset -1px -1px 0 #808080,
+		0.5px 0.5px 0 rgba(38, 38, 38, 0.3);
 	cursor: pointer;
 	margin: 0;
 	vertical-align: middle;
 }
 
+/* Radio input (circle) — overrides checkbox defaults */
 .form-check-input[type="radio"] {
 	border-radius: 50% !important;
+	background-color: var(--white100);
+	box-shadow: 0.5px 0.5px 0 rgba(38, 38, 38, 0.3);
 }
 
-.form-check-input:checked {
-	background-color: var(--iti-accent);
-	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
-}
-
+/* Checked checkbox — no background change, just the checkmark */
 .form-check-input[type="checkbox"]:checked {
-	/* Checkmark via inline SVG */
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 5 L4 7 L8 3' stroke='%23000' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-	background-size: 10px;
+	background-color: var(--gray300);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.09 9.77l.08-.42c.14-.79 1.1-1.1 1.68-.54l2 1.94c.4.39 1.04.37 1.42-.04l7.63-8.08c.32-.34.87-.33 1.17.01.25.29.25.72 0 1.02l-8.79 10.46c-.38.45-1.07.48-1.48.05L1.36 10.64c-.22-.23-.32-.56-.27-.87z' fill='%23262626'/%3E%3C/svg%3E");
+	background-size: 14px;
 	background-position: center;
 	background-repeat: no-repeat;
 }
 
+/* Checked radio — no background change, inner dot via radial gradient */
 .form-check-input[type="radio"]:checked {
-	/* Filled circle via inline SVG */
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Ccircle cx='5' cy='5' r='3' fill='%23000'/%3E%3C/svg%3E");
-	background-size: 10px;
-	background-position: center;
-	background-repeat: no-repeat;
+	background-color: var(--white100);
+	background-image: radial-gradient(
+		circle at center,
+		var(--charcoal) 3px,
+		transparent 3px
+	);
+}
+
+/* Active/pressed state — checkbox darkens with inverted bevel */
+.form-check-input[type="checkbox"]:active {
+	background-color: var(--gray700);
+	box-shadow:
+		inset 1px 1px 0 #404040,
+		inset -1px -1px 0 #C0C0C0,
+		0.5px 0.5px 0 rgba(38, 38, 38, 0.3);
+}
+
+/* Active/pressed state — radio */
+.form-check-input[type="radio"]:active {
+	background-color: var(--gray300);
 }
 
 .form-check-input:focus {
-	outline: 1px dotted var(--iti-text);
+	outline: 1px dotted var(--charcoal);
 	outline-offset: 1px;
 }
 
+/* Disabled — muted border, flat, no shadows */
 .form-check-input:disabled {
-	opacity: 0.5;
+	background-color: var(--gray300);
+	border-color: var(--disabled-gray);
+	box-shadow: none;
+	opacity: 1;
 	cursor: default;
+}
+
+.form-check-input[type="radio"]:disabled {
+	background-color: var(--gray200);
 }
 
 .form-check-label {
 	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	cursor: pointer;
+}
+
+.form-check-label:has(+ .form-check-input:disabled),
+.form-check-input:disabled + .form-check-label {
+	color: var(--disabled-gray);
+	cursor: default;
 }
 
 /* ── Switch (checkbox variant) ── */
@@ -1424,9 +1463,12 @@ pre {
 	width: 28px;
 	height: 14px;
 	border-radius: 7px !important;
-	background-color: var(--iti-bg-dark);
+	background-color: var(--gray500);
 	background-image: none;
 	position: relative;
+	box-shadow:
+		inset 1px 1px 0 rgba(0, 0, 0, 0.2),
+		0.5px 0.5px 0 rgba(38, 38, 38, 0.3);
 }
 
 .form-switch .form-check-input::after {
@@ -1436,8 +1478,8 @@ pre {
 	left: 0;
 	width: 10px;
 	height: 10px;
-	background-color: var(--iti-bg-light);
-	border: 1px solid var(--iti-border-dark);
+	background-color: var(--gray200);
+	border: 1px solid var(--charcoal);
 	border-radius: 50% !important;
 	transition: left 0.1s ease;
 }

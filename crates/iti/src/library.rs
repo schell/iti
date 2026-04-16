@@ -9,6 +9,7 @@ use crate::components::{
     button::library::ButtonLibraryItem,
     button_group::library::ButtonGroupLibraryItem,
     card::library::CardLibraryItem,
+    checkbox::library::CheckboxLibraryItem,
     dropdown::library::DropdownLibraryItem,
     icon::library::IconLibraryItem,
     list::{library::ListLibraryItem, List, ListEvent},
@@ -16,6 +17,7 @@ use crate::components::{
     overhaul::library::OverhaulLibraryItem,
     pane::{library::PaneRetainLibraryItem, RestartPanes},
     progress::library::ProgressLibraryItem,
+    radio::library::RadioLibraryItem,
     select::library::SelectLibraryItem,
     shadow::library::ShadowLibraryItem,
     slider::library::SliderLibraryItem,
@@ -51,6 +53,7 @@ pub enum LibraryListPane<V: View> {
     Button(ButtonLibraryItem<V>),
     ButtonGroup(ButtonGroupLibraryItem<V>),
     Card(CardLibraryItem<V>),
+    Checkbox(CheckboxLibraryItem<V>),
     Dropdown(DropdownLibraryItem<V>),
     Icon(IconLibraryItem<V>),
     List(ListLibraryItem<V>),
@@ -58,6 +61,7 @@ pub enum LibraryListPane<V: View> {
     Overhaul(OverhaulLibraryItem<V>),
     PaneRetain(Box<PaneRetainLibraryItem<V>>),
     Progress(ProgressLibraryItem<V>),
+    Radio(RadioLibraryItem<V>),
     Select(SelectLibraryItem<V>),
     Shadow(ShadowLibraryItem<V>),
     Slider(SliderLibraryItem<V>),
@@ -85,6 +89,7 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::Button(item) => item.as_boxed_append_arg(),
             LibraryListPane::ButtonGroup(item) => item.as_boxed_append_arg(),
             LibraryListPane::Card(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Checkbox(item) => item.as_boxed_append_arg(),
             LibraryListPane::Dropdown(item) => item.as_boxed_append_arg(),
             LibraryListPane::Icon(item) => item.as_boxed_append_arg(),
             LibraryListPane::List(item) => item.as_boxed_append_arg(),
@@ -92,6 +97,7 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::Overhaul(item) => item.as_boxed_append_arg(),
             LibraryListPane::PaneRetain(item) => item.as_boxed_append_arg(),
             LibraryListPane::Progress(item) => item.as_boxed_append_arg(),
+            LibraryListPane::Radio(item) => item.as_boxed_append_arg(),
             LibraryListPane::Select(item) => item.as_boxed_append_arg(),
             LibraryListPane::Shadow(item) => item.as_boxed_append_arg(),
             LibraryListPane::Slider(item) => item.as_boxed_append_arg(),
@@ -110,11 +116,13 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::Badge(item) => item.step().await,
             LibraryListPane::Button(item) => item.step().await,
             LibraryListPane::ButtonGroup(item) => item.step().await,
+            LibraryListPane::Checkbox(item) => item.step().await,
             LibraryListPane::Dropdown(item) => item.step().await,
             LibraryListPane::List(item) => item.step().await,
             LibraryListPane::Modal(item) => item.step().await,
             LibraryListPane::PaneRetain(item) => item.step().await,
             LibraryListPane::Progress(item) => item.step().await,
+            LibraryListPane::Radio(item) => item.step().await,
             LibraryListPane::Select(item) => item.step().await,
             LibraryListPane::Shadow(item) => item.step().await,
             LibraryListPane::Slider(item) => item.step().await,
@@ -190,6 +198,10 @@ impl<V: View> Default for Library<V> {
             LibraryListPane::Card(Default::default())
         });
 
+        lib.add_item("components::Checkbox", || {
+            LibraryListPane::Checkbox(Default::default())
+        });
+
         lib.add_item("components::Dropdown", || {
             LibraryListPane::Dropdown(Default::default())
         });
@@ -208,6 +220,10 @@ impl<V: View> Default for Library<V> {
 
         lib.add_item("components::Progress", || {
             LibraryListPane::Progress(Default::default())
+        });
+
+        lib.add_item("components::RadioGroup", || {
+            LibraryListPane::Radio(Default::default())
         });
 
         lib.add_item("components::Select", || {

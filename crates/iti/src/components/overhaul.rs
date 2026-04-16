@@ -10,7 +10,9 @@ pub mod library {
     use mogwai::prelude::*;
 
     use crate::components::button::{Button, PrimaryButton};
+    use crate::components::checkbox::Checkbox;
     use crate::components::icon::IconGlyph;
+    use crate::components::radio::RadioGroup;
     use crate::components::Flavor;
 
     /// Sandbox library item for the Platinum design system overhaul.
@@ -84,6 +86,34 @@ pub mod library {
                 .get_icon_mut()
                 .set_glyph(IconGlyph::MagnifyingGlass);
             icon_search.get_icon_mut().set_additional_classes("");
+
+            // Checkbox demos
+            let cb_default = Checkbox::new("Unchecked", false);
+            let cb_checked = Checkbox::new("Checked", true);
+
+            let cb_disabled = Checkbox::new("Disabled", false);
+            cb_disabled.disable();
+
+            let cb_disabled_checked = Checkbox::new("Disabled checked", true);
+            cb_disabled_checked.disable();
+
+            let mut cb_switch = Checkbox::new("Switch off", false);
+            cb_switch.set_switch_style(true);
+
+            let mut cb_switch_on = Checkbox::new("Switch on", true);
+            cb_switch_on.set_switch_style(true);
+
+            // Radio demo
+            let mut radio_group = RadioGroup::new("platinum-demo");
+            radio_group.push("Option A", "a");
+            radio_group.push("Option B", "b");
+            radio_group.push("Option C", "c");
+
+            let mut radio_inline = RadioGroup::new("platinum-inline");
+            radio_inline.push("Small", "sm");
+            radio_inline.push("Medium", "md");
+            radio_inline.push("Large", "lg");
+            radio_inline.set_inline(true);
 
             rsx! {
                 let wrapper = div() {
@@ -295,6 +325,56 @@ pub mod library {
                                     {&icon_edit}
                                     {&icon_search}
                                 }
+                            }
+                        }
+                    }
+
+                    // ── Checkboxes & Radios section ──
+                    div(style:margin_top = "2em") {
+                        span(
+                            class = "editorial",
+                            style:font_size = "2em",
+                            style:font_weight = "lighter",
+                            style:color = crate::color::PURPLE,
+                        ) {
+                            "Checkboxes & Radios"
+                        }
+                    }
+                    div(
+                        class = "gap-4",
+                        style:border = "2px dashed #7B61FF",
+                        style:border_radius = "4px",
+                        style:padding = "1em"
+                    ) {
+                        div(
+                            class = "d-flex flex-wrap gap-4 panel",
+                        ) {
+                            // Checkboxes
+                            div() {
+                                p() { strong() { "Checkboxes" } }
+                                {&cb_default}
+                                {&cb_checked}
+                                {&cb_disabled}
+                                {&cb_disabled_checked}
+                            }
+
+                            // Switches
+                            div() {
+                                p() { strong() { "Switches" } }
+                                {&cb_switch}
+                                {&cb_switch_on}
+                            }
+
+                            // Radio (vertical)
+                            div() {
+                                p() { strong() { "Radio Group" } }
+                                {&radio_group}
+                            }
+
+                            // Radio (inline)
+                            div() {
+                                p() { strong() { "Radio Inline" } }
+                                {&radio_inline}
                             }
                         }
                     }
