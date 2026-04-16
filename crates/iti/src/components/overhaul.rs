@@ -378,6 +378,61 @@ pub mod library {
                             }
                         }
                     }
+
+                    // ── Progress Bars section ──
+                    div(style:margin_top = "2em") {
+                        span(
+                            class = "editorial",
+                            style:font_size = "2em",
+                            style:font_weight = "lighter",
+                            style:color = crate::color::PURPLE,
+                        ) {
+                            "Progress Bars"
+                        }
+                    }
+                    div(
+                        class = "gap-4",
+                        style:border = "2px dashed #7B61FF",
+                        style:border_radius = "4px",
+                        style:padding = "1em"
+                    ) {
+                        div(class = "panel", style:padding = "1em") {
+                            p() { strong() { "Empty (0%)" } }
+                            div(class = "progress mb-3") {}
+
+                            p() { strong() { "25%" } }
+                            div(class = "progress mb-3") {
+                                div(
+                                    class = "progress-bar",
+                                    style:width = "25%",
+                                ) {}
+                            }
+
+                            p() { strong() { "50%" } }
+                            div(class = "progress mb-3") {
+                                div(
+                                    class = "progress-bar",
+                                    style:width = "50%",
+                                ) {}
+                            }
+
+                            p() { strong() { "75%" } }
+                            div(class = "progress mb-3") {
+                                div(
+                                    class = "progress-bar",
+                                    style:width = "75%",
+                                ) {}
+                            }
+
+                            p() { strong() { "100%" } }
+                            div(class = "progress") {
+                                div(
+                                    class = "progress-bar",
+                                    style:width = "100%",
+                                ) {}
+                            }
+                        }
+                    }
                 }
             }
 

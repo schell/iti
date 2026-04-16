@@ -1051,63 +1051,52 @@ pre {
    §20  Progress Bars
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Track (sunken slot) */
 .progress {
 	display: flex;
 	overflow: hidden;
-	background-color: var(--iti-bg-light);
-	border: 2px solid;
-	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
-	height: 16px;
+	background-color: var(--gray500);
+	border: 1px solid var(--charcoal);
+	border-radius: 0;
+	box-shadow:
+		inset 1px 1px 0 var(--gray700),
+		inset -1px -1px 0 var(--white100);
+	height: 12px;
 }
 
+/* Fill bar (azul tube gradient) */
 .progress-bar {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
 	overflow: hidden;
-	text-align: center;
-	white-space: nowrap;
-	background-color: var(--iti-primary);
-	color: var(--white100);
-	font-size: 11px;
+	height: 10px;
+	border-radius: 2px;
 	transition: none;
-	/* Barber pole stripe pattern */
-	background-image: repeating-linear-gradient(
-		-45deg,
-		transparent,
-		transparent 4px,
-		rgba(255, 255, 255, 0.3) 4px,
-		rgba(255, 255, 255, 0.3) 8px
+	background: linear-gradient(
+		to bottom,
+		#262673,
+		#4040A6 0.5px,
+		#5959BF 1px,
+		#7373D9 1.5px,
+		#8C8CF2 2px,
+		#A6A6FF 2.5px,
+		#BFBFFF 3px,
+		#D4D4FB 3.5px,
+		#E5E5F2 4px,
+		#E5E5F2 5px,
+		#D4D4FB 5.5px,
+		#BFBFFF 6px,
+		#A6A6FF 6.5px,
+		#8C8CF2 7px,
+		#7373D9 7.5px,
+		#5959BF 8px,
+		#4040A6 8.5px,
+		#262688 9px,
+		#0D0D66 9.5px,
+		#0B0B53
 	);
 }
-
-.progress-bar-striped {
-	background-image: repeating-linear-gradient(
-		-45deg,
-		transparent,
-		transparent 4px,
-		rgba(255, 255, 255, 0.3) 4px,
-		rgba(255, 255, 255, 0.3) 8px
-	);
-}
-
-@keyframes progress-bar-stripes {
-	0% { background-position-x: 1rem; }
-}
-
-.progress-bar-animated {
-	animation: progress-bar-stripes 1s linear infinite;
-}
-
-/* Flavor background colors for progress bars */
-.bg-primary   { background-color: var(--iti-primary) !important; }
-.bg-secondary { background-color: var(--iti-secondary) !important; }
-.bg-success   { background-color: var(--iti-success) !important; }
-.bg-danger    { background-color: var(--iti-danger) !important; }
-.bg-warning   { background-color: var(--iti-warning) !important; }
-.bg-info      { background-color: var(--iti-info) !important; }
-.bg-light     { background-color: var(--iti-light) !important; }
-.bg-dark      { background-color: var(--iti-dark) !important; }
 
 /* ═══════════════════════════════════════════════════════════════════
    §21  Toasts
