@@ -215,182 +215,184 @@ pub mod library {
                                 "Using the .panel class gets you all of the above"
                             }
                         }
-                    }
 
-                    // ── Color palette swatches ──
-                    div(style:margin_top = "1em") {
-                        p() { strong() { "Color Palette" } }
-                        div(class = "d-flex flex-wrap gap-2") {
-                            // Grays
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-black900",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "black900" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-gray800",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "gray800" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-gray700",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "gray700" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-gray600",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "gray600" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-gray500",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "gray500" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-gray400",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "gray400" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-gray300",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "gray300" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-gray200",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "gray200" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-white100",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "white100" }
+                        // ── Color palette swatches ──
+                        div() {
+                            div(style:margin_top = "1em") {
+                                p() { strong() { "Color Palette" } }
+                                div(class = "d-flex flex-wrap gap-2") {
+                                    // Grays
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-black900",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "black900" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-gray800",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "gray800" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-gray700",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "gray700" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-gray600",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "gray600" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-gray500",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "gray500" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-gray400",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "gray400" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-gray300",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "gray300" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-gray200",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "gray200" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-white100",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "white100" }
+                                    }
+                                }
+                                div(class = "d-flex flex-wrap gap-2", style:margin_top = "0.5em") {
+                                    // Colors
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-azul",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "azul" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-lavender",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "lavender" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-thistle",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "thistle" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-ice",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "ice" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-cream",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "cream" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-success",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "success" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-danger",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "danger" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-warning",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "warning" }
+                                    }
+                                    div(style:text_align = "center") {
+                                        div(
+                                            class = "bg-charcoal",
+                                            style:width = "48px",
+                                            style:height = "48px",
+                                            style:border = "1px solid var(--charcoal)",
+                                        ) {}
+                                        small() { "charcoal" }
+                                    }
+                                }
                             }
                         }
-                        div(class = "d-flex flex-wrap gap-2", style:margin_top = "0.5em") {
-                            // Colors
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-azul",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "azul" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-lavender",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "lavender" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-thistle",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "thistle" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-ice",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "ice" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-cream",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "cream" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-success",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "success" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-danger",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "danger" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-warning",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "warning" }
-                            }
-                            div(style:text_align = "center") {
-                                div(
-                                    class = "bg-charcoal",
-                                    style:width = "48px",
-                                    style:height = "48px",
-                                    style:border = "1px solid var(--charcoal)",
-                                ) {}
-                                small() { "charcoal" }
-                            }
-                        }
                     }
 
-                    // ── Buttons section ──
+                                        // ── Buttons section ──
                     div(style:margin_top = "2em") {
                         span(
                             class = "editorial",
@@ -604,6 +606,63 @@ pub mod library {
                                     style:width = "100%",
                                 ) {}
                             }
+                        }
+                    }
+
+                    // ── Sliders section ──
+                    div(style:margin_top = "2em") {
+                        span(
+                            class = "editorial",
+                            style:font_size = "2em",
+                            style:font_weight = "lighter",
+                            style:color = crate::color::PURPLE,
+                        ) {
+                            "Sliders"
+                        }
+                    }
+                    div(
+                        class = "gap-4",
+                        style:border = "2px dashed #7B61FF",
+                        style:border_radius = "4px",
+                        style:padding = "1em"
+                    ) {
+                        div(class = "panel", style:padding = "1em") {
+                            p() { strong() { "Default" } }
+                            input(
+                                type = "range",
+                                class = "iti-slider mb-3",
+                                min = "0",
+                                max = "100",
+                                value = "50",
+                            ) {}
+
+                            p() { strong() { "At minimum" } }
+                            input(
+                                type = "range",
+                                class = "iti-slider mb-3",
+                                min = "0",
+                                max = "100",
+                                value = "0",
+                            ) {}
+
+                            p() { strong() { "At maximum" } }
+                            input(
+                                type = "range",
+                                class = "iti-slider mb-3",
+                                min = "0",
+                                max = "100",
+                                value = "100",
+                            ) {}
+
+                            p() { strong() { "Disabled" } }
+                            input(
+                                type = "range",
+                                class = "iti-slider",
+                                min = "0",
+                                max = "100",
+                                value = "30",
+                                disabled = "",
+                            ) {}
                         }
                     }
                 }
