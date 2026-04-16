@@ -20,13 +20,43 @@ pub mod library {
 
     /// A dashed purple section in the Platinum Kit sandbox.
     ///
-    /// Provides a titled container with a purple dashed border. Build
-    /// the section content inside the `rsx!` block using the `content`
-    /// element as the parent.
+    /// Provides a titled container with a purple dashed border and an
+    /// editorial section heading. Use [`push`](Section::push) to add
+    /// content elements inside the dashed border area.
     #[derive(ViewChild)]
     struct Section<V: View> {
         #[child]
         wrapper: V::Element,
+        content: V::Element,
+    }
+
+    impl<V: View> Section<V> {
+        /// Create a new section with the given title.
+        fn new(title: &str) -> Self {
+            rsx! {
+                let wrapper = div(style:margin_top = "2em") {
+                    span(
+                        class = "editorial",
+                        style:font_size = "2em",
+                        style:font_weight = "lighter",
+                        style:color = crate::color::PURPLE,
+                    ) {
+                        {V::Text::new(title)}
+                    }
+                    let content = div(
+                        style:border = "2px dashed #7B61FF",
+                        style:border_radius = "4px",
+                        style:padding = "1em",
+                    ) {}
+                }
+            }
+            Self { wrapper, content }
+        }
+
+        /// Append a child element to the section content area.
+        fn push(&self, child: &impl ViewChild<V>) {
+            self.content.append_child(child);
+        }
     }
 
     // ── Color swatch helper ─────────────────────────────────────────
@@ -70,96 +100,88 @@ pub mod library {
 
     /// Build the "Panels and Colors" section with shadow demos and palette swatches.
     fn build_panels_and_colors<V: View>() -> Section<V> {
+        let section = Section::new("Panels and colors");
+
         rsx! {
-            let wrapper = div(style:margin_top = "2em") {
-                span(
-                    class = "editorial",
-                    style:font_size = "2em",
-                    style:font_weight = "lighter",
-                    style:color = crate::color::PURPLE,
-                ) { "Panels and colors" }
+            let panels = div(class = "d-flex flex-wrap gap-4") {
                 div(
-                    class = "d-flex flex-wrap gap-4",
-                    style:border = "2px dashed #7B61FF",
-                    style:border_radius = "4px",
-                    style:padding = "1em",
+                    class = "window-shadow inner-stroke bg-gray200",
+                    style:padding = "16px",
+                    style:width = "260px"
                 ) {
-                    div(
-                        class = "window-shadow inner-stroke bg-gray200",
-                        style:padding = "16px",
-                        style:width = "260px"
-                    ) {
-                        p() { strong() { ".window-shadow .inner-stroke .bg-gray200" } }
-                        p() { "A container with the Platinum window bevel \
-                               and inner stroke applied. Gray 200 background." }
-                    }
-                    div(
-                        class = "window-shadow bg-gray400",
-                        style:padding = "16px",
-                        style:width = "260px"
-                    ) {
-                        p() { strong() { ".window-shadow .bg-gray400" } }
-                        p() { "Bevel and drop shadow without the inner stroke. Gray 400 background." }
-                    }
-                    div(
-                        class = "inner-stroke bg-gray200",
-                        style:padding = "16px",
-                        style:width = "260px"
-                    ) {
-                        p() { strong() { ".inner-stroke .bg-gray200" } }
-                        p() { "Just the 1px inner outline, no shadow. Gray 200 background." }
-                    }
-                    div(
-                        class = "bg-gray200",
-                        style:padding = "16px",
-                        style:width = "260px",
-                    ) {
-                        p() { strong() { ".bg-gray200" } }
-                        p() { "No shadow or stroke - for comparison. Gray 200 background." }
-                    }
-                    div(
-                        class = "panel",
-                        style:padding = "16px",
-                        style:width = "260px",
-                    ) {
-                        p() { strong() { ".panel" } }
-                        p() { "Using the .panel class gets you all of the above" }
-                    }
-                    div() {
-                        div(style:margin_top = "1em") {
-                            p() { strong() { "Color Palette" } }
-                            div(class = "d-flex flex-wrap gap-2") {
-                                {swatch::<V>("bg-black900", "black900")}
-                                {swatch::<V>("bg-gray800", "gray800")}
-                                {swatch::<V>("bg-gray700", "gray700")}
-                                {swatch::<V>("bg-gray600", "gray600")}
-                                {swatch::<V>("bg-gray500", "gray500")}
-                                {swatch::<V>("bg-gray400", "gray400")}
-                                {swatch::<V>("bg-gray300", "gray300")}
-                                {swatch::<V>("bg-gray200", "gray200")}
-                                {swatch::<V>("bg-white100", "white100")}
-                            }
-                            div(class = "d-flex flex-wrap gap-2", style:margin_top = "0.5em") {
-                                {swatch::<V>("bg-azul", "azul")}
-                                {swatch::<V>("bg-lavender", "lavender")}
-                                {swatch::<V>("bg-thistle", "thistle")}
-                                {swatch::<V>("bg-ice", "ice")}
-                                {swatch::<V>("bg-cream", "cream")}
-                                {swatch::<V>("bg-success", "success")}
-                                {swatch::<V>("bg-danger", "danger")}
-                                {swatch::<V>("bg-warning", "warning")}
-                                {swatch::<V>("bg-charcoal", "charcoal")}
-                            }
+                    p() { strong() { ".window-shadow .inner-stroke .bg-gray200" } }
+                    p() { "A container with the Platinum window bevel \
+                           and inner stroke applied. Gray 200 background." }
+                }
+                div(
+                    class = "window-shadow bg-gray400",
+                    style:padding = "16px",
+                    style:width = "260px"
+                ) {
+                    p() { strong() { ".window-shadow .bg-gray400" } }
+                    p() { "Bevel and drop shadow without the inner stroke. Gray 400 background." }
+                }
+                div(
+                    class = "inner-stroke bg-gray200",
+                    style:padding = "16px",
+                    style:width = "260px"
+                ) {
+                    p() { strong() { ".inner-stroke .bg-gray200" } }
+                    p() { "Just the 1px inner outline, no shadow. Gray 200 background." }
+                }
+                div(
+                    class = "bg-gray200",
+                    style:padding = "16px",
+                    style:width = "260px",
+                ) {
+                    p() { strong() { ".bg-gray200" } }
+                    p() { "No shadow or stroke - for comparison. Gray 200 background." }
+                }
+                div(
+                    class = "panel",
+                    style:padding = "16px",
+                    style:width = "260px",
+                ) {
+                    p() { strong() { ".panel" } }
+                    p() { "Using the .panel class gets you all of the above" }
+                }
+                div() {
+                    div(style:margin_top = "1em") {
+                        p() { strong() { "Color Palette" } }
+                        div(class = "d-flex flex-wrap gap-2") {
+                            {swatch::<V>("bg-black900", "black900")}
+                            {swatch::<V>("bg-gray800", "gray800")}
+                            {swatch::<V>("bg-gray700", "gray700")}
+                            {swatch::<V>("bg-gray600", "gray600")}
+                            {swatch::<V>("bg-gray500", "gray500")}
+                            {swatch::<V>("bg-gray400", "gray400")}
+                            {swatch::<V>("bg-gray300", "gray300")}
+                            {swatch::<V>("bg-gray200", "gray200")}
+                            {swatch::<V>("bg-white100", "white100")}
+                        }
+                        div(class = "d-flex flex-wrap gap-2", style:margin_top = "0.5em") {
+                            {swatch::<V>("bg-azul", "azul")}
+                            {swatch::<V>("bg-lavender", "lavender")}
+                            {swatch::<V>("bg-thistle", "thistle")}
+                            {swatch::<V>("bg-ice", "ice")}
+                            {swatch::<V>("bg-cream", "cream")}
+                            {swatch::<V>("bg-success", "success")}
+                            {swatch::<V>("bg-danger", "danger")}
+                            {swatch::<V>("bg-warning", "warning")}
+                            {swatch::<V>("bg-charcoal", "charcoal")}
                         }
                     }
                 }
             }
         }
-        Section { wrapper }
+        section.push(&panels);
+        section
     }
 
     /// Build the "Buttons" section with all button variants.
     fn build_buttons<V: View>() -> Section<V> {
+        let section = Section::new("Buttons");
+
         let mut btn_normal = Button::new("Button", None);
         btn_normal.set_has_icon(false);
 
@@ -217,92 +239,80 @@ pub mod library {
         icon_search.get_icon_mut().set_additional_classes("");
 
         rsx! {
-            let wrapper = div(style:margin_top = "2em") {
-                span(
-                    class = "editorial",
-                    style:font_size = "2em",
-                    style:font_weight = "lighter",
-                    style:color = crate::color::PURPLE,
-                ) { "Buttons" }
-                div(
-                    style:border = "2px dashed #7B61FF",
-                    style:border_radius = "4px",
-                    style:padding = "1em",
-                ) {
-                    div(class = "d-flex flex-wrap gap-4 panel") {
-                        div() {
-                            p() { strong() { "Standard" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                {&btn_normal}
-                                {&btn_disabled}
-                            }
+            let content = div(class = "d-flex flex-wrap gap-4 panel") {
+                div() {
+                    p() { strong() { "Standard" } }
+                    div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                        {&btn_normal}
+                        {&btn_disabled}
+                    }
+                }
+                div() {
+                    p() { strong() { "Primary (Ringed)" } }
+                    div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                        {&primary_normal}
+                        {&primary_disabled}
+                    }
+                }
+                div() {
+                    p() { strong() { "Flavor Tints" } }
+                    div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                        {&btn_success}
+                        {&btn_danger}
+                        {&btn_warning}
+                        {&btn_info}
+                    }
+                }
+                div() {
+                    p() { strong() { "Sizes" } }
+                    div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                        button(type = "button", class = "btn btn-sm") { "Small (.btn-sm)" }
+                        button(type = "button", class = "btn") { "Default" }
+                        button(type = "button", class = "btn btn-lg") { "Large (.btn-lg)" }
+                    }
+                }
+                div() {
+                    p() { strong() { "Primary Sizes" } }
+                    div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                        span(class = "btn-primary-ring") {
+                            button(type = "button", class = "btn btn-sm") { "Small" }
                         }
-                        div() {
-                            p() { strong() { "Primary (Ringed)" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                {&primary_normal}
-                                {&primary_disabled}
-                            }
+                        span(class = "btn-primary-ring") {
+                            button(type = "button", class = "btn") { "Default" }
                         }
-                        div() {
-                            p() { strong() { "Flavor Tints" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                {&btn_success}
-                                {&btn_danger}
-                                {&btn_warning}
-                                {&btn_info}
-                            }
+                        span(class = "btn-primary-ring") {
+                            button(type = "button", class = "btn btn-lg") { "Large" }
                         }
-                        div() {
-                            p() { strong() { "Sizes" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                button(type = "button", class = "btn btn-sm") { "Small (.btn-sm)" }
-                                button(type = "button", class = "btn") { "Default" }
-                                button(type = "button", class = "btn btn-lg") { "Large (.btn-lg)" }
-                            }
-                        }
-                        div() {
-                            p() { strong() { "Primary Sizes" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                span(class = "btn-primary-ring") {
-                                    button(type = "button", class = "btn btn-sm") { "Small" }
-                                }
-                                span(class = "btn-primary-ring") {
-                                    button(type = "button", class = "btn") { "Default" }
-                                }
-                                span(class = "btn-primary-ring") {
-                                    button(type = "button", class = "btn btn-lg") { "Large" }
-                                }
-                            }
-                        }
-                        div() {
-                            p() { strong() { "Icon + Text" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                {&btn_add}
-                                {&btn_delete}
-                                {&btn_edit}
-                                {&btn_search}
-                            }
-                        }
-                        div() {
-                            p() { strong() { "Icon Only" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                {&icon_plus}
-                                {&icon_trash}
-                                {&icon_edit}
-                                {&icon_search}
-                            }
-                        }
+                    }
+                }
+                div() {
+                    p() { strong() { "Icon + Text" } }
+                    div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                        {&btn_add}
+                        {&btn_delete}
+                        {&btn_edit}
+                        {&btn_search}
+                    }
+                }
+                div() {
+                    p() { strong() { "Icon Only" } }
+                    div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                        {&icon_plus}
+                        {&icon_trash}
+                        {&icon_edit}
+                        {&icon_search}
                     }
                 }
             }
         }
-
-        Section { wrapper }
+        section.push(&content);
+        section
     }
 
     /// Build the "Checkboxes & Radios" section.
     fn build_checkboxes_and_radios<V: View>() -> Section<V> {
+        let section = Section::new("Checkboxes & Radios");
+
         let cb_default = Checkbox::new("Unchecked", false);
         let cb_checked = Checkbox::new("Checked", true);
 
@@ -330,95 +340,71 @@ pub mod library {
         radio_inline.set_inline(true);
 
         rsx! {
-            let wrapper = div(style:margin_top = "2em") {
-                span(
-                    class = "editorial",
-                    style:font_size = "2em",
-                    style:font_weight = "lighter",
-                    style:color = crate::color::PURPLE,
-                ) { "Checkboxes & Radios" }
-                div(
-                    style:border = "2px dashed #7B61FF",
-                    style:border_radius = "4px",
-                    style:padding = "1em",
-                ) {
-                    div(class = "d-flex flex-wrap gap-4 panel") {
-                        div() {
-                            p() { strong() { "Checkboxes" } }
-                            {&cb_default}
-                            {&cb_checked}
-                            {&cb_disabled}
-                            {&cb_disabled_checked}
-                        }
-                        div() {
-                            p() { strong() { "Switches" } }
-                            {&cb_switch}
-                            {&cb_switch_on}
-                        }
-                        div() {
-                            p() { strong() { "Radio Group" } }
-                            {&radio_group}
-                        }
-                        div() {
-                            p() { strong() { "Radio Inline" } }
-                            {&radio_inline}
-                        }
-                    }
+            let content = div(class = "d-flex flex-wrap gap-4 panel") {
+                div() {
+                    p() { strong() { "Checkboxes" } }
+                    {&cb_default}
+                    {&cb_checked}
+                    {&cb_disabled}
+                    {&cb_disabled_checked}
+                }
+                div() {
+                    p() { strong() { "Switches" } }
+                    {&cb_switch}
+                    {&cb_switch_on}
+                }
+                div() {
+                    p() { strong() { "Radio Group" } }
+                    {&radio_group}
+                }
+                div() {
+                    p() { strong() { "Radio Inline" } }
+                    {&radio_inline}
                 }
             }
         }
-
-        Section { wrapper }
+        section.push(&content);
+        section
     }
 
     /// Build the "Progress Bars" section.
     fn build_progress_bars<V: View>() -> Section<V> {
+        let section = Section::new("Progress Bars");
+
         rsx! {
-            let wrapper = div(style:margin_top = "2em") {
-                span(
-                    class = "editorial",
-                    style:font_size = "2em",
-                    style:font_weight = "lighter",
-                    style:color = crate::color::PURPLE,
-                ) { "Progress Bars" }
-                div(
-                    style:border = "2px dashed #7B61FF",
-                    style:border_radius = "4px",
-                    style:padding = "1em",
-                ) {
-                    div(class = "panel", style:padding = "1em") {
-                        p() { strong() { "Empty (0%)" } }
-                        div(class = "progress mb-3") {}
+            let content = div(class = "panel", style:padding = "1em") {
+                p() { strong() { "Empty (0%)" } }
+                div(class = "progress mb-3") {}
 
-                        p() { strong() { "25%" } }
-                        div(class = "progress mb-3") {
-                            div(class = "progress-bar", style:width = "25%") {}
-                        }
+                p() { strong() { "25%" } }
+                div(class = "progress mb-3") {
+                    div(class = "progress-bar", style:width = "25%") {}
+                }
 
-                        p() { strong() { "50%" } }
-                        div(class = "progress mb-3") {
-                            div(class = "progress-bar", style:width = "50%") {}
-                        }
+                p() { strong() { "50%" } }
+                div(class = "progress mb-3") {
+                    div(class = "progress-bar", style:width = "50%") {}
+                }
 
-                        p() { strong() { "75%" } }
-                        div(class = "progress mb-3") {
-                            div(class = "progress-bar", style:width = "75%") {}
-                        }
+                p() { strong() { "75%" } }
+                div(class = "progress mb-3") {
+                    div(class = "progress-bar", style:width = "75%") {}
+                }
 
-                        p() { strong() { "100%" } }
-                        div(class = "progress") {
-                            div(class = "progress-bar", style:width = "100%") {}
-                        }
-                    }
+                p() { strong() { "100%" } }
+                div(class = "progress") {
+                    div(class = "progress-bar", style:width = "100%") {}
                 }
             }
         }
-
-        Section { wrapper }
+        section.push(&content);
+        section
     }
 
     /// Build the "Sliders" section.
     fn build_sliders<V: View>() -> Section<V> {
+        let section = Section::new("Sliders");
+
         let ticked_slider = SliderWithTicks::new(
             0.0,
             6.0,
@@ -430,61 +416,47 @@ pub mod library {
         let unlabeled_ticks = SliderWithTicks::with_tick_count(0.0, 100.0, 10.0, 50.0, 11);
 
         rsx! {
-            let wrapper = div(style:margin_top = "2em") {
-                span(
-                    class = "editorial",
-                    style:font_size = "2em",
-                    style:font_weight = "lighter",
-                    style:color = crate::color::PURPLE,
-                ) { "Sliders" }
-                div(
-                    style:border = "2px dashed #7B61FF",
-                    style:border_radius = "4px",
-                    style:padding = "1em",
-                ) {
-                    div(class = "panel", style:padding = "1em") {
-                        p() { strong() { "Default" } }
-                        input(
-                            type = "range",
-                            class = "iti-slider mb-3",
-                            min = "0", max = "100", value = "50",
-                        ) {}
+            let content = div(class = "panel", style:padding = "1em") {
+                p() { strong() { "Default" } }
+                input(
+                    type = "range",
+                    class = "iti-slider mb-3",
+                    min = "0", max = "100", value = "50",
+                ) {}
 
-                        p() { strong() { "At minimum" } }
-                        input(
-                            type = "range",
-                            class = "iti-slider mb-3",
-                            min = "0", max = "100", value = "0",
-                        ) {}
+                p() { strong() { "At minimum" } }
+                input(
+                    type = "range",
+                    class = "iti-slider mb-3",
+                    min = "0", max = "100", value = "0",
+                ) {}
 
-                        p() { strong() { "At maximum" } }
-                        input(
-                            type = "range",
-                            class = "iti-slider mb-3",
-                            min = "0", max = "100", value = "100",
-                        ) {}
+                p() { strong() { "At maximum" } }
+                input(
+                    type = "range",
+                    class = "iti-slider mb-3",
+                    min = "0", max = "100", value = "100",
+                ) {}
 
-                        p() { strong() { "Disabled" } }
-                        input(
-                            type = "range",
-                            class = "iti-slider mb-3",
-                            min = "0", max = "100", value = "30",
-                            disabled = "",
-                        ) {}
+                p() { strong() { "Disabled" } }
+                input(
+                    type = "range",
+                    class = "iti-slider mb-3",
+                    min = "0", max = "100", value = "30",
+                    disabled = "",
+                ) {}
 
-                        p() { strong() { "With Labeled Ticks" } }
-                        div(class = "mb-3") {
-                            {&ticked_slider}
-                        }
-
-                        p() { strong() { "With Unlabeled Ticks" } }
-                        {&unlabeled_ticks}
-                    }
+                p() { strong() { "With Labeled Ticks" } }
+                div(class = "mb-3") {
+                    {&ticked_slider}
                 }
+
+                p() { strong() { "With Unlabeled Ticks" } }
+                {&unlabeled_ticks}
             }
         }
-
-        Section { wrapper }
+        section.push(&content);
+        section
     }
 
     // ── Main component ──────────────────────────────────────────────
