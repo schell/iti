@@ -119,9 +119,8 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::TabList(item) => item.step().await,
             LibraryListPane::Toast(item) => item.step().await,
             LibraryListPane::Icon(item) => item.step().await,
-            LibraryListPane::Default(_)
-            | LibraryListPane::Card(_)
-            | LibraryListPane::Overhaul(_) => std::future::pending().await,
+            LibraryListPane::Overhaul(_) => std::future::pending().await,
+            LibraryListPane::Default(_) | LibraryListPane::Card(_) => std::future::pending().await,
         }
     }
 }

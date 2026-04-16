@@ -14,6 +14,7 @@ use mogwai::web::prelude::*;
 use wasm_bindgen::prelude::*;
 
 pub mod assets;
+pub mod color;
 pub mod components;
 pub mod id;
 pub mod storage;
@@ -30,6 +31,12 @@ pub async fn main() {
         .chain(fern::Output::call(console_log::log))
         .apply()
         .unwrap();
+
+    // Inject color token CSS custom properties before iti.css resolves
+    // its var() references. The CDN and embedded paths do this
+    // automatically, but the Trunk path loads iti.css via <link> tags
+    // so we need to inject the tokens explicitly.
+    assets::inject_color_tokens();
 
     library::main().await;
 }

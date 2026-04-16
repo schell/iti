@@ -22,73 +22,79 @@ pub mod library {
     impl<V: View> Default for OverhaulLibraryItem<V> {
         fn default() -> Self {
             rsx! {
-                let wrapper = div(class = "d-flex flex-wrap gap-4") {
+                let wrapper = div() {
                     div() {
-                        h3() { "Platinum Kit" }
+                        h1(
+                            class = "editorial",
+                            style:font_size = "4em",
+                            style:font_weight = "lighter",
+                            style:margin_bottom = "0",
+                        ) { "Platinum Kit" }
                         p(class = "text-muted") {
                             "Design system sandbox \u{2014} experiment with shadows, \
                              fonts, and colors here."
                         }
                     }
+                    div(class = "d-flex flex-wrap gap-4") {
+                        // ── Window shadow + inner stroke ──
+                        div(
+                            class = "window-shadow inner-stroke",
+                            style:background_color = "var(--iti-bg-medium)",
+                            style:padding = "16px",
+                            style:width = "260px"
+                        ) {
+                            p() {
+                                strong() { ".window-shadow .inner-stroke" }
+                            }
+                            p() {
+                                "A container with the Platinum window bevel \
+                                 and inner stroke applied."
+                            }
+                        }
 
-                    // ── Window shadow + inner stroke ──
-                    div(
-                        class = "window-shadow inner-stroke",
-                        style:background_color = "var(--iti-bg-medium)",
-                        style:padding = "16px",
-                        style:width = "260px"
-                    ) {
-                        p() {
-                            strong() { ".window-shadow .inner-stroke" }
+                        // ── Window shadow only ──
+                        div(
+                            class = "window-shadow",
+                            style:background_color = "var(--iti-bg-medium)",
+                            style:padding = "16px",
+                            style:width = "260px"
+                        ) {
+                            p() {
+                                strong() { ".window-shadow" }
+                            }
+                            p() {
+                                "Bevel and drop shadow without the inner stroke."
+                            }
                         }
-                        p() {
-                            "A container with the Platinum window bevel \
-                             and inner stroke applied."
-                        }
-                    }
 
-                    // ── Window shadow only ──
-                    div(
-                        class = "window-shadow",
-                        style:background_color = "var(--iti-bg-medium)",
-                        style:padding = "16px",
-                        style:width = "260px"
-                    ) {
-                        p() {
-                            strong() { ".window-shadow" }
+                        // ── Inner stroke only ──
+                        div(
+                            class = "inner-stroke",
+                            style:background_color = "var(--iti-bg-light)",
+                            style:padding = "16px",
+                            style:width = "260px"
+                        ) {
+                            p() {
+                                strong() { ".inner-stroke" }
+                            }
+                            p() {
+                                "Just the 1px inner outline, no shadow."
+                            }
                         }
-                        p() {
-                            "Bevel and drop shadow without the inner stroke."
-                        }
-                    }
 
-                    // ── Inner stroke only ──
-                    div(
-                        class = "inner-stroke",
-                        style:background_color = "var(--iti-bg-light)",
-                        style:padding = "16px",
-                        style:width = "260px"
-                    ) {
-                        p() {
-                            strong() { ".inner-stroke" }
-                        }
-                        p() {
-                            "Just the 1px inner outline, no shadow."
-                        }
-                    }
-
-                    // ── Plain (no effects) ──
-                    div(
-                        style:background_color = "var(--iti-bg-light)",
-                        style:padding = "16px",
-                        style:width = "260px",
-                        style:border = "1px solid var(--iti-border-dark)"
-                    ) {
-                        p() {
-                            strong() { "Plain" }
-                        }
-                        p() {
-                            "No shadow or stroke \u{2014} for comparison."
+                        // ── Plain (no effects) ──
+                        div(
+                            style:background_color = "var(--iti-bg-light)",
+                            style:padding = "16px",
+                            style:width = "260px",
+                            style:border = "1px solid var(--iti-border-dark)"
+                        ) {
+                            p() {
+                                strong() { "Plain" }
+                            }
+                            p() {
+                                "No shadow or stroke \u{2014} for comparison."
+                            }
                         }
                     }
                 }

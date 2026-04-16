@@ -57,14 +57,29 @@ fn append_style(css: &str) {
     head.append_child(&style).unwrap_throw();
 }
 
+/// Inject the design token CSS custom properties as a `<style>` element.
+///
+/// This must be called **before** `iti.css` is loaded (whether via `<link>`
+/// or `<style>`) so that the token variables (`--azul`, `--gray300`, etc.)
+/// are available when the semantic aliases resolve their `var()` references.
+///
+/// Called automatically by [`inject_cdn_links`] and
+/// [`embedded::inject_styles`]. For the Trunk/manual loading path, call
+/// this from your WASM entry point before the stylesheet `<link>` loads.
+pub fn inject_color_tokens() {
+    append_style(crate::color::CSS_TOKENS);
+}
+
 /// Inject all required stylesheets using a CDN `<link>` for Font Awesome.
 ///
-/// Creates two elements in `<head>`:
+/// Creates three elements in `<head>`:
+/// - `<style>` for color token CSS custom properties
 /// - `<link>` for Font Awesome 6 CSS (with fonts from CDN)
 /// - `<style>` for iti's unified stylesheet
 ///
 /// Requires an internet connection to reach the Font Awesome CDN.
 pub fn inject_cdn_links() {
+    inject_color_tokens();
     append_link(cdn::FONTAWESOME_CSS);
     append_style(ITI_CSS);
 }
@@ -207,9 +222,9 @@ pub mod embedded {
     /// Creates `<style>` elements in `<head>` — no `<link>` tags,
     /// no network requests:
     ///
-    /// 1. iti unified CSS (with `@font-face` rewritten to a Blob URL
-    ///    for the Chicago font)
-    /// 2. Font Awesome 6 CSS (with `@font-face` rewritten to Blob URLs)
+    /// 1. Color token CSS custom properties (from `color.rs`)
+    /// 2. iti unified CSS (with `@font-face` rewritten to Blob URLs)
+    /// 3. Font Awesome 6 CSS (with `@font-face` rewritten to Blob URLs)
     ///
     /// Font Awesome Brands icons are **not** embedded to save binary
     /// space. Brand icon classes (`.fa-brands`) will render as blank
@@ -242,6 +257,7 @@ pub mod embedded {
         );
 
         // Inject everything as <style> elements — zero network requests
+        inject_color_tokens();
         append_style(&iti_css);
         append_style(&fa_css);
     }

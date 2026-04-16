@@ -63,29 +63,11 @@
    §2  Design Tokens & Semantic Variables
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Token hex values (--black900, --gray300, --azul, etc.) are generated
+   from color.rs and prepended to this stylesheet at runtime. Semantic
+   aliases below reference them via var(). */
+
 :root {
-	/* ── Figma Design Tokens (source of truth) ──────────────────── */
-
-	/* Primary */
-	--black900:  #000000;
-	--white100:  #FFFFFF;
-
-	/* Grays */
-	--gray200:   #EEEEEE;
-	--gray300:   #DDDDDD;
-	--gray400:   #CCCCCC;
-	--gray500:   #BBBBBB;
-	--gray600:   #999999;
-	--gray700:   #808080;
-	--gray800:   #666666;
-
-	/* Colors */
-	--azul:      #333399;
-	--lavender:  #CCCCFF;
-	--cream:     #FFFFCC;
-	--thistle:   #E6CCFF;
-	--ice:       #CCE6FF;
-
 	/* ── Semantic: Chrome ───────────────────────────────────────── */
 
 	--iti-bg:            var(--gray300);
@@ -109,9 +91,6 @@
 	/* ── Semantic: Flavors ──────────────────────────────────────── */
 
 	--iti-secondary:  var(--gray600);
-	--iti-success:    #339933;
-	--iti-danger:     #CC3333;
-	--iti-warning:    #CC9933;
 	--iti-info:       var(--ice);
 	--iti-light:      var(--gray200);
 	--iti-dark:       var(--gray800);
