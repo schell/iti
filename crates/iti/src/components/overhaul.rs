@@ -10,6 +10,7 @@ pub mod library {
     use mogwai::prelude::*;
 
     use crate::components::button::{Button, PrimaryButton};
+    use crate::components::icon::IconGlyph;
     use crate::components::Flavor;
 
     /// Sandbox library item for the Platinum design system overhaul.
@@ -50,6 +51,39 @@ pub mod library {
 
             let mut btn_info = Button::new("Info", Some(Flavor::Info));
             btn_info.set_has_icon(false);
+
+            // Icon + Text buttons
+            let btn_add = Button::new("Add", None);
+            // Plus icon is the default — no need to change glyph
+
+            let mut btn_delete = Button::new("Delete", None);
+            btn_delete.get_icon_mut().set_glyph(IconGlyph::Trash);
+
+            let mut btn_edit = Button::new("Edit", None);
+            btn_edit.get_icon_mut().set_glyph(IconGlyph::Pen);
+
+            let mut btn_search = Button::new("Search", None);
+            btn_search
+                .get_icon_mut()
+                .set_glyph(IconGlyph::MagnifyingGlass);
+
+            // Icon-only buttons
+            let mut icon_plus = Button::new("", None);
+            icon_plus.get_icon_mut().set_additional_classes("");
+
+            let mut icon_trash = Button::new("", None);
+            icon_trash.get_icon_mut().set_glyph(IconGlyph::Trash);
+            icon_trash.get_icon_mut().set_additional_classes("");
+
+            let mut icon_edit = Button::new("", None);
+            icon_edit.get_icon_mut().set_glyph(IconGlyph::Pen);
+            icon_edit.get_icon_mut().set_additional_classes("");
+
+            let mut icon_search = Button::new("", None);
+            icon_search
+                .get_icon_mut()
+                .set_glyph(IconGlyph::MagnifyingGlass);
+            icon_search.get_icon_mut().set_additional_classes("");
 
             rsx! {
                 let wrapper = div() {
@@ -136,6 +170,19 @@ pub mod library {
                             }
                             p() {
                                 "No shadow or stroke - for comparison. Gray 200 background."
+                            }
+                        }
+                        // Panel - bg-gray200, window shadow, inset stroke, padding
+                        div(
+                            class = "panel",
+                            style:padding = "16px",
+                            style:width = "260px",
+                        ) {
+                            p() {
+                                strong() { ".panel" }
+                            }
+                            p() {
+                                "Using the .panel class gets you all of the above"
                             }
                         }
                     }
@@ -225,6 +272,28 @@ pub mod library {
                                             "Large"
                                         }
                                     }
+                                }
+                            }
+
+                            // Icon + Text
+                            div() {
+                                p() { strong() { "Icon + Text" } }
+                                div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                    {&btn_add}
+                                    {&btn_delete}
+                                    {&btn_edit}
+                                    {&btn_search}
+                                }
+                            }
+
+                            // Icon Only
+                            div() {
+                                p() { strong() { "Icon Only" } }
+                                div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                    {&icon_plus}
+                                    {&icon_trash}
+                                    {&icon_edit}
+                                    {&icon_search}
                                 }
                             }
                         }
