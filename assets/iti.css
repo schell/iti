@@ -1666,6 +1666,39 @@ pre {
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='16' viewBox='0 0 13 16'%3E%3Cpath d='M1 0.5 H12 V9.5 L6.5 14.5 L1 9.5 Z' fill='%23CCCCCC' stroke='%239D9D9D' stroke-width='1'/%3E%3C/svg%3E");
 }
 
+/* ── Slider tick marks (optional) ── */
+
+.iti-slider-ticks {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+}
+
+.iti-slider-tick-marks {
+	display: flex;
+	justify-content: space-between;
+	padding: 0 6px;
+	margin-top: -2px;
+}
+
+.iti-tick {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	font-family: var(--iti-font-body);
+	font-size: 10px;
+	color: var(--charcoal);
+}
+
+.iti-tick::before {
+	content: "";
+	display: block;
+	width: 1px;
+	height: 8px;
+	background-color: var(--charcoal);
+	margin-bottom: 2px;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    §25  iti Custom Components
    ═══════════════════════════════════════════════════════════════════ */

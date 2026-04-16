@@ -127,6 +127,116 @@ impl<V: View> Default for Slider<V> {
     }
 }
 
+/// A slider with evenly-spaced tick marks and optional labels below the track.
+///
+/// Wraps a [`Slider`] in a container with tick mark elements. The tick marks
+/// are purely visual — they don't snap the slider to specific values.
+///
+/// # Example
+///
+/// ```ignore
+/// let slider = SliderWithTicks::new(
+///     0.0, 6.0, 1.0, 3.0,
+///     &["01", "02", "03", "04", "05", "06", "07"],
+/// );
+/// ```
+#[derive(ViewChild)]
+pub struct SliderWithTicks<V: View> {
+    #[child]
+    wrapper: V::Element,
+    slider: Slider<V>,
+    #[allow(dead_code)]
+    tick_container: V::Element,
+}
+
+impl<V: View> SliderWithTicks<V> {
+    /// Create a slider with tick marks and optional labels.
+    ///
+    /// `tick_labels` is a slice of label strings. Each string becomes a
+    /// tick mark positioned evenly along the track. Use empty strings
+    /// for tick lines without labels.
+    pub fn new(min: f64, max: f64, step: f64, value: f64, tick_labels: &[&str]) -> Self {
+        let slider = Slider::new(min, max, step, value);
+        rsx! {
+            let wrapper = div(class = "iti-slider-ticks") {
+                {&slider}
+                let tick_container = div(class = "iti-slider-tick-marks") {}
+            }
+        }
+
+        for label in tick_labels {
+            rsx! {
+                let tick = span(class = "iti-tick") {
+                    {V::Text::new(*label)}
+                }
+            }
+            tick_container.append_child(&tick);
+        }
+
+        Self {
+            wrapper,
+            slider,
+            tick_container,
+        }
+    }
+
+    /// Create a slider with a given number of unlabeled tick marks.
+    pub fn with_tick_count(min: f64, max: f64, step: f64, value: f64, count: usize) -> Self {
+        let labels: Vec<&str> = vec![""; count];
+        Self::new(min, max, step, value, &labels)
+    }
+
+    /// Access the inner slider.
+    pub fn slider(&self) -> &Slider<V> {
+        &self.slider
+    }
+
+    /// Mutably access the inner slider.
+    pub fn slider_mut(&mut self) -> &mut Slider<V> {
+        &mut self.slider
+    }
+
+    /// Read the current value.
+    pub fn value(&self) -> f64 {
+        self.slider.value()
+    }
+
+    /// Programmatically set the slider value.
+    pub fn set_value(&mut self, value: f64) {
+        self.slider.set_value(value);
+    }
+
+    /// Set the minimum value.
+    pub fn set_min(&self, min: f64) {
+        self.slider.set_min(min);
+    }
+
+    /// Set the maximum value.
+    pub fn set_max(&self, max: f64) {
+        self.slider.set_max(max);
+    }
+
+    /// Set the step increment.
+    pub fn set_step(&self, step: f64) {
+        self.slider.set_step(step);
+    }
+
+    /// Disable the slider.
+    pub fn disable(&self) {
+        self.slider.disable();
+    }
+
+    /// Enable the slider.
+    pub fn enable(&self) {
+        self.slider.enable();
+    }
+
+    /// Await the next user input and return a [`SliderEvent`] with the new value.
+    pub async fn step(&mut self) -> SliderEvent<V> {
+        self.slider.step().await
+    }
+}
+
 /// Format an f64 as a compact string, omitting trailing `.0` for integers.
 fn format_f64(v: f64) -> String {
     if v.fract() == 0.0 {

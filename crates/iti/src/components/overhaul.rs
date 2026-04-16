@@ -13,6 +13,7 @@ pub mod library {
     use crate::components::checkbox::Checkbox;
     use crate::components::icon::IconGlyph;
     use crate::components::radio::RadioGroup;
+    use crate::components::slider::SliderWithTicks;
     use crate::components::Flavor;
 
     /// Sandbox library item for the Platinum design system overhaul.
@@ -114,6 +115,18 @@ pub mod library {
             radio_inline.push("Medium", "md");
             radio_inline.push("Large", "lg");
             radio_inline.set_inline(true);
+
+            // Slider with labeled ticks
+            let ticked_slider = SliderWithTicks::new(
+                0.0,
+                6.0,
+                1.0,
+                3.0,
+                &["01", "02", "03", "04", "05", "06", "07"],
+            );
+
+            // Slider with unlabeled ticks
+            let unlabeled_ticks = SliderWithTicks::with_tick_count(0.0, 100.0, 10.0, 50.0, 11);
 
             rsx! {
                 let wrapper = div() {
@@ -657,12 +670,20 @@ pub mod library {
                             p() { strong() { "Disabled" } }
                             input(
                                 type = "range",
-                                class = "iti-slider",
+                                class = "iti-slider mb-3",
                                 min = "0",
                                 max = "100",
                                 value = "30",
                                 disabled = "",
                             ) {}
+
+                            p() { strong() { "With Labeled Ticks" } }
+                            div(class = "mb-3") {
+                                {&ticked_slider}
+                            }
+
+                            p() { strong() { "With Unlabeled Ticks" } }
+                            {&unlabeled_ticks}
                         }
                     }
                 }
