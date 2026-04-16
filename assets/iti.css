@@ -451,88 +451,7 @@ pre {
 	pointer-events: none;
 }
 
-/* ── Flavor tint buttons ── */
-
-.btn-primary {
-	background-color: var(--iti-primary-tint);
-}
-
-.btn-primary:hover {
-	background-color: var(--iti-primary-tint);
-	filter: brightness(1.06);
-}
-
-.btn-secondary {
-	background-color: var(--iti-secondary-tint);
-}
-
-.btn-secondary:hover {
-	background-color: var(--iti-secondary-tint);
-	filter: brightness(1.06);
-}
-
-.btn-success {
-	background-color: var(--iti-success-tint);
-}
-
-.btn-success:hover {
-	background-color: var(--iti-success-tint);
-	filter: brightness(1.06);
-}
-
-.btn-danger {
-	background-color: var(--iti-danger-tint);
-}
-
-.btn-danger:hover {
-	background-color: var(--iti-danger-tint);
-	filter: brightness(1.06);
-}
-
-.btn-warning {
-	background-color: var(--iti-warning-tint);
-}
-
-.btn-warning:hover {
-	background-color: var(--iti-warning-tint);
-	filter: brightness(1.06);
-}
-
-.btn-info {
-	background-color: var(--iti-info-tint);
-}
-
-.btn-info:hover {
-	background-color: var(--iti-info-tint);
-	filter: brightness(1.06);
-}
-
-.btn-light {
-	background-color: var(--gray200);
-}
-
-.btn-light:hover {
-	background-color: var(--white100);
-}
-
-.btn-dark {
-	background-color: var(--gray500);
-}
-
-.btn-dark:hover {
-	background-color: var(--gray400);
-}
-
-/* All flavor buttons share the same pressed state */
-[class*="btn-"]:active,
-[class*="btn-"].active {
-	background-color: var(--gray800);
-	color: var(--white100);
-	filter: none;
-	box-shadow:
-		inset 1px 1px 0 rgba(38, 38, 38, 0.8),
-		inset -1px -1px 0 rgba(255, 255, 255, 0.2);
-}
+/* ── Link button ── */
 
 .btn-link {
 	background-color: transparent;
@@ -554,16 +473,18 @@ pre {
 	box-shadow: none;
 }
 
-/* ── Outline variants ── */
+/* ── Flavor tint utilities ──
+   General-purpose background tint classes. Can be applied to buttons,
+   cards, or any element. Independent of component structure. */
 
-[class*="btn-outline-"] {
-	background-color: var(--gray200);
-	color: var(--charcoal);
-}
-
-[class*="btn-outline-"]:hover {
-	background-color: var(--gray300);
-}
+.flavor-primary   { background-color: var(--iti-primary-tint); }
+.flavor-secondary { background-color: var(--iti-secondary-tint); }
+.flavor-success   { background-color: var(--iti-success-tint); }
+.flavor-danger    { background-color: var(--iti-danger-tint); }
+.flavor-warning   { background-color: var(--iti-warning-tint); }
+.flavor-info      { background-color: var(--iti-info-tint); }
+.flavor-light     { background-color: var(--gray200); }
+.flavor-dark      { background-color: var(--gray500); }
 
 /* ── Primary button ring (wraps a .btn) ── */
 

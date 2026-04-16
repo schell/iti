@@ -176,7 +176,7 @@ pub mod library {
                 let wrapper = div() {
                     button(
                         type = "button",
-                        class = "btn btn-primary",
+                        class = "btn",
                         on:click = open_click,
                     ) {
                         "Open modal"

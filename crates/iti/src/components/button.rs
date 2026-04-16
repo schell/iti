@@ -41,8 +41,11 @@ impl<V: View> Button<V> {
                 type = "button",
                 class = flavor(
                     maybe_flav => {
-                        let class = format!("btn btn-{}", maybe_flav.unwrap_or(Flavor::Secondary));
-                        class
+                        match maybe_flav {
+                            Some(Flavor::Link) => "btn btn-link".to_string(),
+                            Some(flav) => format!("btn flavor-{flav}"),
+                            None => "btn".to_string(),
+                        }
                     }
                 ),
                 style:cursor = "pointer",

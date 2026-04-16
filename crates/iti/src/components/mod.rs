@@ -21,8 +21,8 @@ pub mod widget;
 
 /// Bootstrap 5 color variant.
 ///
-/// Maps to Bootstrap's contextual class suffixes (e.g. `btn-primary`,
-/// `alert-danger`, `list-group-item-success`).
+/// Maps to contextual class suffixes used across components (e.g.
+/// `flavor-primary`, `alert-danger`, `list-group-item-success`).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum Flavor {
     #[default]
