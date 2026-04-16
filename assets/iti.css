@@ -1381,32 +1381,41 @@ pre {
 	cursor: pointer;
 	margin: 0;
 	vertical-align: middle;
+	position: relative;
+	overflow: visible;
 }
 
 /* Radio input (circle) — overrides checkbox defaults */
 .form-check-input[type="radio"] {
 	border-radius: 50% !important;
-	background-color: var(--white100);
+	background: linear-gradient(135deg, #FFFFFF 0%, var(--gray400) 100%);
 	box-shadow: 0.5px 0.5px 0 rgba(38, 38, 38, 0.3);
 }
 
-/* Checked checkbox — no background change, just the checkmark */
+/* Checked checkbox — no background change, checkmark via ::before
+   pseudo-element so the check can overflow the box bounds */
 .form-check-input[type="checkbox"]:checked {
 	background-color: var(--gray300);
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.09 9.77l.08-.42c.14-.79 1.1-1.1 1.68-.54l2 1.94c.4.39 1.04.37 1.42-.04l7.63-8.08c.32-.34.87-.33 1.17.01.25.29.25.72 0 1.02l-8.79 10.46c-.38.45-1.07.48-1.48.05L1.36 10.64c-.22-.23-.32-.56-.27-.87z' fill='%23262626'/%3E%3C/svg%3E");
-	background-size: 14px;
-	background-position: center;
-	background-repeat: no-repeat;
 }
 
-/* Checked radio — no background change, inner dot via radial gradient */
+.form-check-input[type="checkbox"]:checked::before {
+	content: "";
+	position: absolute;
+	width: 18px;
+	height: 18px;
+	top: -4px;
+	left: -2px;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.09 9.77l.08-.42c.14-.79 1.1-1.1 1.68-.54l2 1.94c.4.39 1.04.37 1.42-.04l7.63-8.08c.32-.34.87-.33 1.17.01.25.29.25.72 0 1.02l-8.79 10.46c-.38.45-1.07.48-1.48.05L1.36 10.64c-.22-.23-.32-.56-.27-.87z' fill='%23262626'/%3E%3C/svg%3E");
+	background-size: 18px;
+	background-repeat: no-repeat;
+	pointer-events: none;
+}
+
+/* Checked radio — inner/concave bevel gradient + charcoal inner dot */
 .form-check-input[type="radio"]:checked {
-	background-color: var(--white100);
-	background-image: radial-gradient(
-		circle at center,
-		var(--charcoal) 3px,
-		transparent 3px
-	);
+	background:
+		radial-gradient(circle at center, var(--charcoal) 3px, transparent 3px),
+		linear-gradient(135deg, var(--gray400) 0%, #FFFFFF 100%);
 }
 
 /* Active/pressed state — checkbox darkens with inverted bevel */
@@ -1418,9 +1427,9 @@ pre {
 		0.5px 0.5px 0 rgba(38, 38, 38, 0.3);
 }
 
-/* Active/pressed state — radio */
+/* Active/pressed state — radio concave gradient without dot */
 .form-check-input[type="radio"]:active {
-	background-color: var(--gray300);
+	background: linear-gradient(135deg, var(--gray400) 0%, #FFFFFF 100%);
 }
 
 .form-check-input:focus {
