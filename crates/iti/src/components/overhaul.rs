@@ -185,6 +185,44 @@ pub mod library {
                                 {&btn_info}
                             }
                         }
+
+                        // Sizes
+                        div() {
+                            p() { strong() { "Sizes" } }
+                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                button(type = "button", class = "btn btn-sm") {
+                                    "Small (.btn-sm)"
+                                }
+                                button(type = "button", class = "btn") {
+                                    "Default"
+                                }
+                                button(type = "button", class = "btn btn-lg") {
+                                    "Large (.btn-lg)"
+                                }
+                            }
+                        }
+
+                        // Sizes with primary ring
+                        div() {
+                            p() { strong() { "Primary Sizes" } }
+                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                span(class = "btn-primary-ring") {
+                                    button(type = "button", class = "btn btn-sm") {
+                                        "Small"
+                                    }
+                                }
+                                span(class = "btn-primary-ring") {
+                                    button(type = "button", class = "btn") {
+                                        "Default"
+                                    }
+                                }
+                                span(class = "btn-primary-ring") {
+                                    button(type = "button", class = "btn btn-lg") {
+                                        "Large"
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
