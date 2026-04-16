@@ -1801,4 +1801,15 @@ pre {
 	background-color: var(--iti-bg-medium);
 }
 
-
+/* -- Panel -- */
+/* This is a window-shadow + inner-stroke + others */
+.panel {
+	background-color: var(--gray200);
+	box-shadow:
+		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
+		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		2px 2px 0 rgba(0, 0, 0, 0.85);
+	outline: 1px solid var(--black900);
+	outline-offset: -1px;
+	padding: 1em;
+}

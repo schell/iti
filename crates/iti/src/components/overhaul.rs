@@ -152,73 +152,78 @@ pub mod library {
                         }
                     }
                     div(
-                        class = "d-flex flex-wrap gap-4",
+                        class = "gap-4",
                         style:border = "2px dashed #7B61FF",
                         style:border_radius = "4px",
                         style:padding = "1em"
                     ) {
-                        // Standard buttons
-                        div() {
-                            p() { strong() { "Standard" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                {&btn_normal}
-                                {&btn_disabled}
-                            }
-                        }
-
-                        // Primary (ringed) buttons
-                        div() {
-                            p() { strong() { "Primary (Ringed)" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                {&primary_normal}
-                                {&primary_disabled}
-                            }
-                        }
-
-                        // Flavor tints
-                        div() {
-                            p() { strong() { "Flavor Tints" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                {&btn_success}
-                                {&btn_danger}
-                                {&btn_warning}
-                                {&btn_info}
-                            }
-                        }
-
-                        // Sizes
-                        div() {
-                            p() { strong() { "Sizes" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                button(type = "button", class = "btn btn-sm") {
-                                    "Small (.btn-sm)"
-                                }
-                                button(type = "button", class = "btn") {
-                                    "Default"
-                                }
-                                button(type = "button", class = "btn btn-lg") {
-                                    "Large (.btn-lg)"
+                        div(
+                            class = "d-flex flex-wrap gap-4 panel",
+                            style = ""
+                        ) {
+                            // Standard buttons
+                            div() {
+                                p() { strong() { "Standard" } }
+                                div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                    {&btn_normal}
+                                    {&btn_disabled}
                                 }
                             }
-                        }
 
-                        // Sizes with primary ring
-                        div() {
-                            p() { strong() { "Primary Sizes" } }
-                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
-                                span(class = "btn-primary-ring") {
+                            // Primary (ringed) buttons
+                            div() {
+                                p() { strong() { "Primary (Ringed)" } }
+                                div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                    {&primary_normal}
+                                    {&primary_disabled}
+                                }
+                            }
+
+                            // Flavor tints
+                            div() {
+                                p() { strong() { "Flavor Tints" } }
+                                div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                    {&btn_success}
+                                    {&btn_danger}
+                                    {&btn_warning}
+                                    {&btn_info}
+                                }
+                            }
+
+                            // Sizes
+                            div() {
+                                p() { strong() { "Sizes" } }
+                                div(class = "d-flex gap-2 flex-wrap align-items-center") {
                                     button(type = "button", class = "btn btn-sm") {
-                                        "Small"
+                                        "Small (.btn-sm)"
                                     }
-                                }
-                                span(class = "btn-primary-ring") {
                                     button(type = "button", class = "btn") {
                                         "Default"
                                     }
-                                }
-                                span(class = "btn-primary-ring") {
                                     button(type = "button", class = "btn btn-lg") {
-                                        "Large"
+                                        "Large (.btn-lg)"
+                                    }
+                                }
+                            }
+
+                            // Sizes with primary ring
+                            div() {
+                                p() { strong() { "Primary Sizes" } }
+                                div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                    span(class = "btn-primary-ring") {
+                                        button(type = "button", class = "btn btn-sm") {
+                                            "Small"
+                                        }
+                                    }
+                                    span(class = "btn-primary-ring") {
+                                        button(type = "button", class = "btn") {
+                                            "Default"
+                                        }
+                                    }
+                                    span(class = "btn-primary-ring") {
+                                        button(type = "button", class = "btn btn-lg") {
+                                            "Large"
+                                        }
                                     }
                                 }
                             }
