@@ -1674,10 +1674,19 @@ pre {
 	flex-direction: column;
 }
 
+/* Remove horizontal margin from the slider when inside the
+   tick container — the ticks handle the alignment instead */
+.iti-slider-ticks .iti-slider {
+	margin-left: 0;
+	margin-right: 0;
+}
+
 .iti-slider-tick-marks {
 	display: flex;
 	justify-content: space-between;
-	padding: 0 6px;
+	/* Padding = half the thumb width (6.5px) so tick positions
+	   align with the thumb center at min/max values */
+	padding: 0 6.5px;
 	margin-top: -2px;
 }
 
