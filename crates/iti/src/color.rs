@@ -54,6 +54,9 @@ pub const AZUL: &str = "#333399";
 /// Soft purple-blue — hover/highlight, slider thumbs, checkboxes.
 pub const LAVENDER: &str = "#CCCCFF";
 
+/// Darker purple-violet.
+pub const PURPLE: &str = "#7B61FF";
+
 /// Warm pale yellow — complement to lavender, warning tint.
 pub const CREAM: &str = "#FFFFCC";
 
@@ -107,6 +110,7 @@ pub fn css_tokens() -> String {
 \t/* Colors */
 \t--azul:      {AZUL};
 \t--lavender:  {LAVENDER};
+\t--purple:    {PURPLE};
 \t--cream:     {CREAM};
 \t--thistle:   {THISTLE};
 \t--ice:       {ICE};

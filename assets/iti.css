@@ -1715,13 +1715,14 @@ pre {
 	background-size: 8px 8px;
 }
 
-/* ── Platinum bevel shadows ── */
+
+/* -- Platinum bevel shadows -- */
 
 .window-shadow {
 	box-shadow:
 		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
 		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
-		2px 2px 0 #262626;
+		2px 2px 0 rgba(0, 0, 0, 0.85);
 }
 
 .inner-stroke {
@@ -1742,3 +1743,5 @@ pre {
 .close-icon :hover {
 	background-color: var(--iti-bg-medium);
 }
+
+

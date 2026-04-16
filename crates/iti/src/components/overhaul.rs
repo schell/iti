@@ -23,7 +23,9 @@ pub mod library {
         fn default() -> Self {
             rsx! {
                 let wrapper = div() {
-                    div() {
+                    div(
+                        style:margin_bottom = "3em",
+                    ) {
                         h1(
                             class = "editorial",
                             style:font_size = "4em",
@@ -35,65 +37,75 @@ pub mod library {
                              fonts, and colors here."
                         }
                     }
-                    div(class = "d-flex flex-wrap gap-4") {
+
+                    span(
+                        class = "editorial",
+                        style:font_size = "2em",
+                        style:font_weight = "lighter",
+                        style:color = crate::color::PURPLE,
+                    ) {
+                        "Panels and colors"
+                    }
+                    div(
+                        class = "d-flex flex-wrap gap-4",
+                        style:border = "2px dashed #7B61FF",
+                        style:border_radius = "4px",
+                        style:padding = "1em"
+                    ) {
                         // ── Window shadow + inner stroke ──
                         div(
-                            class = "window-shadow inner-stroke",
-                            style:background_color = crate::color::GRAY200,
+                            class = "window-shadow inner-stroke bg-gray200",
                             style:padding = "16px",
                             style:width = "260px"
                         ) {
                             p() {
-                                strong() { ".window-shadow .inner-stroke" }
+                                strong() { ".window-shadow .inner-stroke .bg-gray200" }
                             }
                             p() {
                                 "A container with the Platinum window bevel \
-                                 and inner stroke applied."
+                                 and inner stroke applied. Gray 200 background."
                             }
                         }
 
                         // ── Window shadow only ──
                         div(
-                            class = "window-shadow",
-                            style:background_color = "var(--iti-bg-medium)",
+                            class = "window-shadow bg-gray400",
                             style:padding = "16px",
                             style:width = "260px"
                         ) {
                             p() {
-                                strong() { ".window-shadow" }
+                                strong() { ".window-shadow .bg-gray400" }
                             }
                             p() {
-                                "Bevel and drop shadow without the inner stroke."
+                                "Bevel and drop shadow without the inner stroke. Gray 400 background."
                             }
                         }
 
                         // ── Inner stroke only ──
                         div(
-                            class = "inner-stroke",
-                            style:background_color = "var(--iti-bg-light)",
+                            class = "inner-stroke bg-gray200",
                             style:padding = "16px",
                             style:width = "260px"
                         ) {
                             p() {
-                                strong() { ".inner-stroke" }
+                                strong() { ".inner-stroke .bg-gray200" }
                             }
                             p() {
-                                "Just the 1px inner outline, no shadow."
+                                "Just the 1px inner outline, no shadow. Gray 200 background."
                             }
                         }
 
                         // ── Plain (no effects) ──
                         div(
-                            style:background_color = "var(--iti-bg-light)",
+                            class = "bg-gray200",
                             style:padding = "16px",
                             style:width = "260px",
-                            style:border = "1px solid var(--iti-border-dark)"
                         ) {
                             p() {
-                                strong() { "Plain" }
+                                strong() { ".bg-gray200" }
                             }
                             p() {
-                                "No shadow or stroke \u{2014} for comparison."
+                                "No shadow or stroke - for comparison. Gray 200 background."
                             }
                         }
                     }
