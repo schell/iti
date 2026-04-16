@@ -1401,12 +1401,12 @@ pre {
 .form-check-input[type="checkbox"]:checked::before {
 	content: "";
 	position: absolute;
-	width: 18px;
-	height: 18px;
-	top: -4px;
-	left: -2px;
+	width: 16px;
+	height: 16px;
+	top: -3px;
+	left: 0px;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.09 9.77l.08-.42c.14-.79 1.1-1.1 1.68-.54l2 1.94c.4.39 1.04.37 1.42-.04l7.63-8.08c.32-.34.87-.33 1.17.01.25.29.25.72 0 1.02l-8.79 10.46c-.38.45-1.07.48-1.48.05L1.36 10.64c-.22-.23-.32-.56-.27-.87z' fill='%23262626'/%3E%3C/svg%3E");
-	background-size: 18px;
+	background-size: 16px;
 	background-repeat: no-repeat;
 	pointer-events: none;
 }
