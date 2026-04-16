@@ -1697,6 +1697,9 @@ pre {
 	font-family: var(--iti-font-body);
 	font-size: 10px;
 	color: var(--charcoal);
+	width: 0;
+	overflow: visible;
+	white-space: nowrap;
 }
 
 .iti-tick::before {
