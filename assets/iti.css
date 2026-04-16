@@ -394,17 +394,23 @@ pre {
    §10  Buttons
    ═══════════════════════════════════════════════════════════════════ */
 
+/* ── Base button (Platinum secondary) ── */
+
 .btn {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	background-color: var(--iti-bg-medium);
-	color: var(--iti-text);
-	border: 2px solid;
-	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-border-dark) var(--iti-border-light);
+	background-color: var(--gray300);
+	color: var(--charcoal);
+	border: 1px solid var(--charcoal);
+	border-radius: 3px;
+	box-shadow:
+		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
+		inset -1px -1px 0 rgba(128, 128, 128, 0.5);
 	font-family: var(--iti-font-ui);
 	font-size: 12px;
-	padding: 3px 12px;
+	padding: 2px 12px;
+	height: 20px;
 	text-shadow: none;
 	text-decoration: none;
 	transition: none;
@@ -417,107 +423,115 @@ pre {
 }
 
 .btn:hover {
-	background-color: var(--iti-bg-light);
-	color: var(--iti-text);
-	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-border-dark) var(--iti-border-light);
+	background-color: var(--gray200);
+	color: var(--charcoal);
 }
 
 .btn:active,
 .btn.active {
-	background-color: var(--iti-bg-dark);
-	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
+	background-color: var(--gray800);
+	color: var(--white100);
+	box-shadow:
+		inset 1px 1px 0 rgba(38, 38, 38, 0.8),
+		inset -1px -1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .btn:focus-visible {
-	outline: 1px dotted var(--iti-text);
+	outline: 1px dotted var(--charcoal);
 	outline-offset: -4px;
 }
 
 .btn:disabled,
 .btn.disabled {
-	background-color: var(--iti-bg-medium);
-	color: var(--iti-border-dark);
-	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-border-dark) var(--iti-border-light);
+	background-color: var(--gray300);
+	color: var(--disabled-gray);
+	border-color: var(--disabled-gray);
+	box-shadow: none;
 	opacity: 1;
-	text-shadow: 1px 1px 0 var(--iti-border-light);
 	pointer-events: none;
 }
 
-/* Flavor buttons */
+/* ── Flavor tint buttons ── */
+
 .btn-primary {
 	background-color: var(--iti-primary-tint);
-	color: var(--iti-text);
 }
 
 .btn-primary:hover {
 	background-color: var(--iti-primary-tint);
-	color: var(--iti-text);
 	filter: brightness(1.06);
 }
 
 .btn-secondary {
 	background-color: var(--iti-secondary-tint);
-	color: var(--iti-text);
 }
 
 .btn-secondary:hover {
 	background-color: var(--iti-secondary-tint);
-	color: var(--iti-text);
 	filter: brightness(1.06);
 }
 
 .btn-success {
 	background-color: var(--iti-success-tint);
-	color: var(--iti-text);
 }
 
 .btn-success:hover {
 	background-color: var(--iti-success-tint);
-	color: var(--iti-text);
 	filter: brightness(1.06);
 }
 
 .btn-danger {
 	background-color: var(--iti-danger-tint);
-	color: var(--iti-text);
 }
 
 .btn-danger:hover {
 	background-color: var(--iti-danger-tint);
-	color: var(--iti-text);
 	filter: brightness(1.06);
 }
 
 .btn-warning {
 	background-color: var(--iti-warning-tint);
-	color: var(--iti-text);
 }
 
 .btn-warning:hover {
 	background-color: var(--iti-warning-tint);
-	color: var(--iti-text);
 	filter: brightness(1.06);
 }
 
 .btn-info {
 	background-color: var(--iti-info-tint);
-	color: var(--iti-text);
 }
 
 .btn-info:hover {
 	background-color: var(--iti-info-tint);
-	color: var(--iti-text);
 	filter: brightness(1.06);
 }
 
 .btn-light {
-	background-color: var(--iti-bg-light);
-	color: var(--iti-text);
+	background-color: var(--gray200);
+}
+
+.btn-light:hover {
+	background-color: var(--white100);
 }
 
 .btn-dark {
-	background-color: var(--iti-bg-dark);
-	color: var(--iti-text);
+	background-color: var(--gray500);
+}
+
+.btn-dark:hover {
+	background-color: var(--gray400);
+}
+
+/* All flavor buttons share the same pressed state */
+[class*="btn-"]:active,
+[class*="btn-"].active {
+	background-color: var(--gray800);
+	color: var(--white100);
+	filter: none;
+	box-shadow:
+		inset 1px 1px 0 rgba(38, 38, 38, 0.8),
+		inset -1px -1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .btn-link {
@@ -525,6 +539,7 @@ pre {
 	border-color: transparent;
 	color: var(--iti-primary);
 	text-decoration: underline;
+	box-shadow: none;
 }
 
 .btn-link:hover {
@@ -533,34 +548,76 @@ pre {
 	color: var(--iti-primary);
 }
 
-/* Outline variants */
+.btn-link:active {
+	background-color: transparent;
+	color: var(--iti-primary);
+	box-shadow: none;
+}
+
+/* ── Outline variants ── */
+
 [class*="btn-outline-"] {
-	background-color: var(--iti-bg-light);
-	color: var(--iti-text);
-	border: 2px solid;
-	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-border-dark) var(--iti-border-light);
+	background-color: var(--gray200);
+	color: var(--charcoal);
 }
 
 [class*="btn-outline-"]:hover {
-	background-color: var(--iti-bg-medium);
-	color: var(--iti-text);
+	background-color: var(--gray300);
 }
 
-[class*="btn-outline-"]:active,
-[class*="btn-outline-"].active {
-	background-color: var(--iti-bg-dark);
-	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
+/* ── Primary button ring (wraps a .btn) ── */
+
+.btn-primary-ring {
+	display: inline-flex;
+	border: 1px solid var(--charcoal);
+	border-radius: 5px;
+	padding: 2px;
+	background: linear-gradient(
+		to bottom,
+		var(--ring-light),
+		var(--ring-mid)
+	);
+	box-shadow:
+		inset 0 -1px 0 var(--ring-shadow),
+		inset -1px 0 0 var(--ring-shadow);
 }
 
-/* Button sizes */
+.btn-primary-ring .btn {
+	border-radius: 3px;
+}
+
+/* Disabled ring — flatten when inner button is disabled */
+.btn-primary-ring:has(.btn:disabled) {
+	border-color: var(--disabled-gray);
+	background: var(--gray300);
+	box-shadow: none;
+}
+
+/* Pressed ring — darken the ring gradient */
+.btn-primary-ring:has(.btn:active),
+.btn-primary-ring:has(.btn.active) {
+	background: linear-gradient(
+		to bottom,
+		var(--ring-shadow),
+		var(--gray800)
+	);
+	box-shadow:
+		inset 0 1px 0 rgba(38, 38, 38, 0.4),
+		inset 1px 0 0 rgba(38, 38, 38, 0.4);
+}
+
+/* ── Button sizes ── */
+
 .btn-sm {
 	font-size: 11px;
-	padding: 2px 8px;
+	padding: 1px 8px;
+	height: 18px;
 }
 
 .btn-lg {
 	font-size: 14px;
-	padding: 6px 16px;
+	padding: 4px 16px;
+	height: 24px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

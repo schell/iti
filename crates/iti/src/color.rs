@@ -66,6 +66,23 @@ pub const THISTLE: &str = "#E6CCFF";
 /// Light sky blue — info flavor, analogous to lavender.
 pub const ICE: &str = "#CCE6FF";
 
+// ── UI Chrome ───────────────────────────────────────────────────────
+
+/// Near-black — button borders, text, pressed shadows.
+pub const CHARCOAL: &str = "#262626";
+
+/// Muted gray — disabled border and text.
+pub const DISABLED_GRAY: &str = "#9D9D9D";
+
+/// Primary button ring — lighter gradient band.
+pub const RING_LIGHT: &str = "#B7B7B7";
+
+/// Primary button ring — mid gradient band.
+pub const RING_MID: &str = "#D0D0D0";
+
+/// Primary button ring — shadow edges and corners.
+pub const RING_SHADOW: &str = "#848484";
+
 // ── Semantic flavor colors (not derived from var()) ─────────────────
 
 /// Green — success indicators.
@@ -115,10 +132,17 @@ pub fn css_tokens() -> String {
 \t--thistle:   {THISTLE};
 \t--ice:       {ICE};
 
-\t/* Flavors */
-\t--iti-success: {SUCCESS};
-\t--iti-danger:  {DANGER};
-\t--iti-warning: {WARNING};
+	/* UI Chrome */
+	--charcoal:      {CHARCOAL};
+	--disabled-gray: {DISABLED_GRAY};
+	--ring-light:    {RING_LIGHT};
+	--ring-mid:      {RING_MID};
+	--ring-shadow:   {RING_SHADOW};
+
+	/* Flavors */
+	--iti-success: {SUCCESS};
+	--iti-danger:  {DANGER};
+	--iti-warning: {WARNING};
 }}
 
 /* ── Background color utilities (generated from color.rs) ───── */
@@ -132,6 +156,8 @@ pub fn css_tokens() -> String {
 .bg-gray600   {{ background-color: {GRAY600} !important; }}
 .bg-gray700   {{ background-color: {GRAY700} !important; }}
 .bg-gray800   {{ background-color: {GRAY800} !important; }}
+.bg-charcoal  {{ background-color: {CHARCOAL} !important; }}
+.bg-disabled  {{ background-color: {DISABLED_GRAY} !important; }}
 .bg-azul      {{ background-color: {AZUL} !important; }}
 .bg-lavender  {{ background-color: {LAVENDER} !important; }}
 .bg-cream     {{ background-color: {CREAM} !important; }}

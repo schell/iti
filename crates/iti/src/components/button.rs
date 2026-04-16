@@ -1,11 +1,10 @@
-//! A button component.
+//! Button components.
 //!
-//! May have an icon, which can be removed or inserted.
-//! The text can be set.
-//! The button can be enabled/disabled.
-//! It has a progress spinner.
-//! It has a flavor.
-//! It has a `step` method that returns the click event.
+//! Provides [`Button`] (the standard Platinum button) and [`PrimaryButton`]
+//! (a default-action button wrapped in the distinctive Mac OS 9 outer ring).
+//!
+//! Buttons may have an icon, a progress spinner, and a reactive text/flavor.
+//! Use `step()` to await the next click event.
 use mogwai::prelude::*;
 
 use crate::components::{
@@ -13,7 +12,7 @@ use crate::components::{
     Flavor,
 };
 
-/// A Bootstrap-styled button with icon, spinner, and reactive text/flavor.
+/// A Platinum-styled button with icon, spinner, and reactive text/flavor.
 #[derive(ViewChild)]
 pub struct Button<V: View> {
     #[child]
@@ -132,6 +131,83 @@ impl<V: View> Button<V> {
     }
 }
 
+/// A primary (default action) button with the Mac OS 9 outer ring.
+///
+/// Wraps a standard [`Button`] in a frame element that provides the
+/// distinctive double-border ring used for the default action in dialogs.
+///
+/// All mutating methods delegate to the inner [`Button`]. Access the inner
+/// button directly via [`button()`](PrimaryButton::button) or
+/// [`button_mut()`](PrimaryButton::button_mut) for full API access.
+#[derive(ViewChild)]
+pub struct PrimaryButton<V: View> {
+    #[child]
+    frame: V::Element,
+    button: Button<V>,
+}
+
+impl<V: View> PrimaryButton<V> {
+    pub fn new(text: impl AsRef<str>, flavor: Option<Flavor>) -> Self {
+        let button = Button::new(text, flavor);
+        rsx! {
+            let frame = span(class = "btn-primary-ring") {
+                {&button}
+            }
+        }
+        Self { frame, button }
+    }
+
+    /// Access the inner button.
+    pub fn button(&self) -> &Button<V> {
+        &self.button
+    }
+
+    /// Mutably access the inner button.
+    pub fn button_mut(&mut self) -> &mut Button<V> {
+        &mut self.button
+    }
+
+    pub fn set_text(&mut self, text: impl AsRef<str>) {
+        self.button.set_text(text);
+    }
+
+    pub fn set_flavor(&mut self, flavor: Option<Flavor>) {
+        self.button.set_flavor(flavor);
+    }
+
+    pub fn enable(&self) {
+        self.button.enable();
+    }
+
+    pub fn disable(&self) {
+        self.button.disable();
+    }
+
+    pub fn start_spinner(&mut self) {
+        self.button.start_spinner();
+    }
+
+    pub fn stop_spinner(&mut self) {
+        self.button.stop_spinner();
+    }
+
+    pub fn set_has_icon(&mut self, has_icon: bool) {
+        self.button.set_has_icon(has_icon);
+    }
+
+    pub fn get_icon(&self) -> &Icon<V> {
+        self.button.get_icon()
+    }
+
+    pub fn get_icon_mut(&mut self) -> &mut Icon<V> {
+        self.button.get_icon_mut()
+    }
+
+    pub async fn step(&self) -> V::Event {
+        self.button.step().await
+    }
+}
+
 #[cfg(feature = "library")]
 pub mod library {
     use std::pin::Pin;
@@ -147,19 +223,38 @@ pub mod library {
         pub wrapper: V::Element,
         clicks: usize,
         button: Button<V>,
+        primary_button: PrimaryButton<V>,
         flavor_changes: Pin<Box<dyn Stream<Item = Flavor>>>,
     }
 
     impl<V: View> Default for ButtonLibraryItem<V> {
         fn default() -> Self {
+            let mut disabled_btn = Button::new("Disabled", None);
+            disabled_btn.set_has_icon(false);
+            disabled_btn.disable();
+
+            let mut disabled_primary = PrimaryButton::new("Disabled Primary", None);
+            disabled_primary.set_has_icon(false);
+            disabled_primary.disable();
+
             rsx! {
                 let wrapper = fieldset() {
-                    div(class = "row") {
-                        div() {
+                    div(class = "mb-3") {
+                        h4() { "Standard Buttons" }
+                        div(class = "d-flex gap-2 flex-wrap align-items-center mb-2") {
                             let button = {Button::new("0 clicks", Some(Flavor::Primary))}
+                            {&disabled_btn}
                         }
                     }
-                    div(class = "row") {
+                    div(class = "mb-3") {
+                        h4() { "Primary (Ringed) Buttons" }
+                        div(class = "d-flex gap-2 flex-wrap align-items-center mb-2") {
+                            let primary_button = {PrimaryButton::new("Primary Action", None)}
+                            {&disabled_primary}
+                        }
+                    }
+                    div(class = "mb-3") {
+                        h4() { "Flavor Controls" }
                         ul() {
                             li() {
                                 a(
@@ -197,6 +292,7 @@ pub mod library {
                 wrapper,
                 clicks: 0,
                 button,
+                primary_button,
                 flavor_changes,
             }
         }
@@ -205,26 +301,27 @@ pub mod library {
     impl<V: View> ButtonLibraryItem<V> {
         pub async fn step(&mut self) {
             use futures_lite::StreamExt;
-            match self
-                .button
-                .step()
-                .map(Ok)
-                .or(self.flavor_changes.next().map(Err))
-                .await
-            {
-                Ok(_event) => {
+            let btn_fut = self.button.step().map(|e| Ok(Some(e)));
+            let primary_fut = self.primary_button.step().map(|e| Ok(Some(e)));
+            let flavor_fut = self.flavor_changes.next().map(Err);
+
+            match btn_fut.or(primary_fut).or(flavor_fut).await {
+                Ok(Some(_event)) => {
                     log::debug!("got click");
                     self.clicks += 1;
-                    self.button.set_text(if self.clicks == 1 {
+                    let text = if self.clicks == 1 {
                         "1 click".into()
                     } else {
                         format!("{} clicks", self.clicks)
-                    });
+                    };
+                    self.button.set_text(&text);
+                    self.primary_button.set_text(text);
                 }
                 Err(Some(flav)) => {
                     self.button.set_flavor(Some(flav));
+                    self.primary_button.set_flavor(Some(flav));
                 }
-                _ => unreachable!("blarg!"),
+                _ => unreachable!("button library step"),
             }
         }
     }

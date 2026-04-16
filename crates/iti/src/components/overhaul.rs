@@ -9,6 +9,9 @@
 pub mod library {
     use mogwai::prelude::*;
 
+    use crate::components::button::{Button, PrimaryButton};
+    use crate::components::Flavor;
+
     /// Sandbox library item for the Platinum design system overhaul.
     ///
     /// Purely presentational — no interactive events. Add new demo
@@ -21,6 +24,33 @@ pub mod library {
 
     impl<V: View> Default for OverhaulLibraryItem<V> {
         fn default() -> Self {
+            // Create button demos
+            let mut btn_normal = Button::new("Button", None);
+            btn_normal.set_has_icon(false);
+
+            let mut btn_disabled = Button::new("Disabled", None);
+            btn_disabled.set_has_icon(false);
+            btn_disabled.disable();
+
+            let mut primary_normal = PrimaryButton::new("OK", None);
+            primary_normal.set_has_icon(false);
+
+            let mut primary_disabled = PrimaryButton::new("Disabled", None);
+            primary_disabled.set_has_icon(false);
+            primary_disabled.disable();
+
+            let mut btn_success = Button::new("Success", Some(Flavor::Success));
+            btn_success.set_has_icon(false);
+
+            let mut btn_danger = Button::new("Danger", Some(Flavor::Danger));
+            btn_danger.set_has_icon(false);
+
+            let mut btn_warning = Button::new("Warning", Some(Flavor::Warning));
+            btn_warning.set_has_icon(false);
+
+            let mut btn_info = Button::new("Info", Some(Flavor::Info));
+            btn_info.set_has_icon(false);
+
             rsx! {
                 let wrapper = div() {
                     div(
@@ -106,6 +136,53 @@ pub mod library {
                             }
                             p() {
                                 "No shadow or stroke - for comparison. Gray 200 background."
+                            }
+                        }
+                    }
+
+                    // ── Buttons section ──
+                    div(style:margin_top = "2em") {
+                        span(
+                            class = "editorial",
+                            style:font_size = "2em",
+                            style:font_weight = "lighter",
+                            style:color = crate::color::PURPLE,
+                        ) {
+                            "Buttons"
+                        }
+                    }
+                    div(
+                        class = "d-flex flex-wrap gap-4",
+                        style:border = "2px dashed #7B61FF",
+                        style:border_radius = "4px",
+                        style:padding = "1em"
+                    ) {
+                        // Standard buttons
+                        div() {
+                            p() { strong() { "Standard" } }
+                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                {&btn_normal}
+                                {&btn_disabled}
+                            }
+                        }
+
+                        // Primary (ringed) buttons
+                        div() {
+                            p() { strong() { "Primary (Ringed)" } }
+                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                {&primary_normal}
+                                {&primary_disabled}
+                            }
+                        }
+
+                        // Flavor tints
+                        div() {
+                            p() { strong() { "Flavor Tints" } }
+                            div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                                {&btn_success}
+                                {&btn_danger}
+                                {&btn_warning}
+                                {&btn_info}
                             }
                         }
                     }
