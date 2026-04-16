@@ -1614,42 +1614,42 @@ pre {
 .iti-slider::-webkit-slider-thumb {
 	-webkit-appearance: none;
 	appearance: none;
-	width: 13px;
-	height: 16px;
-	margin-top: -7px;
+	width: 16px;
+	height: 20px;
+	margin-top: -9px;
 	background: transparent;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='16' viewBox='0 0 13 16'%3E%3Cpath d='M1 0.5 H12 V9.5 L6.5 14.5 L1 9.5 Z' fill='%238B8BDC' stroke='%23262626' stroke-width='1'/%3E%3Crect x='1.5' y='1.5' width='1' height='8' fill='%239C9CDD' opacity='0.6'/%3E%3Crect x='10.5' y='1.5' width='1' height='8' fill='%23494990' opacity='0.6'/%3E%3Crect x='4' y='3' width='0.5' height='5' fill='%236C6CC4'/%3E%3Crect x='4.5' y='3' width='0.5' height='5' fill='%23A8A8DB'/%3E%3Crect x='6' y='3' width='0.5' height='5' fill='%236C6CC4'/%3E%3Crect x='6.5' y='3' width='0.5' height='5' fill='%23A8A8DB'/%3E%3Crect x='8' y='3' width='0.5' height='5' fill='%236C6CC4'/%3E%3Crect x='8.5' y='3' width='0.5' height='5' fill='%23A8A8DB'/%3E%3C/svg%3E");
-	background-size: 13px 16px;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%238B8BDC' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%239C9CDD' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%23494990' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3C/svg%3E");
+	background-size: 16px 20px;
 	background-repeat: no-repeat;
 	border: none;
 }
 
 .iti-slider::-moz-range-thumb {
-	width: 13px;
-	height: 16px;
+	width: 16px;
+	height: 20px;
 	background: transparent;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='16' viewBox='0 0 13 16'%3E%3Cpath d='M1 0.5 H12 V9.5 L6.5 14.5 L1 9.5 Z' fill='%238B8BDC' stroke='%23262626' stroke-width='1'/%3E%3Crect x='1.5' y='1.5' width='1' height='8' fill='%239C9CDD' opacity='0.6'/%3E%3Crect x='10.5' y='1.5' width='1' height='8' fill='%23494990' opacity='0.6'/%3E%3Crect x='4' y='3' width='0.5' height='5' fill='%236C6CC4'/%3E%3Crect x='4.5' y='3' width='0.5' height='5' fill='%23A8A8DB'/%3E%3Crect x='6' y='3' width='0.5' height='5' fill='%236C6CC4'/%3E%3Crect x='6.5' y='3' width='0.5' height='5' fill='%23A8A8DB'/%3E%3Crect x='8' y='3' width='0.5' height='5' fill='%236C6CC4'/%3E%3Crect x='8.5' y='3' width='0.5' height='5' fill='%23A8A8DB'/%3E%3C/svg%3E");
-	background-size: 13px 16px;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%238B8BDC' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%239C9CDD' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%23494990' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3C/svg%3E");
+	background-size: 16px 20px;
 	background-repeat: no-repeat;
 	border: none;
 }
 
 /* Hover — brighten the thumb */
 .iti-slider:hover::-webkit-slider-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='16' viewBox='0 0 13 16'%3E%3Cpath d='M1 0.5 H12 V9.5 L6.5 14.5 L1 9.5 Z' fill='%239E9EE8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='1.5' y='1.5' width='1' height='8' fill='%23B0B0EE' opacity='0.6'/%3E%3Crect x='10.5' y='1.5' width='1' height='8' fill='%235C5CA0' opacity='0.6'/%3E%3Crect x='4' y='3' width='0.5' height='5' fill='%237E7ED4'/%3E%3Crect x='4.5' y='3' width='0.5' height='5' fill='%23BABAE8'/%3E%3Crect x='6' y='3' width='0.5' height='5' fill='%237E7ED4'/%3E%3Crect x='6.5' y='3' width='0.5' height='5' fill='%23BABAE8'/%3E%3Crect x='8' y='3' width='0.5' height='5' fill='%237E7ED4'/%3E%3Crect x='8.5' y='3' width='0.5' height='5' fill='%23BABAE8'/%3E%3C/svg%3E");
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%239E9EE8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%23B0B0EE' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%235C5CA0' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3C/svg%3E");
 }
 
 .iti-slider:hover::-moz-range-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='16' viewBox='0 0 13 16'%3E%3Cpath d='M1 0.5 H12 V9.5 L6.5 14.5 L1 9.5 Z' fill='%239E9EE8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='1.5' y='1.5' width='1' height='8' fill='%23B0B0EE' opacity='0.6'/%3E%3Crect x='10.5' y='1.5' width='1' height='8' fill='%235C5CA0' opacity='0.6'/%3E%3Crect x='4' y='3' width='0.5' height='5' fill='%237E7ED4'/%3E%3Crect x='4.5' y='3' width='0.5' height='5' fill='%23BABAE8'/%3E%3Crect x='6' y='3' width='0.5' height='5' fill='%237E7ED4'/%3E%3Crect x='6.5' y='3' width='0.5' height='5' fill='%23BABAE8'/%3E%3Crect x='8' y='3' width='0.5' height='5' fill='%237E7ED4'/%3E%3Crect x='8.5' y='3' width='0.5' height='5' fill='%23BABAE8'/%3E%3C/svg%3E");
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%239E9EE8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%23B0B0EE' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%235C5CA0' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3C/svg%3E");
 }
 
 /* Active (dragging) — darken the thumb */
 .iti-slider:active::-webkit-slider-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='16' viewBox='0 0 13 16'%3E%3Cpath d='M1 0.5 H12 V9.5 L6.5 14.5 L1 9.5 Z' fill='%236868B8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='1.5' y='1.5' width='1' height='8' fill='%23494990' opacity='0.6'/%3E%3Crect x='10.5' y='1.5' width='1' height='8' fill='%239C9CDD' opacity='0.6'/%3E%3Crect x='4' y='3' width='0.5' height='5' fill='%235050A0'/%3E%3Crect x='4.5' y='3' width='0.5' height='5' fill='%238888C8'/%3E%3Crect x='6' y='3' width='0.5' height='5' fill='%235050A0'/%3E%3Crect x='6.5' y='3' width='0.5' height='5' fill='%238888C8'/%3E%3Crect x='8' y='3' width='0.5' height='5' fill='%235050A0'/%3E%3Crect x='8.5' y='3' width='0.5' height='5' fill='%238888C8'/%3E%3C/svg%3E");
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%236868B8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%23494990' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%239C9CDD' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3C/svg%3E");
 }
 
 .iti-slider:active::-moz-range-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='16' viewBox='0 0 13 16'%3E%3Cpath d='M1 0.5 H12 V9.5 L6.5 14.5 L1 9.5 Z' fill='%236868B8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='1.5' y='1.5' width='1' height='8' fill='%23494990' opacity='0.6'/%3E%3Crect x='10.5' y='1.5' width='1' height='8' fill='%239C9CDD' opacity='0.6'/%3E%3Crect x='4' y='3' width='0.5' height='5' fill='%235050A0'/%3E%3Crect x='4.5' y='3' width='0.5' height='5' fill='%238888C8'/%3E%3Crect x='6' y='3' width='0.5' height='5' fill='%235050A0'/%3E%3Crect x='6.5' y='3' width='0.5' height='5' fill='%238888C8'/%3E%3Crect x='8' y='3' width='0.5' height='5' fill='%235050A0'/%3E%3Crect x='8.5' y='3' width='0.5' height='5' fill='%238888C8'/%3E%3C/svg%3E");
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%236868B8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%23494990' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%239C9CDD' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3C/svg%3E");
 }
 
 /* Disabled */
@@ -1659,11 +1659,11 @@ pre {
 }
 
 .iti-slider:disabled::-webkit-slider-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='16' viewBox='0 0 13 16'%3E%3Cpath d='M1 0.5 H12 V9.5 L6.5 14.5 L1 9.5 Z' fill='%23CCCCCC' stroke='%239D9D9D' stroke-width='1'/%3E%3C/svg%3E");
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%23CCCCCC' stroke='%239D9D9D' stroke-width='1'/%3E%3C/svg%3E");
 }
 
 .iti-slider:disabled::-moz-range-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='16' viewBox='0 0 13 16'%3E%3Cpath d='M1 0.5 H12 V9.5 L6.5 14.5 L1 9.5 Z' fill='%23CCCCCC' stroke='%239D9D9D' stroke-width='1'/%3E%3C/svg%3E");
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%23CCCCCC' stroke='%239D9D9D' stroke-width='1'/%3E%3C/svg%3E");
 }
 
 /* ── Slider tick marks (optional) ── */
@@ -1684,9 +1684,9 @@ pre {
 .iti-slider-tick-marks {
 	display: flex;
 	justify-content: space-between;
-	/* Padding = half the thumb width (6.5px) so tick positions
+	/* Padding = half the thumb width (8px) so tick positions
 	   align with the thumb center at min/max values */
-	padding: 0 6.5px;
+	padding: 0 8px;
 	margin-top: -2px;
 }
 
