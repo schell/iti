@@ -16,9 +16,10 @@ pub struct CheckboxEvent<V: View> {
 }
 
 /// A checkbox component with optional switch styling.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Checkbox<V: View> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     input: V::Element,
     #[allow(dead_code)]

@@ -7,11 +7,16 @@
 
 #[cfg(feature = "library")]
 pub mod library {
+
+    use futures_lite::FutureExt;
+    use mogwai::future::MogwaiFutureExt;
     use mogwai::prelude::*;
+    use mogwai::web::prelude::wasm_bindgen_futures;
 
     use crate::components::button::{Button, PrimaryButton};
     use crate::components::checkbox::Checkbox;
     use crate::components::icon::IconGlyph;
+    use crate::components::progress::Progress;
     use crate::components::radio::RadioGroup;
     use crate::components::slider::SliderWithTicks;
     use crate::components::Flavor;
@@ -33,23 +38,48 @@ pub mod library {
     impl<V: View> Section<V> {
         /// Create a new section with the given title.
         fn new(title: &str) -> Self {
+            let mut enabled = Proxy::new(true);
             rsx! {
-                let wrapper = div(style:margin_top = "2em") {
+                let wrapper = div(class = "container", style:margin_top = "2em") {
                     span(
-                        class = "editorial",
+                        class = "editorial row",
                         style:font_size = "2em",
                         style:font_weight = "lighter",
                         style:color = crate::color::PURPLE,
+                        style:cursor = "pointer",
+                        on:click = on_click
                     ) {
+                        let toggle = {{
+                            let c = Checkbox::new("", *enabled);
+                            c.set_style("float", "left");
+                            c
+                        }}
                         {V::Text::new(title)}
                     }
                     let content = div(
+                        class = "row",
                         style:border = "2px dashed #7B61FF",
                         style:border_radius = "4px",
                         style:padding = "1em",
+                        style:display = enabled(is_enabled => if *is_enabled {
+                            "block"
+                        } else {
+                            "none"
+                        })
                     ) {}
                 }
             }
+            wasm_bindgen_futures::spawn_local(async move {
+                let mut toggle = toggle;
+                loop {
+                    let _ = toggle
+                        .step()
+                        .map(|_| ())
+                        .or(on_click.next().map(|_| ()))
+                        .await;
+                    enabled.modify(|is_enabled| *is_enabled = !*is_enabled);
+                }
+            });
             Self { wrapper, content }
         }
 
@@ -373,31 +403,47 @@ pub mod library {
 
         rsx! {
             let content = div(class = "panel", style:padding = "1em") {
-                p() { strong() { "Empty (0%)" } }
-                div(class = "progress mb-3") {}
-
-                p() { strong() { "25%" } }
-                div(class = "progress mb-3") {
-                    div(class = "progress-bar", style:width = "25%") {}
+                p() {
+                    strong() {
+                        let percent_text = "0%"
+                    }
                 }
 
-                p() { strong() { "50%" } }
-                div(class = "progress mb-3") {
-                    div(class = "progress-bar", style:width = "50%") {}
+                div(class = "mb-3") {
+                    let progress = {Progress::new(0)}
                 }
 
-                p() { strong() { "75%" } }
-                div(class = "progress mb-3") {
-                    div(class = "progress-bar", style:width = "75%") {}
-                }
-
-                p() { strong() { "100%" } }
-                div(class = "progress") {
-                    div(class = "progress-bar", style:width = "100%") {}
-                }
+                let zero_button = {{
+                    let mut b = Button::new("Set to 0%", None);
+                    b.set_has_icon(false);
+                    b
+                }}
             }
         }
+
         section.push(&content);
+        wasm_bindgen_futures::spawn_local(async move {
+            let mut progress = progress;
+            let zero_button = zero_button;
+
+            loop {
+                let hit_zero = zero_button.step().map(Some);
+                let tick = async {
+                    mogwai::time::wait_millis(200).await;
+                    None
+                };
+                match hit_zero.or(tick).await {
+                    Some(_ev) => {
+                        progress.set_value(0);
+                    }
+                    None => {
+                        let current = progress.get_value();
+                        progress.set_value(current + 1);
+                    }
+                }
+                percent_text.set_text(format!("{}%", progress.get_value()));
+            }
+        });
         section
     }
 
@@ -422,20 +468,6 @@ pub mod library {
                     type = "range",
                     class = "iti-slider mb-3",
                     min = "0", max = "100", value = "50",
-                ) {}
-
-                p() { strong() { "At minimum" } }
-                input(
-                    type = "range",
-                    class = "iti-slider mb-3",
-                    min = "0", max = "100", value = "0",
-                ) {}
-
-                p() { strong() { "At maximum" } }
-                input(
-                    type = "range",
-                    class = "iti-slider mb-3",
-                    min = "0", max = "100", value = "100",
                 ) {}
 
                 p() { strong() { "Disabled" } }

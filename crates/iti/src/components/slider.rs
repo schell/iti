@@ -17,9 +17,10 @@ pub struct SliderEvent<V: View> {
 ///
 /// Provides a configurable numeric slider with `f64` values and an async
 /// [`step`](Slider::step) method that yields [`SliderEvent`]s on user input.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Slider<V: View> {
     #[child]
+    #[properties]
     input: V::Element,
     on_input: V::EventListener,
     value: f64,

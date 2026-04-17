@@ -8,7 +8,6 @@ use super::Flavor;
 
 struct ProgressState {
     value: u8,
-    flavor: Flavor,
     striped: bool,
     animated: bool,
 }
@@ -27,11 +26,10 @@ pub struct Progress<V: View> {
 }
 
 impl<V: View> Progress<V> {
-    pub fn new(value: u8, flavor: Flavor) -> Self {
+    pub fn new(value: u8) -> Self {
         let clamped = value.min(100);
         let mut state = Proxy::new(ProgressState {
             value: clamped,
-            flavor,
             striped: false,
             animated: false,
         });
@@ -45,11 +43,7 @@ impl<V: View> Progress<V> {
                 aria_valuemax = "100",
             ) {
                 let bar = div(
-                    class = state(s => {
-                        let striped = if s.striped { " progress-bar-striped" } else { "" };
-                        let animated = if s.animated { " progress-bar-animated" } else { "" };
-                        format!("progress-bar bg-{}{striped}{animated}", s.flavor)
-                    }),
+                    class = "progress-bar",
                     style:width = state(s => format!("{}%", s.value)),
                 ) {}
             }
@@ -62,12 +56,12 @@ impl<V: View> Progress<V> {
         }
     }
 
-    pub fn set_value(&mut self, value: u8) {
-        self.state.modify(|s| s.value = value.min(100));
+    pub fn get_value(&self) -> u8 {
+        self.state.value
     }
 
-    pub fn set_flavor(&mut self, flavor: Flavor) {
-        self.state.modify(|s| s.flavor = flavor);
+    pub fn set_value(&mut self, value: u8) {
+        self.state.modify(|s| s.value = value.min(100));
     }
 
     pub fn set_striped(&mut self, striped: bool) {
@@ -111,7 +105,7 @@ pub mod library {
 
     impl<V: View> Default for ProgressLibraryItem<V> {
         fn default() -> Self {
-            let progress = Progress::new(25, super::Flavor::Primary);
+            let progress = Progress::new(25);
             let mut control_group = ButtonGroup::<V>::default();
             control_group.extend([
                 Button::new("+10", Some(Flavor::Primary)),

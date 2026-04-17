@@ -13,9 +13,10 @@ use crate::components::{
 };
 
 /// A Platinum-styled button with icon, spinner, and reactive text/flavor.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Button<V: View> {
     #[child]
+    #[properties]
     button: V::Element,
     icon: Icon<V>,
     flavor: Proxy<Option<Flavor>>,
