@@ -10,8 +10,9 @@ pub mod dropdown;
 pub mod icon;
 pub mod list;
 pub mod modal;
-pub mod overhaul;
 pub mod pane;
+#[cfg(feature = "library")]
+pub mod platinum_kit;
 pub mod progress;
 pub mod radio;
 pub mod select;
