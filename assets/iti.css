@@ -1286,8 +1286,8 @@ pre {
 	line-height: 1.4;
 	appearance: none;
 
-	/* Platinum arrow button indicator (inline SVG) */
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='18'%3E%3Crect width='20' height='18' fill='%23BBBBBB'/%3E%3Crect x='0' y='0' width='20' height='1' fill='%23FFFFFF'/%3E%3Crect x='0' y='0' width='1' height='18' fill='%23FFFFFF'/%3E%3Crect x='0' y='17' width='20' height='1' fill='%23808080'/%3E%3Crect x='19' y='0' width='1' height='18' fill='%23808080'/%3E%3Cpolygon points='10,3 14,8 6,8' fill='%23000000'/%3E%3Cpolygon points='10,15 6,10 14,10' fill='%23000000'/%3E%3C/svg%3E");
+	/* Platinum arrow button indicator */
+	background-image: url("svg/select-arrows.svg");
 	background-repeat: no-repeat;
 	background-position: right 2px center;
 	background-size: 20px 18px;
@@ -1305,7 +1305,7 @@ pre {
 	              var(--iti-border-light) var(--iti-border-dark);
 	outline: none;
 	/* Keep arrow visible against dark background */
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='18'%3E%3Crect width='20' height='18' fill='%23BBBBBB'/%3E%3Crect x='0' y='0' width='20' height='1' fill='%23FFFFFF'/%3E%3Crect x='0' y='0' width='1' height='18' fill='%23FFFFFF'/%3E%3Crect x='0' y='17' width='20' height='1' fill='%23808080'/%3E%3Crect x='19' y='0' width='1' height='18' fill='%23808080'/%3E%3Cpolygon points='10,3 14,8 6,8' fill='%23000000'/%3E%3Cpolygon points='10,15 6,10 14,10' fill='%23000000'/%3E%3C/svg%3E");
+	background-image: url("svg/select-arrows.svg");
 	background-repeat: no-repeat;
 	background-position: right 2px center;
 	background-size: 20px 18px;
@@ -1399,7 +1399,7 @@ pre {
 	height: 16px;
 	top: -6px;
 	left: 0px;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1.09 9.77l.08-.42c.14-.79 1.1-1.1 1.68-.54l2 1.94c.4.39 1.04.37 1.42-.04l7.63-8.08c.32-.34.87-.33 1.17.01.25.29.25.72 0 1.02l-8.79 10.46c-.38.45-1.07.48-1.48.05L1.36 10.64c-.22-.23-.32-.56-.27-.87z' fill='%23262626'/%3E%3C/svg%3E");
+	background-image: url("svg/checkbox-checkmark.svg");
 	background-size: 16px;
 	background-repeat: no-repeat;
 	pointer-events: none;
@@ -1618,7 +1618,7 @@ pre {
 	height: 20px;
 	margin-top: -9px;
 	background: transparent;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%238B8BDC' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%239C9CDD' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%23494990' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3C/svg%3E");
+	background-image: url("svg/slider-thumb.svg");
 	background-size: 16px 20px;
 	background-repeat: no-repeat;
 	border: none;
@@ -1628,7 +1628,7 @@ pre {
 	width: 16px;
 	height: 20px;
 	background: transparent;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%238B8BDC' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%239C9CDD' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%23494990' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%236C6CC4'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%23A8A8DB'/%3E%3C/svg%3E");
+	background-image: url("svg/slider-thumb.svg");
 	background-size: 16px 20px;
 	background-repeat: no-repeat;
 	border: none;
@@ -1636,20 +1636,20 @@ pre {
 
 /* Hover — brighten the thumb */
 .iti-slider:hover::-webkit-slider-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%239E9EE8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%23B0B0EE' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%235C5CA0' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3C/svg%3E");
+	background-image: url("svg/slider-thumb-hover.svg");
 }
 
 .iti-slider:hover::-moz-range-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%239E9EE8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%23B0B0EE' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%235C5CA0' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%237E7ED4'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%23BABAE8'/%3E%3C/svg%3E");
+	background-image: url("svg/slider-thumb-hover.svg");
 }
 
 /* Active (dragging) — darken the thumb */
 .iti-slider:active::-webkit-slider-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%236868B8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%23494990' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%239C9CDD' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3C/svg%3E");
+	background-image: url("svg/slider-thumb-active.svg");
 }
 
 .iti-slider:active::-moz-range-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%236868B8' stroke='%23262626' stroke-width='1'/%3E%3Crect x='2' y='2' width='1' height='10' fill='%23494990' opacity='0.5'/%3E%3Crect x='13' y='2' width='1' height='10' fill='%239C9CDD' opacity='0.5'/%3E%3Crect x='5' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='5.6' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3Crect x='7.5' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='8.1' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3Crect x='10' y='4' width='0.6' height='6' fill='%235050A0'/%3E%3Crect x='10.6' y='4' width='0.6' height='6' fill='%238888C8'/%3E%3C/svg%3E");
+	background-image: url("svg/slider-thumb-active.svg");
 }
 
 /* Disabled */
@@ -1659,11 +1659,11 @@ pre {
 }
 
 .iti-slider:disabled::-webkit-slider-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%23CCCCCC' stroke='%239D9D9D' stroke-width='1'/%3E%3C/svg%3E");
+	background-image: url("svg/slider-thumb-disabled.svg");
 }
 
 .iti-slider:disabled::-moz-range-thumb {
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'%3E%3Cpath d='M1.2 1.2 H14.8 V12.9 L8 17.8 L1.2 12.3 Z' fill='%23CCCCCC' stroke='%239D9D9D' stroke-width='1'/%3E%3C/svg%3E");
+	background-image: url("svg/slider-thumb-disabled.svg");
 }
 
 /* ── Slider tick marks (optional) ── */

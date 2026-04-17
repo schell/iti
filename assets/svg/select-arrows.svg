@@ -1,0 +1,9 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='20' height='18'>
+  <rect width='20' height='18' fill='#BBBBBB'/>
+  <rect x='0' y='0' width='20' height='1' fill='#FFFFFF'/>
+  <rect x='0' y='0' width='1' height='18' fill='#FFFFFF'/>
+  <rect x='0' y='17' width='20' height='1' fill='#808080'/>
+  <rect x='19' y='0' width='1' height='18' fill='#808080'/>
+  <polygon points='10,3 14,8 6,8' fill='#000000'/>
+  <polygon points='10,15 6,10 14,10' fill='#000000'/>
+</svg>
