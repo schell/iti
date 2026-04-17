@@ -141,9 +141,10 @@ impl<V: View> Default for Slider<V> {
 ///     &["01", "02", "03", "04", "05", "06", "07"],
 /// );
 /// ```
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct SliderWithTicks<V: View> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     slider: Slider<V>,
     #[allow(dead_code)]

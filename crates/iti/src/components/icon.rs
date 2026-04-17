@@ -349,16 +349,17 @@ struct IconState {
     style: IconStyle,
     glyph: IconGlyph,
     size: IconSize,
-    additional_classes: String,
 }
 
 /// A Font Awesome icon element.
 ///
-/// Supports setting the glyph, size, style, additional CSS classes, and
-/// visibility.
-#[derive(ViewChild)]
+/// Supports setting the glyph, size, style, and visibility. Use
+/// [`ViewProperties::add_class`] and [`ViewProperties::remove_class`] for
+/// additional CSS classes.
+#[derive(ViewChild, ViewProperties)]
 pub struct Icon<V: View> {
     #[child]
+    #[properties]
     i: V::Element,
     state: Proxy<IconState>,
 }
@@ -377,22 +378,16 @@ impl<V: View> Icon<V> {
 
     /// Create an icon with explicit glyph, size, and style.
     pub fn with_style(glyph: IconGlyph, size: IconSize, style: IconStyle) -> Self {
-        let mut state = Proxy::new(IconState {
-            style,
-            glyph,
-            size,
-            additional_classes: Default::default(),
-        });
+        let mut state = Proxy::new(IconState { style, glyph, size });
 
         rsx! {
             let i = i(
                 class = state(
                     s => format!(
-                        "{} {} {} {}",
+                        "{} {} {}",
                         s.style.as_str(),
                         s.glyph.as_str(),
-                        s.size.as_str(),
-                        s.additional_classes.as_str()
+                        s.size.as_str()
                     )
                 ),
             ) {}
@@ -411,11 +406,6 @@ impl<V: View> Icon<V> {
 
     pub fn set_style(&mut self, style: IconStyle) {
         self.state.modify(|s| s.style = style);
-    }
-
-    pub fn set_additional_classes(&mut self, classes: impl AsRef<str>) {
-        self.state
-            .modify(|s| s.additional_classes = classes.as_ref().to_string());
     }
 
     pub fn set_is_visible(&self, is_visible: bool) {

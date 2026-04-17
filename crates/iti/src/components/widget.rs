@@ -8,9 +8,10 @@ use futures_lite::{Stream, StreamExt};
 use mogwai::prelude::*;
 
 /// Container for some arbitrary user interface paired with an event stream.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Widget<V: View, T> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     stream: Pin<Box<dyn Stream<Item = T>>>,
 }

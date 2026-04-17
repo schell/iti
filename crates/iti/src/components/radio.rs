@@ -27,9 +27,10 @@ pub struct RadioEvent<V: View> {
 }
 
 /// A single radio button within a [`RadioGroup`].
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 struct RadioOption<V: View> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     input: V::Element,
     #[allow(dead_code)]
@@ -111,9 +112,10 @@ impl RadioGroupState {
 ///     log::info!("Selected: {} (index {})", event.value, event.index);
 /// }
 /// ```
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct RadioGroup<V: View> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     options: Vec<RadioOption<V>>,
     name: String,

@@ -25,9 +25,10 @@ impl ItemState {
 }
 
 /// A single item within a [`List`].
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct ListItem<V: View, T> {
     #[child]
+    #[properties]
     li: V::Element,
     item: T,
     on_click: V::EventListener,
@@ -83,9 +84,10 @@ pub struct ListEvent<V: View> {
 }
 
 /// A Bootstrap list-group with clickable items.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct List<V: View, T> {
     #[child]
+    #[properties]
     ul: V::Element,
     items: Vec<ListItem<V, T>>,
 }

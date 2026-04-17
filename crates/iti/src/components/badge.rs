@@ -13,9 +13,10 @@ struct BadgeState {
 /// A Bootstrap badge (`<span class="badge">`).
 ///
 /// Supports reactive text, flavor, and an optional pill (rounded) style.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Badge<V: View> {
     #[child]
+    #[properties]
     span: V::Element,
     text: V::Text,
     state: Proxy<BadgeState>,

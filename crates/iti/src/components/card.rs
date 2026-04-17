@@ -7,9 +7,10 @@ use mogwai::prelude::*;
 ///
 /// Provides a structured container with optional header, body, and footer
 /// sections. Each section can hold arbitrary content via [`ProxyChild`].
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Card<V: View> {
     #[child]
+    #[properties]
     div: V::Element,
     header: V::Element,
     header_inner: V::Element,

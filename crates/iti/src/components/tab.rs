@@ -7,9 +7,10 @@ use mogwai::prelude::*;
 use crate::id::{Id, IdPool};
 
 /// A single tab within a [`TabList`].
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct TabListItem<V: View, T> {
     #[child]
+    #[properties]
     li: V::Element,
     a: V::Element,
     on_click: V::EventListener,
@@ -78,9 +79,10 @@ pub struct TabItemRemoval<T> {
 }
 
 /// A Bootstrap nav-tabs component.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct TabList<V: View, T> {
     #[child]
+    #[properties]
     ul: V::Element,
     items: Vec<TabListItem<V, T>>,
     id_pool: IdPool<T>,

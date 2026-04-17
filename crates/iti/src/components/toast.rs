@@ -22,9 +22,10 @@ struct ToastState {
 /// Call [`Toast::show`] to make it visible and [`Toast::step`] to await user
 /// interaction. The toast does **not** auto-dismiss; the caller is responsible
 /// for racing a timer against `step()` if auto-dismiss is desired.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Toast<V: View> {
     #[child]
+    #[properties]
     div: V::Element,
     title: V::Text,
     body: V::Text,

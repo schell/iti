@@ -54,9 +54,10 @@ pub struct ButtonGroupEvent<V: View> {
 }
 
 /// A Bootstrap button group that owns its children.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct ButtonGroup<V: View> {
     #[child]
+    #[properties]
     div: V::Element,
     buttons: Vec<Button<V>>,
     state: Proxy<ButtonGroupState>,

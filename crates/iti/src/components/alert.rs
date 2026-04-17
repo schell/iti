@@ -8,9 +8,10 @@ use super::Flavor;
 /// Its text is settable.
 /// Its flavor is settable.
 /// It can be hidden and revealed.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Alert<V: View> {
     #[child]
+    #[properties]
     div: V::Element,
     text: V::Text,
     flavor: Proxy<Flavor>,

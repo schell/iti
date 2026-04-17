@@ -252,21 +252,21 @@ pub mod library {
             .set_glyph(IconGlyph::MagnifyingGlass);
 
         let mut icon_plus = Button::new("", None);
-        icon_plus.get_icon_mut().set_additional_classes("");
+        icon_plus.get_icon_mut().remove_class("me-1");
 
         let mut icon_trash = Button::new("", None);
         icon_trash.get_icon_mut().set_glyph(IconGlyph::Trash);
-        icon_trash.get_icon_mut().set_additional_classes("");
+        icon_trash.get_icon_mut().remove_class("me-1");
 
         let mut icon_edit = Button::new("", None);
         icon_edit.get_icon_mut().set_glyph(IconGlyph::Pen);
-        icon_edit.get_icon_mut().set_additional_classes("");
+        icon_edit.get_icon_mut().remove_class("me-1");
 
         let mut icon_search = Button::new("", None);
         icon_search
             .get_icon_mut()
             .set_glyph(IconGlyph::MagnifyingGlass);
-        icon_search.get_icon_mut().set_additional_classes("");
+        icon_search.get_icon_mut().remove_class("me-1");
 
         rsx! {
             let content = div(class = "d-flex flex-wrap gap-4 panel") {

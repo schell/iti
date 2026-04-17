@@ -33,8 +33,8 @@ impl<V: View> Button<V> {
         let mut flavor = Proxy::new(flavor);
         let mut text = Proxy::new(text.as_ref().to_string());
         let icon = {
-            let mut i = Icon::new(IconGlyph::Plus, IconSize::Regular);
-            i.set_additional_classes("me-1");
+            let i = Icon::new(IconGlyph::Plus, IconSize::Regular);
+            i.add_class("me-1");
             i
         };
         rsx! {
@@ -143,9 +143,10 @@ impl<V: View> Button<V> {
 /// All mutating methods delegate to the inner [`Button`]. Access the inner
 /// button directly via [`button()`](PrimaryButton::button) or
 /// [`button_mut()`](PrimaryButton::button_mut) for full API access.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct PrimaryButton<V: View> {
     #[child]
+    #[properties]
     frame: V::Element,
     button: Button<V>,
 }

@@ -16,9 +16,10 @@ pub enum DropdownEvent<V: View> {
 }
 
 /// A single item within a [`Dropdown`] menu.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct DropdownItem<V: View> {
     #[child]
+    #[properties]
     li: V::Element,
     on_click: V::EventListener,
 }
@@ -46,9 +47,10 @@ impl<V: View> DropdownItem<V> {
 ///
 /// Toggle the menu by calling [`Dropdown::toggle`] in response to
 /// [`Dropdown::step`] returning [`None`].
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Dropdown<V: View> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     menu: V::Element,
     toggle_click: V::EventListener,

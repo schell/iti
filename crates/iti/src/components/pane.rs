@@ -51,9 +51,10 @@ pub struct PaneItemRemoval<T> {
 ///   with [`ProxyChild::replace`].
 /// * [`PaneMode::Retain`] (via [`Panes::new_retained`]) — keeps every pane in
 ///   the DOM inside a wrapper `div` and toggles `display: none`.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Panes<V: View, T> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     mode: PaneMode,
     id_pool: IdPool<T>,
@@ -541,9 +542,10 @@ pub mod library {
 ///
 /// Stores pane *factories* (`Box<dyn FnMut() -> T>`). Each time a pane is
 /// selected it is re-created from the factory, ensuring a fresh state.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct RestartPanes<V: View, T> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     id_pool: IdPool<T>,
     current_id: Option<Id<T>>,

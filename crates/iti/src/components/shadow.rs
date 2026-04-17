@@ -37,9 +37,10 @@ impl Dither {
 /// The shadow is a CSS `::after` pseudo-element using a repeating
 /// checkerboard pattern. Configure with [`set_color`](Shadow::set_color),
 /// [`set_offset`](Shadow::set_offset), and [`set_dither`](Shadow::set_dither).
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Shadow<V: View> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     content_el: V::Element,
     content: ProxyChild<V>,

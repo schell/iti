@@ -17,9 +17,10 @@ pub enum ModalEvent {
 /// The modal consists of a semi-transparent backdrop and the dialog itself.
 /// Call [`Modal::show`] and [`Modal::hide`] to toggle visibility, and
 /// [`Modal::step`] to await close events.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Modal<V: View> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     title: V::Text,
     body: V::Element,

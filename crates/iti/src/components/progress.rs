@@ -16,9 +16,10 @@ struct ProgressState {
 ///
 /// The value ranges from 0 to 100. Setting a value outside this range clamps
 /// it to the nearest bound.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Progress<V: View> {
     #[child]
+    #[properties]
     wrapper: V::Element,
     #[allow(dead_code)]
     bar: V::Element,

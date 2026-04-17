@@ -20,9 +20,10 @@ pub struct SelectEvent<V: View> {
 }
 
 /// A single `<option>` within a [`Select`].
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 struct SelectOption<V: View> {
     #[child]
+    #[properties]
     option: V::Element,
     value: String,
 }
@@ -61,9 +62,10 @@ impl<V: View> SelectOption<V> {
 ///     log::info!("Selected index {} with value {}", ev.index, ev.value);
 /// }
 /// ```
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Select<V: View> {
     #[child]
+    #[properties]
     select: V::Element,
     on_change: V::EventListener,
     options: Vec<SelectOption<V>>,
