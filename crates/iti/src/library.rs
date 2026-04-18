@@ -4,14 +4,10 @@ use js_sys::wasm_bindgen::UnwrapThrowExt;
 use mogwai::{prelude::*, web::body};
 
 use crate::components::{
-    alert::library::AlertLibraryItem,
-    badge::library::BadgeLibraryItem,
     button::library::ButtonLibraryItem,
     button_group::library::ButtonGroupLibraryItem,
-    card::library::CardLibraryItem,
     checkbox::library::CheckboxLibraryItem,
     dropdown::library::DropdownLibraryItem,
-    icon::library::IconLibraryItem,
     list::{library::ListLibraryItem, List, ListEvent},
     modal::library::ModalLibraryItem,
     pane::{library::PaneRetainLibraryItem, RestartPanes},
@@ -19,7 +15,6 @@ use crate::components::{
     progress::library::ProgressLibraryItem,
     radio::library::RadioLibraryItem,
     select::library::SelectLibraryItem,
-    shadow::library::ShadowLibraryItem,
     slider::library::SliderLibraryItem,
     tab::library::TabListLibraryItem,
     toast::library::ToastLibraryItem,
@@ -48,14 +43,10 @@ impl<V: View> LibraryListItem<V> {
 
 pub enum LibraryListPane<V: View> {
     Default(V::Element),
-    Alert(AlertLibraryItem<V>),
-    Badge(BadgeLibraryItem<V>),
     Button(ButtonLibraryItem<V>),
     ButtonGroup(ButtonGroupLibraryItem<V>),
-    Card(CardLibraryItem<V>),
     Checkbox(CheckboxLibraryItem<V>),
     Dropdown(DropdownLibraryItem<V>),
-    Icon(IconLibraryItem<V>),
     List(ListLibraryItem<V>),
     Modal(ModalLibraryItem<V>),
     Overhaul(OverhaulLibraryItem<V>),
@@ -63,7 +54,6 @@ pub enum LibraryListPane<V: View> {
     Progress(ProgressLibraryItem<V>),
     Radio(RadioLibraryItem<V>),
     Select(SelectLibraryItem<V>),
-    Shadow(ShadowLibraryItem<V>),
     Slider(SliderLibraryItem<V>),
     TabList(TabListLibraryItem<V>),
     Toast(ToastLibraryItem<V>),
@@ -84,14 +74,10 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
     ) -> AppendArg<V, impl Iterator<Item = std::borrow::Cow<'_, <V as View>::Node>>> {
         match self {
             LibraryListPane::Default(el) => el.as_boxed_append_arg(),
-            LibraryListPane::Alert(item) => item.as_boxed_append_arg(),
-            LibraryListPane::Badge(item) => item.as_boxed_append_arg(),
             LibraryListPane::Button(item) => item.as_boxed_append_arg(),
             LibraryListPane::ButtonGroup(item) => item.as_boxed_append_arg(),
-            LibraryListPane::Card(item) => item.as_boxed_append_arg(),
             LibraryListPane::Checkbox(item) => item.as_boxed_append_arg(),
             LibraryListPane::Dropdown(item) => item.as_boxed_append_arg(),
-            LibraryListPane::Icon(item) => item.as_boxed_append_arg(),
             LibraryListPane::List(item) => item.as_boxed_append_arg(),
             LibraryListPane::Modal(item) => item.as_boxed_append_arg(),
             LibraryListPane::Overhaul(item) => item.as_boxed_append_arg(),
@@ -99,7 +85,6 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::Progress(item) => item.as_boxed_append_arg(),
             LibraryListPane::Radio(item) => item.as_boxed_append_arg(),
             LibraryListPane::Select(item) => item.as_boxed_append_arg(),
-            LibraryListPane::Shadow(item) => item.as_boxed_append_arg(),
             LibraryListPane::Slider(item) => item.as_boxed_append_arg(),
             LibraryListPane::TabList(item) => item.as_boxed_append_arg(),
             LibraryListPane::Toast(item) => item.as_boxed_append_arg(),
@@ -110,10 +95,8 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
 impl<V: View> LibraryListPane<V> {
     pub async fn step(&mut self) {
         let body = body();
-        body.set_style("background-color", crate::color::GRAY300);
+        body.set_style("background-color", crate::color::LAVENDER);
         match self {
-            LibraryListPane::Alert(item) => item.step().await,
-            LibraryListPane::Badge(item) => item.step().await,
             LibraryListPane::Button(item) => item.step().await,
             LibraryListPane::ButtonGroup(item) => item.step().await,
             LibraryListPane::Checkbox(item) => item.step().await,
@@ -124,16 +107,12 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::Progress(item) => item.step().await,
             LibraryListPane::Radio(item) => item.step().await,
             LibraryListPane::Select(item) => item.step().await,
-            LibraryListPane::Shadow(item) => item.step().await,
             LibraryListPane::Slider(item) => item.step().await,
             LibraryListPane::TabList(item) => item.step().await,
             LibraryListPane::Toast(item) => item.step().await,
-            LibraryListPane::Icon(item) => item.step().await,
-            LibraryListPane::Overhaul(_) => {
-                body.set_style("background-color", crate::color::LAVENDER);
+            LibraryListPane::Default(_) | LibraryListPane::Overhaul(_) => {
                 std::future::pending().await
             }
-            LibraryListPane::Default(_) | LibraryListPane::Card(_) => std::future::pending().await,
         }
     }
 }
@@ -178,14 +157,6 @@ impl<V: View> Default for Library<V> {
             right_column_pane_ids: vec![],
         };
 
-        lib.add_item("components::Alert", || {
-            LibraryListPane::Alert(Default::default())
-        });
-
-        lib.add_item("components::Badge", || {
-            LibraryListPane::Badge(Default::default())
-        });
-
         lib.add_item("components::Button", || {
             LibraryListPane::Button(Default::default())
         });
@@ -194,20 +165,12 @@ impl<V: View> Default for Library<V> {
             LibraryListPane::ButtonGroup(Default::default())
         });
 
-        lib.add_item("components::Card", || {
-            LibraryListPane::Card(Default::default())
-        });
-
         lib.add_item("components::Checkbox", || {
             LibraryListPane::Checkbox(Default::default())
         });
 
         lib.add_item("components::Dropdown", || {
             LibraryListPane::Dropdown(Default::default())
-        });
-
-        lib.add_item("components::Icon", || {
-            LibraryListPane::Icon(Default::default())
         });
 
         lib.add_item("components::List<T>", || {
@@ -228,10 +191,6 @@ impl<V: View> Default for Library<V> {
 
         lib.add_item("components::Select", || {
             LibraryListPane::Select(Default::default())
-        });
-
-        lib.add_item("components::Shadow", || {
-            LibraryListPane::Shadow(Default::default())
         });
 
         lib.add_item("components::Slider", || {

@@ -833,23 +833,24 @@ pre {
    ═══════════════════════════════════════════════════════════════════ */
 
 .alert {
-	background-color: var(--iti-bg-light);
-	color: var(--iti-text);
-	border: 2px solid;
-	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
-	font-family: inherit;
-	padding: 8px 12px;
-	position: relative;
+	background-color: var(--gray200);
+	box-shadow:
+		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
+		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		2px 2px 0 rgba(0, 0, 0, 0.85);
+	outline: 1px solid var(--black900);
+	outline-offset: -1px;
+	display: flex;
 }
 
-.alert-primary   { background-color: var(--iti-primary-bg);   border-left: 5px solid var(--iti-primary); }
-.alert-secondary { background-color: var(--iti-secondary-bg); border-left: 5px solid var(--iti-secondary); }
-.alert-success   { background-color: var(--iti-success-bg);   border-left: 5px solid var(--iti-success); }
-.alert-danger    { background-color: var(--iti-danger-bg);    border-left: 5px solid var(--iti-danger); }
-.alert-warning   { background-color: var(--iti-warning-bg);   border-left: 5px solid var(--iti-warning); }
-.alert-info      { background-color: var(--iti-info-bg);      border-left: 5px solid var(--iti-info); }
-.alert-light     { background-color: var(--iti-bg-light);     border-left: 5px solid var(--iti-bg-dark); }
-.alert-dark      { background-color: var(--iti-bg-dark); color: var(--iti-bg-light); border-left: 5px solid var(--iti-dark); }
+.alert-primary   { padding: 1em; width: 100%; background-color: var(--iti-primary-bg);   border-left: 5px solid var(--iti-primary); }
+.alert-secondary { padding: 1em; width: 100%; background-color: var(--iti-secondary-bg); border-left: 5px solid var(--iti-secondary); }
+.alert-success   { padding: 1em; width: 100%; background-color: var(--iti-success-bg);   border-left: 5px solid var(--iti-success); }
+.alert-danger    { padding: 1em; width: 100%; background-color: var(--iti-danger-bg);    border-left: 5px solid var(--iti-danger); }
+.alert-warning   { padding: 1em; width: 100%; background-color: var(--iti-warning-bg);   border-left: 5px solid var(--iti-warning); }
+.alert-info      { padding: 1em; width: 100%; background-color: var(--iti-info-bg);      border-left: 5px solid var(--iti-info); }
+.alert-light     { padding: 1em; width: 100%; background-color: var(--iti-bg-light);     border-left: 5px solid var(--iti-bg-dark); }
+.alert-dark      { padding: 1em; width: 100%; background-color: var(--iti-bg-dark); color: var(--iti-bg-light); border-left: 5px solid var(--iti-dark); }
 
 .alert-link {
 	color: inherit;
@@ -867,6 +868,7 @@ pre {
 	font-weight: normal;
 	padding: 2px 6px;
 	border: 1px solid var(--iti-border-dark);
+	border-radius: 2px;
 	line-height: 1.4;
 	text-align: center;
 	white-space: nowrap;
@@ -908,16 +910,26 @@ pre {
 	position: absolute;
 	z-index: 1000;
 	min-width: 10rem;
-	background-color: var(--iti-bg-light);
-	border: 2px solid;
-	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-border-dark) var(--iti-border-light);
-	padding: 0;
-	margin-top: 0;
 	list-style: none;
+	margin-top: 2px;
+
+	/* Panel styling */
+	background-color: var(--gray200);
+	box-shadow:
+		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
+		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		2px 2px 0 rgba(0, 0, 0, 0.85);
+	outline: 1px solid var(--black900);
+	outline-offset: -1px;
+	padding: 4px 0;
 }
 
 .dropdown-menu.show {
 	display: block;
+}
+
+.dropdown-menu.show li {
+	padding: 0 4px 0 3px;
 }
 
 .dropdown-item {
@@ -1001,11 +1013,15 @@ pre {
 .list-group {
 	display: flex;
 	flex-direction: column;
-	padding-left: 0;
-	margin-bottom: 0;
-	border: 2px solid;
-	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
 	list-style: none;
+	background-color: var(--gray200);
+	box-shadow:
+		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
+		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		2px 2px 0 rgba(0, 0, 0, 0.85);
+	outline: 1px solid var(--black900);
+	outline-offset: -1px;
+	padding: 1em;
 }
 
 .list-group-item {
@@ -1014,8 +1030,8 @@ pre {
 	background-color: var(--iti-bg-light);
 	color: var(--iti-text);
 	border: none;
-	border-bottom: 1px solid var(--iti-bg-medium);
-	padding: 4px 8px;
+	/* border-bottom: 1px solid var(--iti-bg-medium); */
+	padding: 0.4em 0.8em;
 	font-size: 12px;
 	transition: none;
 	text-decoration: none;
@@ -1274,54 +1290,64 @@ pre {
 .form-select {
 	display: block;
 	width: 100%;
-	background-color: var(--iti-bg-light);
+	height: 20px;
+	background-color: var(--gray300);
 	color: var(--iti-text);
 	font-family: inherit;
-	font-size: 13px;
-	border: 2px solid;
-	border-color: var(--iti-border-dark) var(--iti-border-light)
-	              var(--iti-border-light) var(--iti-border-dark);
-	padding: 3px 30px 3px 8px;
+	font-size: 12px;
+	border: 1px solid var(--charcoal);
+	border-radius: 6px;
+	cursor: pointer;
+	padding: 0 28px 0 10px;
 	transition: none;
-	line-height: 1.4;
+	line-height: 18px;
 	appearance: none;
 
-	/* Platinum arrow button indicator */
-	background-image: url("svg/select-arrows.svg");
+	/* Inner bevel effect (Platinum style) */
+	box-shadow:
+		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
+		inset -1px -1px 0 rgba(128, 128, 128, 0.5);
+
+	/* Platinum arrow button indicator with separator bars */
+	background-image: url("svg/select-arrows-platinum.svg");
 	background-repeat: no-repeat;
-	background-position: right 2px center;
-	background-size: 20px 18px;
+	background-position: right 0 center;
+	background-size: 22px 18px;
 }
 
 .form-select:hover {
-	background-color: var(--iti-bg-light);
-	filter: brightness(1.03);
+	background-color: var(--gray200);
 }
 
 .form-select:focus {
 	background-color: var(--iti-highlight);
 	color: var(--iti-highlight-text);
-	border-color: var(--iti-border-dark) var(--iti-border-light)
-	              var(--iti-border-light) var(--iti-border-dark);
+	border-color: var(--charcoal);
 	outline: none;
+	box-shadow:
+		inset 1px 1px 0 rgba(255, 255, 255, 0.3),
+		inset -1px -1px 0 rgba(0, 0, 0, 0.2);
 	/* Keep arrow visible against dark background */
-	background-image: url("svg/select-arrows.svg");
+	background-image: url("svg/select-arrows-platinum.svg");
 	background-repeat: no-repeat;
-	background-position: right 2px center;
-	background-size: 20px 18px;
+	background-position: right 0 center;
+	background-size: 22px 18px;
 }
 
 .form-select:focus-visible {
 	outline: 1px dotted var(--iti-text);
-	outline-offset: -4px;
+	outline-offset: -3px;
 }
 
 .form-select:disabled {
-	background-color: var(--iti-bg-medium);
-	color: var(--iti-border-dark);
+	background-color: var(--gray400);
+	color: var(--gray700);
 	opacity: 1;
-	text-shadow: 1px 1px 0 var(--iti-border-light);
+	text-shadow: 1px 1px 0 var(--white100);
 	cursor: default;
+	box-shadow:
+		inset 1px 1px 0 rgba(255, 255, 255, 0.4),
+		inset -1px -1px 0 rgba(128, 128, 128, 0.3);
 }
 
 .form-select option {
@@ -1694,6 +1720,7 @@ pre {
 .iti-shadow {
 	position: relative;
 	display: inline-block;
+	isolation: isolate; /* Create stacking context so ::after z-index:-1 stays within */
 }
 
 .iti-shadow::after {

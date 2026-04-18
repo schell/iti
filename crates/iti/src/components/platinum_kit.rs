@@ -9,13 +9,17 @@ use mogwai::future::MogwaiFutureExt;
 use mogwai::prelude::*;
 use mogwai::web::prelude::wasm_bindgen_futures;
 
+use crate::components::alert::Alert;
+use crate::components::badge::Badge;
 use crate::components::button::{Button, PrimaryButton};
+use crate::components::card::Card;
 use crate::components::checkbox::Checkbox;
 use crate::components::dropdown::{Dropdown, DropdownEvent};
-use crate::components::icon::IconGlyph;
+use crate::components::icon::{Icon, IconGlyph, IconSize};
 use crate::components::progress::Progress;
 use crate::components::radio::RadioGroup;
 use crate::components::select::Select;
+use crate::components::shadow::{Dither, Shadow};
 use crate::components::slider::SliderWithTicks;
 use crate::components::Flavor;
 
@@ -559,9 +563,9 @@ fn build_dropdowns<V: View>() -> Section<V> {
                         style:position = "static",
                         style:display = "block",
                     ) {
-                        li() { a(class = "dropdown-item", href = "#") { "Action" } }
-                        li() { a(class = "dropdown-item", href = "#") { "Another action" } }
-                        li() { a(class = "dropdown-item", href = "#") { "Something else" } }
+                        li() { a(class = "dropdown-item") { "Action" } }
+                        li() { a(class = "dropdown-item") { "Another action" } }
+                        li() { a(class = "dropdown-item") { "Something else" } }
                     }
                 }
             }
@@ -728,6 +732,257 @@ fn build_text_inputs<V: View>() -> Section<V> {
     section
 }
 
+/// Build the "Alerts" section showing all flavor variants.
+fn build_alerts<V: View>() -> Section<V> {
+    let section = Section::new("Alerts");
+
+    const FLAVORS: [Flavor; 8] = [
+        Flavor::Primary,
+        Flavor::Secondary,
+        Flavor::Success,
+        Flavor::Danger,
+        Flavor::Warning,
+        Flavor::Info,
+        Flavor::Light,
+        Flavor::Dark,
+    ];
+
+    let alert_items: Vec<V::Element> = FLAVORS
+        .iter()
+        .map(|&f| {
+            let alert = Alert::new(format!("This is a {f} alert!"), f);
+            rsx! {
+                let item = div(class = "mb-2") {
+                    {&alert}
+                }
+            }
+            item
+        })
+        .collect();
+
+    section.push(&alert_items);
+    section
+}
+
+/// Build the "Badges" section showing all flavor variants plus pill style.
+fn build_badges<V: View>() -> Section<V> {
+    let section = Section::new("Badges");
+
+    const FLAVORS: [Flavor; 8] = [
+        Flavor::Primary,
+        Flavor::Secondary,
+        Flavor::Success,
+        Flavor::Danger,
+        Flavor::Warning,
+        Flavor::Info,
+        Flavor::Light,
+        Flavor::Dark,
+    ];
+
+    let standard_badges: Vec<Badge<V>> = FLAVORS
+        .iter()
+        .map(|&f| Badge::new(format!("{f}"), f))
+        .collect();
+
+    let pill_badges: Vec<Badge<V>> = FLAVORS
+        .iter()
+        .map(|&f| {
+            let mut badge = Badge::new(format!("{f}"), f);
+            badge.set_pill(true);
+            badge
+        })
+        .collect();
+
+    rsx! {
+        let content = div(class = "panel") {
+            div(class = "mb-3") {
+                p() { strong() { "Standard" } }
+                div(class = "d-flex flex-wrap gap-2") {
+                    {&standard_badges}
+                }
+            }
+            div() {
+                p() { strong() { "Pill" } }
+                div(class = "d-flex flex-wrap gap-2") {
+                    {&pill_badges}
+                }
+            }
+        }
+    }
+    section.push(&content);
+    section
+}
+
+/// Build the "Cards" section with a sample card.
+fn build_cards<V: View>() -> Section<V> {
+    let section = Section::new("Cards");
+
+    let mut card = Card::new();
+    card.set_header(&"Card Header".into_text::<V>());
+
+    rsx! {
+        let body_content = div() {
+            h5(class = "card-title") { "Card Title" }
+            p(class = "card-text") {
+                "Some quick example text to build on the card title and \
+                 make up the bulk of the card\u{2019}s content."
+            }
+        }
+    }
+    card.set_body(&body_content);
+
+    rsx! {
+        let footer_text = small(class = "text-body-secondary") {
+            "Last updated 3 mins ago"
+        }
+    }
+    card.set_footer(&footer_text);
+
+    rsx! {
+        let content = div(class = "panel", style:max_width = "24rem") {
+            {&card}
+        }
+    }
+    section.push(&content);
+    section
+}
+
+/// Build the "Shadows" section showing the three dither levels.
+fn build_shadows<V: View>() -> Section<V> {
+    let section = Section::new("Shadows");
+
+    // Fine dither (default)
+    let mut shadow_fine = Shadow::new();
+    rsx! {
+        let box_fine = div(
+            class = "p-3 bg-white border",
+            style:width = "140px",
+            style:text_align = "center",
+        ) {
+            strong() { "Fine" }
+            br() {}
+            small(class = "text-muted") { "2px dither" }
+        }
+    }
+    shadow_fine.set_content(&box_fine);
+
+    // Medium dither
+    let mut shadow_medium = Shadow::new();
+    shadow_medium.set_dither(Dither::Medium);
+    shadow_medium.set_color("#333399");
+    rsx! {
+        let box_medium = div(
+            class = "p-3 bg-white border",
+            style:width = "140px",
+            style:text_align = "center",
+        ) {
+            strong() { "Medium" }
+            br() {}
+            small(class = "text-muted") { "4px dither" }
+        }
+    }
+    shadow_medium.set_content(&box_medium);
+
+    // Coarse dither
+    let mut shadow_coarse = Shadow::new();
+    shadow_coarse.set_dither(Dither::Coarse);
+    shadow_coarse.set_color("#006600");
+    shadow_coarse.set_offset(8);
+    rsx! {
+        let box_coarse = div(
+            class = "p-3 bg-white border",
+            style:width = "140px",
+            style:text_align = "center",
+        ) {
+            strong() { "Coarse" }
+            br() {}
+            small(class = "text-muted") { "8px dither" }
+        }
+    }
+    shadow_coarse.set_content(&box_coarse);
+
+    rsx! {
+        let content = div(
+            class = "d-flex flex-wrap gap-4",
+            style:background_color = "var(--gray200)",
+            style:padding = "1.5em",
+        ) {
+            {&shadow_fine}
+            {&shadow_medium}
+            {&shadow_coarse}
+        }
+    }
+    section.push(&content);
+    section
+}
+
+/// Build the "Icons" section with a sampling from each category.
+fn build_icons<V: View>() -> Section<V> {
+    let section = Section::new("Icons");
+
+    // Representative sampling: ~3 per category
+    const SAMPLE_ICONS: &[(IconGlyph, &str)] = &[
+        // Navigation
+        (IconGlyph::ArrowLeft, "ArrowLeft"),
+        (IconGlyph::ArrowRight, "ArrowRight"),
+        (IconGlyph::Bars, "Bars"),
+        // Actions
+        (IconGlyph::Check, "Check"),
+        (IconGlyph::Plus, "Plus"),
+        (IconGlyph::Trash, "Trash"),
+        // Status
+        (IconGlyph::Bell, "Bell"),
+        (IconGlyph::CircleCheck, "CircleCheck"),
+        (IconGlyph::TriangleExclamation, "Warning"),
+        // Content
+        (IconGlyph::Calendar, "Calendar"),
+        (IconGlyph::Envelope, "Envelope"),
+        (IconGlyph::Folder, "Folder"),
+        // Objects
+        (IconGlyph::Eye, "Eye"),
+        (IconGlyph::Gear, "Gear"),
+        (IconGlyph::Lock, "Lock"),
+        // People
+        (IconGlyph::Heart, "Heart"),
+        (IconGlyph::Star, "Star"),
+        (IconGlyph::User, "User"),
+        // Layout
+        (IconGlyph::Grip, "Grip"),
+        (IconGlyph::TableCells, "TableCells"),
+    ];
+
+    let icon_cells: Vec<V::Element> = SAMPLE_ICONS
+        .iter()
+        .map(|(glyph, label)| {
+            let icon = Icon::new(*glyph, IconSize::Large);
+            let label_text = V::Text::new(*label);
+            rsx! {
+                let cell = div(
+                    style:text_align = "center",
+                    style:min_width = "4.5rem",
+                ) {
+                    div() { {&icon} }
+                    small(class = "text-muted") { {label_text} }
+                }
+            }
+            cell
+        })
+        .collect();
+
+    rsx! {
+        let content = div(class = "panel") {
+            div(class = "d-flex flex-wrap gap-3") {
+                {icon_cells}
+            }
+            small(class = "text-muted mt-2", style:display = "block") {
+                "Showing 20 of 50 available icons. See IconGlyph for full list."
+            }
+        }
+    }
+    section.push(&content);
+    section
+}
+
 // ── Main component ──────────────────────────────────────────────
 
 /// Sandbox library item for the Platinum design system overhaul.
@@ -751,6 +1006,11 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         let selects = build_selects::<V>();
         let dropdowns = build_dropdowns::<V>();
         let text_inputs = build_text_inputs::<V>();
+        let alerts = build_alerts::<V>();
+        let badges = build_badges::<V>();
+        let cards = build_cards::<V>();
+        let shadows = build_shadows::<V>();
+        let icons = build_icons::<V>();
 
         rsx! {
             let wrapper = div(class = "container") {
@@ -775,6 +1035,25 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     }
                 }
                 {&text_inputs}
+                div(class = "row") {
+                    div(class = "col-auto") {
+                        {&alerts}
+                    }
+                    div(class = "col-auto") {
+                        {&badges}
+                    }
+                    div(class = "col-auto") {
+                        {&cards}
+                    }
+                }
+                div(class = "row") {
+                    div(class = "col-auto") {
+                        {&shadows}
+                    }
+                    div(class = "col-auto") {
+                        {&icons}
+                    }
+                }
             }
         }
 
