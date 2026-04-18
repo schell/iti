@@ -21,6 +21,7 @@ use crate::components::radio::RadioGroup;
 use crate::components::select::Select;
 use crate::components::shadow::{Dither, Shadow};
 use crate::components::slider::SliderWithTicks;
+use crate::components::title_bar::TitleBar;
 use crate::components::Flavor;
 
 // ── Section separator ───────────────────────────────────────────
@@ -983,6 +984,68 @@ fn build_icons<V: View>() -> Section<V> {
     section
 }
 
+/// Build the "Title Bars" section showing various title bar configurations.
+fn build_title_bars<V: View>() -> Section<V> {
+    let section = Section::new("Title Bars");
+
+    // Basic title bar (no close button, no icon)
+    let title_bar_basic = TitleBar::new("My Window");
+
+    // Title bar with close button
+    let mut title_bar_close = TitleBar::new("Closeable Window");
+    title_bar_close.set_show_close_button(true);
+
+    // Title bar with icon
+    let mut title_bar_icon = TitleBar::new("Document.txt");
+    title_bar_icon.set_icon(Some(IconGlyph::File));
+
+    // Title bar with close button and icon
+    let mut title_bar_full = TitleBar::new("Finder");
+    title_bar_full.set_show_close_button(true);
+    title_bar_full.set_icon(Some(IconGlyph::Folder));
+
+    // Title bar with long title (to show ellipsis behavior)
+    let mut title_bar_long = TitleBar::new("This Is A Very Long Window Title That Should Truncate");
+    title_bar_long.set_show_close_button(true);
+
+    rsx! {
+        let content = div(class = "d-flex flex-wrap gap-4") {
+            div(class = "window") {
+                div(style:width = "300px") {
+                    {&title_bar_basic}
+                }
+                div(class = "container") { "Basic (no close button)" }
+            }
+            div(class = "window") {
+                div(style:width = "300px") {
+                    {&title_bar_close}
+                }
+                p() { strong() { "With Close Button" } }
+            }
+            div(class = "window") {
+                div(style:width = "300px") {
+                    {&title_bar_icon}
+                }
+                p() { strong() { "With Icon" } }
+            }
+            div(class = "window") {
+                div(style:width = "300px") {
+                    {&title_bar_full}
+                }
+                p() { strong() { "Full (Close + Icon)" } }
+            }
+            div(class = "window") {
+                div(style:width = "300px") {
+                    {&title_bar_long}
+                }
+                p() { strong() { "Long Title (truncation)" } }
+            }
+        }
+    }
+    section.push(&content);
+    section
+}
+
 // ── Main component ──────────────────────────────────────────────
 
 /// Sandbox library item for the Platinum design system overhaul.
@@ -1011,6 +1074,7 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         let cards = build_cards::<V>();
         let shadows = build_shadows::<V>();
         let icons = build_icons::<V>();
+        let title_bars = build_title_bars::<V>();
 
         rsx! {
             let wrapper = div(class = "container") {
@@ -1052,6 +1116,9 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     }
                     div(class = "col-auto") {
                         {&icons}
+                    }
+                    div(class = "col-auto") {
+                        {&title_bars}
                     }
                 }
             }

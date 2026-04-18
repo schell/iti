@@ -1788,3 +1788,92 @@ pre {
 	outline-offset: -1px;
 	padding: 1em;
 }
+
+/* -- Window -- */
+/* This is a panel, but without the padding so that a title bar can
+   stretch from edge to edge. */
+.window {
+	background-color: var(--gray200);
+	box-shadow:
+		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
+		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		2px 2px 0 rgba(0, 0, 0, 0.85);
+	outline: 1px solid var(--black900);
+	outline-offset: -1px;
+}
+
+/* ── Title Bar (Mac OS 9 Platinum) ── */
+
+.title-bar {
+	display: flex;
+	align-items: center;
+	height: 19px;
+	background-color: #cccccc;
+	padding: 0 4px;
+	margin-bottom: 0.5em;
+	gap: 4px;
+	border: 1px solid var(--black900);
+	box-sizing: border-box;
+
+	box-shadow:
+		inset 1px 1px 0 rgba(255, 255, 255, 0.60)
+		;
+}
+
+/* Close button - uses SVG background images */
+.title-bar-close {
+	width: 13px;
+	height: 13px;
+	padding: 0;
+	border: none;
+	background: url("svg/title-bar-close-default.svg") no-repeat center;
+	background-size: 13px 13px;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.title-bar-close:active {
+	background-image: url("svg/title-bar-close-active.svg");
+}
+
+/* Aluminum pinstripe strips on either side of the title */
+.title-bar-aluminum {
+	flex: 1 1 auto;
+	height: 13px;
+	background: url("svg/title-bar-aluminum.svg") repeat-x center;
+	background-size: auto 13px;
+	min-width: 20px;
+}
+
+.title-bar-aluminum-left {
+	/* Aluminum strip to the left of the title */
+}
+
+.title-bar-aluminum-right {
+	/* Aluminum strip to the right of the title */
+}
+
+/* Icon next to the title (optional) */
+.title-bar-icon {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+}
+
+/* Title text */
+.title-bar-title {
+	flex-shrink: 1;
+	min-width: 0;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--black900);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* When close button is visible, add matching space on the right to keep title centered */
+.title-bar.has-close-button .title-bar-aluminum-right {
+	/* Close button is 13px + 4px gap = 17px */
+	padding-right: 17px;
+}
