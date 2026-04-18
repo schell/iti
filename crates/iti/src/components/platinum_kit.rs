@@ -8,13 +8,14 @@ use futures_lite::FutureExt;
 use mogwai::future::MogwaiFutureExt;
 use mogwai::prelude::*;
 use mogwai::web::prelude::wasm_bindgen_futures;
-use mogwai::web::WebEvent;
 
 use crate::components::button::{Button, PrimaryButton};
 use crate::components::checkbox::Checkbox;
+use crate::components::dropdown::{Dropdown, DropdownEvent};
 use crate::components::icon::IconGlyph;
 use crate::components::progress::Progress;
 use crate::components::radio::RadioGroup;
+use crate::components::select::Select;
 use crate::components::slider::SliderWithTicks;
 use crate::components::Flavor;
 
@@ -493,6 +494,101 @@ fn build_sliders<V: View>() -> Section<V> {
     section
 }
 
+/// Build the "Selects" section with native select dropdowns.
+fn build_selects<V: View>() -> Section<V> {
+    let section = Section::new("Selects");
+
+    // Default select
+    let mut select_default = Select::new(None);
+    select_default.push("Apple", "apple");
+    select_default.push("Banana", "banana");
+    select_default.push("Cherry", "cherry");
+
+    // Flavored select
+    let mut select_primary = Select::new(Some(Flavor::Primary));
+    select_primary.push("Option A", "a");
+    select_primary.push("Option B", "b");
+    select_primary.push("Option C", "c");
+
+    // Disabled select
+    let mut select_disabled = Select::new(None);
+    select_disabled.push("Can't change", "disabled");
+    select_disabled.disable();
+
+    rsx! {
+        let content = div(class = "d-flex flex-wrap gap-4 panel") {
+            div() {
+                p() { strong() { "Default" } }
+                {&select_default}
+            }
+            div() {
+                p() { strong() { "With Flavor" } }
+                {&select_primary}
+            }
+            div() {
+                p() { strong() { "Disabled" } }
+                {&select_disabled}
+            }
+        }
+    }
+    section.push(&content);
+    section
+}
+
+/// Build the "Dropdowns" section with button dropdown menus.
+fn build_dropdowns<V: View>() -> Section<V> {
+    let section = Section::new("Dropdowns");
+
+    // Interactive dropdown
+    let mut dropdown = Dropdown::new("Click me", Flavor::Primary);
+    dropdown.push("Action");
+    dropdown.push("Another action");
+    dropdown.push("Something else");
+
+    rsx! {
+        let content = div(class = "d-flex flex-wrap gap-4 panel") {
+            // Static open dropdown (visual demo only)
+            div() {
+                p() { strong() { "Open State (static)" } }
+                div(class = "dropdown") {
+                    button(type = "button", class = "btn dropdown-toggle") {
+                        "Dropdown"
+                    }
+                    ul(
+                        class = "dropdown-menu show",
+                        style:position = "static",
+                        style:display = "block",
+                    ) {
+                        li() { a(class = "dropdown-item", href = "#") { "Action" } }
+                        li() { a(class = "dropdown-item", href = "#") { "Another action" } }
+                        li() { a(class = "dropdown-item", href = "#") { "Something else" } }
+                    }
+                }
+            }
+            // Interactive dropdown
+            div() {
+                p() { strong() { "Interactive" } }
+                {&dropdown}
+            }
+        }
+    }
+
+    // Wire up dropdown event handling
+    wasm_bindgen_futures::spawn_local(async move {
+        let mut dropdown = dropdown;
+        loop {
+            match dropdown.step().await {
+                None => dropdown.toggle(),
+                Some(DropdownEvent::ItemClicked { .. }) => dropdown.hide(),
+                Some(DropdownEvent::Dismissed) => dropdown.hide(),
+            }
+        }
+    });
+
+    section.push(&content);
+    section
+}
+
 /// Build the "Text Inputs" section with input variants and textarea.
 fn build_text_inputs<V: View>() -> Section<V> {
     let section = Section::new("Text Inputs");
@@ -652,16 +748,32 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         let checkboxes = build_checkboxes_and_radios::<V>();
         let progress = build_progress_bars::<V>();
         let sliders = build_sliders::<V>();
+        let selects = build_selects::<V>();
+        let dropdowns = build_dropdowns::<V>();
         let text_inputs = build_text_inputs::<V>();
 
         rsx! {
-            let wrapper = div() {
+            let wrapper = div(class = "container") {
                 {header}
                 {&panels}
                 {&buttons}
-                {&checkboxes}
-                {&progress}
-                {&sliders}
+                div(class = "row") {
+                    div(class = "col-auto") {
+                        {&checkboxes}
+                    }
+                    div(class = "col-auto") {
+                        {&progress}
+                    }
+                    div(class = "col-auto") {
+                        {&sliders}
+                    }
+                    div(class = "col-auto") {
+                        {&selects}
+                    }
+                    div(class = "col-auto") {
+                        {&dropdowns}
+                    }
+                }
                 {&text_inputs}
             }
         }
