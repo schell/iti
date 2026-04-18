@@ -1614,56 +1614,30 @@ pre {
 .iti-slider::-webkit-slider-thumb {
 	-webkit-appearance: none;
 	appearance: none;
-	width: 16px;
+	width: 20px;
 	height: 20px;
 	margin-top: -9px;
 	background: transparent;
 	background-image: url("svg/slider-thumb.svg");
-	background-size: 16px 20px;
+	background-size: 20px 20px;
 	background-repeat: no-repeat;
 	border: none;
 }
 
 .iti-slider::-moz-range-thumb {
-	width: 16px;
+	width: 20px;
 	height: 20px;
 	background: transparent;
 	background-image: url("svg/slider-thumb.svg");
-	background-size: 16px 20px;
+	background-size: 20px 20px;
 	background-repeat: no-repeat;
 	border: none;
-}
-
-/* Hover — brighten the thumb */
-.iti-slider:hover::-webkit-slider-thumb {
-	background-image: url("svg/slider-thumb-hover.svg");
-}
-
-.iti-slider:hover::-moz-range-thumb {
-	background-image: url("svg/slider-thumb-hover.svg");
-}
-
-/* Active (dragging) — darken the thumb */
-.iti-slider:active::-webkit-slider-thumb {
-	background-image: url("svg/slider-thumb-active.svg");
-}
-
-.iti-slider:active::-moz-range-thumb {
-	background-image: url("svg/slider-thumb-active.svg");
 }
 
 /* Disabled */
 .iti-slider:disabled {
 	cursor: default;
 	opacity: 0.5;
-}
-
-.iti-slider:disabled::-webkit-slider-thumb {
-	background-image: url("svg/slider-thumb-disabled.svg");
-}
-
-.iti-slider:disabled::-moz-range-thumb {
-	background-image: url("svg/slider-thumb-disabled.svg");
 }
 
 /* ── Slider tick marks (optional) ── */

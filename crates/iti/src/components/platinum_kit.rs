@@ -8,6 +8,7 @@ use futures_lite::FutureExt;
 use mogwai::future::MogwaiFutureExt;
 use mogwai::prelude::*;
 use mogwai::web::prelude::wasm_bindgen_futures;
+use mogwai::web::WebEvent;
 
 use crate::components::button::{Button, PrimaryButton};
 use crate::components::checkbox::Checkbox;
@@ -68,12 +69,17 @@ impl<V: View> Section<V> {
         wasm_bindgen_futures::spawn_local(async move {
             let mut toggle = toggle;
             loop {
-                let _ = toggle
-                    .step()
-                    .map(|_| ())
-                    .or(on_click.next().map(|_| ()))
-                    .await;
-                enabled.modify(|is_enabled| *is_enabled = !*is_enabled);
+                let _ev = on_click.next().await;
+
+                enabled.modify(|is_enabled| {
+                    *is_enabled = !*is_enabled;
+                });
+
+                if toggle.is_checked() != *enabled {
+                    toggle.set_checked(*enabled);
+                }
+
+                log::info!("enabled: {}", *enabled);
             }
         });
         Self { wrapper, content }

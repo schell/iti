@@ -51,18 +51,16 @@ impl<V: View> Checkbox<V> {
             }
         }
 
-        if checked {
-            input.set_property("checked", "true");
-        }
-
-        Self {
+        let mut cb = Self {
             wrapper,
             input,
             label,
             on_change,
             checked,
             is_switch,
-        }
+        };
+        cb.set_checked(checked);
+        cb
     }
 
     /// Check if the checkbox is currently checked.
@@ -72,12 +70,17 @@ impl<V: View> Checkbox<V> {
 
     /// Programmatically set the checked state.
     pub fn set_checked(&mut self, checked: bool) {
+        log::info!("set checked {checked}");
         self.checked = checked;
-        if checked {
-            self.input.set_property("checked", "true");
-        } else {
-            self.input.remove_property("checked");
-        }
+        self.input.dyn_el(|input: &web_sys::HtmlInputElement| {
+            log::info!("checked: {checked}");
+            input.set_checked(checked);
+        });
+        // if checked {
+        //     self.input.set_property("checked", "");
+        // } else {
+        //     self.input.remove_property("checked");
+        // }
     }
 
     /// Toggle the checked state.
