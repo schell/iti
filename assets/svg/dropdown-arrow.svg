@@ -5,7 +5,7 @@
    viewBox="0 0 22 18"
    version="1.1"
    id="svg13"
-   sodipodi:docname="select-arrows-platinum.svg"
+   sodipodi:docname="dropdown-arrow.svg"
    inkscape:version="1.4.2 (ebf0e940, 2025-05-08)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -92,15 +92,12 @@
      id="rect7"
      style="stroke-width:0.970932" />
   <!-- Up arrow (small, ~5px wide, centered at x=12) -->
-  <path
-     d="M12 5 L15 8 L9 8 Z"
-     fill="#262626"
-     id="path7" />
   <!-- Anti-alias fringe for up arrow -->
   <!-- Down arrow (small, ~5px wide, centered at x=12) -->
-  <path
-     d="M12 13 L9 10 L15 10 Z"
-     fill="#262626"
-     id="path10" />
   <!-- Anti-alias fringe for down arrow -->
+  <path
+     d="M 11.973558,11.413462 7.7572115,7.0384615 h 8.4326925 z"
+     fill="#262626"
+     id="path13"
+     style="stroke-width:1.43165" />
 </svg>

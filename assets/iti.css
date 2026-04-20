@@ -456,6 +456,16 @@ pre {
 	pointer-events: none;
 }
 
+.btn span i {
+	margin-left: 0.2em;
+	margin-right: 0.2em;
+}
+
+.btn-square {
+	height: auto;
+	aspect-ratio: 1;
+}
+
 /* ── Link button ── */
 
 .btn-link {
@@ -1816,7 +1826,8 @@ pre {
 	box-sizing: border-box;
 
 	box-shadow:
-		inset 1px 1px 0 rgba(255, 255, 255, 0.60)
+		inset 1px 1px 0 rgba(255, 255, 255, 0.60),
+		inset -1px -1px 0 rgba(38, 38, 38, 0.40)
 		;
 }
 

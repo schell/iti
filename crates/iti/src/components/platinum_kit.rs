@@ -276,6 +276,16 @@ fn build_buttons<V: View>() -> Section<V> {
         .set_glyph(IconGlyph::MagnifyingGlass);
     icon_search.get_icon_mut().remove_class("me-1");
 
+    let icons_square: Vec<Button<V>> = IconGlyph::PEOPLE
+        .into_iter()
+        .map(|g| {
+            let mut icon = Button::new("", None);
+            icon.get_icon_mut().set_glyph(g);
+            icon.add_class("btn-square");
+            icon
+        })
+        .collect();
+
     rsx! {
         let content = div(class = "d-flex flex-wrap gap-4 panel") {
             div() {
@@ -339,6 +349,12 @@ fn build_buttons<V: View>() -> Section<V> {
                     {&icon_trash}
                     {&icon_edit}
                     {&icon_search}
+                }
+            }
+            div() {
+                p() { strong() { "Square Icon Buttons"}}
+                div(class = "d-flex gap-2 flex-wrap align-items-center") {
+                    {&icons_square}
                 }
             }
         }
@@ -1010,35 +1026,25 @@ fn build_title_bars<V: View>() -> Section<V> {
 
     rsx! {
         let content = div(class = "d-flex flex-wrap gap-4") {
-            div(class = "window") {
-                div(style:width = "300px") {
-                    {&title_bar_basic}
-                }
+            div(class = "window", style:width = "300px") {
+                {&title_bar_basic}
                 div(class = "container") { "Basic (no close button)" }
             }
-            div(class = "window") {
-                div(style:width = "300px") {
-                    {&title_bar_close}
-                }
-                p() { strong() { "With Close Button" } }
+            div(class = "window", style:width = "300px") {
+                {&title_bar_close}
+                div(class = "container") { "With Close Button" }
             }
-            div(class = "window") {
-                div(style:width = "300px") {
-                    {&title_bar_icon}
-                }
-                p() { strong() { "With Icon" } }
+            div(class = "window", style:width = "300px") {
+                {&title_bar_icon}
+                div(class = "container") { "With Icon" }
             }
-            div(class = "window") {
-                div(style:width = "300px") {
-                    {&title_bar_full}
-                }
-                p() { strong() { "Full (Close + Icon)" } }
+            div(class = "window", style:width = "300px") {
+                {&title_bar_full}
+                div(class = "container") { "Full (Close + Icon)" }
             }
-            div(class = "window") {
-                div(style:width = "300px") {
-                    {&title_bar_long}
-                }
-                p() { strong() { "Long Title (truncation)" } }
+            div(class = "window", style:width = "300px") {
+                {&title_bar_long}
+                div(class = "container") { "Long Title (truncation)" }
             }
         }
     }
