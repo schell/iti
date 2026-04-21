@@ -150,8 +150,13 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
     pub fn insert(&mut self, index: usize, item: T) -> Id<T> {
         let id = self.id_pool.get_id();
         let item = TabListItem::new(id.clone(), item);
-        self.ul.append_child(&item);
-        self.items.insert(index, item);
+        if let Some(existing) = self.items.get(index) {
+            self.ul.insert_child_before(&item, Some(existing));
+            self.items.insert(index, item);
+        } else {
+            self.ul.append_child(&item);
+            self.items.push(item);
+        }
         id
     }
 
