@@ -1830,21 +1830,31 @@ pre {
 	border-bottom: none;
 }
 
-/* Start spacer — pushes tabs inward from the left edge */
-.tab-panel .nav.nav-tabs::before {
-	content: "";
-	width: 12px;
-	border-bottom: 1px solid var(--black900);
-	align-self: flex-end;
-}
-
-/* End spacer — fills remaining width, provides bottom border + drop shadow */
+/* Fallback fill — extends the panel's top border across the
+   full width when no explicit spacer elements are present.
+   When spacers exist, they share the flex-grow equally. */
 .tab-panel .nav.nav-tabs::after {
 	content: "";
 	flex-grow: 1;
-	border-bottom: 1px solid var(--black900);
-	box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.85);
 	align-self: flex-end;
+	border-bottom: 1px solid var(--black900);
+	position: relative;
+	z-index: 1;
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.6),
+		1px 0 0 #262626;
+	margin-right: 1px;
+}
+
+/* ── Spacer — flexible element that absorbs available space ── */
+
+.tab-panel .nav.nav-tabs .nav-tab-spacer {
+	flex-grow: 1;
+	border-bottom: 1px solid var(--black900);
+	list-style: none;
+	position: relative;
+	z-index: 1;
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 /* ── All tabs (inactive by default) ── */
@@ -1869,9 +1879,10 @@ pre {
 	box-shadow:
 	  /* lightening from top-left */
 		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
+		/* darkening on the right */
 		inset -1px 0px 0 rgba(0, 0, 0, 0.4),
 		/* almost black to continue the outline of the panel */
-		inset 0px -1px 0 rgba(38, 38, 38, 1.0);
+		inset 0px -1px 0 rgba(38, 38, 38, 1.0); 
 }
 
 /* ── Active tab ── */

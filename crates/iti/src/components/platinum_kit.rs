@@ -234,10 +234,10 @@ impl<V: View> Section<V> {
                     self.top.write_enabled().unwrap_throw();
                     self.enabled.set(enabled);
                 }
-                Step::TabList(ev) => {
+                Step::TabList(_ev) => {
                     log::info!("tab list stepped");
                 }
-                Step::TabPanel(ev) => {
+                Step::TabPanel(_ev) => {
                     log::info!("tab panel stepped");
                 }
             }
@@ -947,6 +947,7 @@ fn build_tabs<V: View>() -> Section<V> {
         }
     }
     let mut panel: TabPanel<V, V::Element, V::Element> = TabPanel::new(default_pane);
+    panel.set_style("min-width", "500px");
     {
         rsx! {
             let dino_tab = span() {
