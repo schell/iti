@@ -2,7 +2,7 @@
 use std::{collections::HashMap, future::Future};
 
 use futures_lite::FutureExt;
-use mogwai::prelude::*;
+use mogwai::{future::MogwaiFutureExt, prelude::*};
 
 use crate::{
     components::pane::Panes,
@@ -138,9 +138,7 @@ impl<V: View, T: ViewChild<V>> TabEntry<V, T> {
 }
 
 impl<V: View, T: ViewChild<V>> ViewChild<V> for TabEntry<V, T> {
-    fn as_append_arg(
-        &self,
-    ) -> AppendArg<V, impl Iterator<Item = std::borrow::Cow<'_, V::Node>>> {
+    fn as_append_arg(&self) -> AppendArg<V, impl Iterator<Item = std::borrow::Cow<'_, V::Node>>> {
         match self {
             TabEntry::Item(item) => item.as_boxed_append_arg(),
             TabEntry::Spacer(spacer) => spacer.as_boxed_append_arg(),
@@ -186,7 +184,10 @@ impl<V: View, T: ViewChild<V>> Default for TabList<V, T> {
 impl<V: View, T: ViewChild<V>> TabList<V, T> {
     /// Return the number of tabs (spacers are not counted).
     pub fn len(&self) -> usize {
-        self.entries.iter().filter(|e| e.as_item().is_some()).count()
+        self.entries
+            .iter()
+            .filter(|e| e.as_item().is_some())
+            .count()
     }
 
     /// Returns `true` if there are no tabs (spacers are not counted).
@@ -198,10 +199,7 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
     ///
     /// The index counts only tab items, not spacers.
     pub fn get(&self, index: usize) -> Option<&TabListItem<V, T>> {
-        self.entries
-            .iter()
-            .filter_map(|e| e.as_item())
-            .nth(index)
+        self.entries.iter().filter_map(|e| e.as_item()).nth(index)
     }
 
     /// Iterator over all tab items (spacers are skipped).
@@ -353,7 +351,8 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
     /// Does nothing if the tab is not found.
     pub fn insert_spacer_before(&mut self, tab_id: &Id<T>) {
         let pos = self.entries.iter().enumerate().find_map(|(i, e)| {
-            e.as_item().and_then(|item| (&item.id == tab_id).then_some(i))
+            e.as_item()
+                .and_then(|item| (&item.id == tab_id).then_some(i))
         });
         if let Some(pos) = pos {
             let spacer = TabSpacer::new();
@@ -369,7 +368,8 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
     /// Does nothing if the tab is not found.
     pub fn insert_spacer_after(&mut self, tab_id: &Id<T>) {
         let pos = self.entries.iter().enumerate().find_map(|(i, e)| {
-            e.as_item().and_then(|item| (&item.id == tab_id).then_some(i))
+            e.as_item()
+                .and_then(|item| (&item.id == tab_id).then_some(i))
         });
         if let Some(pos) = pos {
             let spacer = TabSpacer::new();
@@ -417,6 +417,11 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
     pub async fn step(&self) -> TabListEvent<V, T> {
         self.item_events().await
     }
+}
+
+pub enum TabPanelEvent<V: View, T, Ev> {
+    Tabs(TabListEvent<V, T>),
+    Panes(Ev),
 }
 
 /// A panel topped with a tab list.
@@ -548,6 +553,29 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
                 self.select(id);
             }
         }
+        ev
+    }
+
+    /// Step the panel and step all panes with the given function.
+    pub async fn step_with<Ev, Fut>(
+        &mut self,
+        f: impl FnMut(&mut P) -> Fut,
+    ) -> TabPanelEvent<V, T, Ev>
+    where
+        Fut: std::future::Future<Output = Ev>,
+    {
+        let tabs = self.tabs.step().map(TabPanelEvent::Tabs);
+        let panes =
+            mogwai::future::race_all(self.panes.iter_mut().map(f)).map(TabPanelEvent::Panes);
+        let ev = tabs.or(panes).await;
+        if let TabPanelEvent::Tabs(TabListEvent::ItemClicked {
+            id,
+            index: _,
+            event: _,
+        }) = &ev
+        {
+            self.select(id);
+        };
         ev
     }
 }
