@@ -64,7 +64,7 @@ pub enum SectionContent<V: View> {
     ProgressBars(ProgressBars<V>),
     TabPanel {
         wrapper: V::Element,
-        tab_lists: Vec<TabList<V, V::Element>>,
+        tab_list: TabList<V, V::Element>,
         tab_panels: Vec<TabPanel<V, V::Element, V::Element>>,
     },
 }
@@ -77,6 +77,39 @@ impl<V: View> ViewChild<V> for SectionContent<V> {
             SectionContent::Any(el) => el.as_boxed_append_arg(),
             SectionContent::ProgressBars(progress_bars) => progress_bars.as_boxed_append_arg(),
             SectionContent::TabPanel { wrapper, .. } => wrapper.as_boxed_append_arg(),
+        }
+    }
+}
+
+impl<V: View> SectionContent<V> {
+    async fn step(&mut self) {
+        enum Step<V: View> {
+            TabList(TabListEvent<V, V::Element>),
+            TabPanel(TabListEvent<V, V::Element>),
+        }
+        match self {
+            SectionContent::ProgressBars(progress_bars) => {
+                progress_bars.step().await;
+            }
+            SectionContent::TabPanel {
+                wrapper: _,
+                tab_list,
+                tab_panels,
+            } => {
+                let mut futs = vec![];
+                futs.push(tab_list.step().map(Step::TabList).boxed_local());
+
+                for panel in tab_panels.iter_mut() {
+                    futs.push(panel.step().map(Step::TabPanel).boxed_local());
+                }
+                match mogwai::future::race_all(futs).await {
+                    Step::TabList(TabListEvent::ItemClicked { id, .. }) => {
+                        tab_list.select_by_id(&id);
+                    }
+                    Step::TabPanel(_tab_list_event) => {}
+                }
+            }
+            _ => futures_lite::future::pending().await,
         }
     }
 }
@@ -203,48 +236,20 @@ impl<V: View> Section<V> {
     }
 
     async fn step(&mut self) {
-        enum Step<V: View> {
-            None,
+        enum Step {
             Top(bool),
-            TabList(TabListEvent<V, V::Element>),
-            TabPanel(TabListEvent<V, V::Element>),
+            Content,
         }
-        loop {
-            let top_toggled = self.top.step().map(Step::Top);
-            let content = match &mut self.content {
-                SectionContent::ProgressBars(progress_bars) => {
-                    progress_bars.step().map(|_| Step::None).boxed_local()
-                }
-                SectionContent::TabPanel {
-                    wrapper: _,
-                    tab_lists,
-                    tab_panels,
-                } => {
-                    let mut race = futures_lite::future::pending().boxed_local();
-                    for list in tab_lists.iter() {
-                        race = race.or(list.step().map(Step::TabList)).boxed_local();
-                    }
-                    for panel in tab_panels.iter_mut() {
-                        race = race.or(panel.step().map(Step::TabPanel)).boxed_local();
-                    }
-                    race
-                }
-                _ => futures_lite::future::pending().boxed_local(),
-            };
 
-            match top_toggled.or(content).await {
-                Step::None => {}
-                Step::Top(enabled) => {
-                    log::info!("section {} toggled: {enabled}", self.top.title);
-                    self.top.write_enabled().unwrap_throw();
-                    self.enabled.set(enabled);
-                }
-                Step::TabList(_ev) => {
-                    log::info!("tab list stepped");
-                }
-                Step::TabPanel(_ev) => {
-                    log::info!("tab panel stepped");
-                }
+        let top_toggled = self.top.step().map(Step::Top);
+        let content = self.content.step().map(|_| Step::Content);
+
+        match top_toggled.or(content).await {
+            Step::Content => {}
+            Step::Top(enabled) => {
+                log::info!("section {} toggled: {enabled}", self.top.title);
+                self.top.write_enabled().unwrap_throw();
+                self.enabled.set(enabled);
             }
         }
     }
@@ -971,7 +976,6 @@ fn make_tab_panel<V: View>(items: &[(&str, &[&str])]) -> TabPanel<V, V::Element,
 
 /// Build the "Tabs" section with multiple tab panel alignment demos.
 fn build_tabs<V: View>() -> Section<V> {
-    let mut tab_lists: Vec<TabList<V, V::Element>> = vec![];
     let mut tab_panels: Vec<TabPanel<V, V::Element, V::Element>> = vec![];
 
     // ── Standalone TabList ──
@@ -988,7 +992,6 @@ fn build_tabs<V: View>() -> Section<V> {
         rsx! { let item = span() { "Rocks" } }
         item
     });
-    list.push_spacer();
 
     // ── TabPanel: no alignment (tabs fill naturally) ──
     let panel_default = make_tab_panel::<V>(&[
@@ -1054,7 +1057,7 @@ fn build_tabs<V: View>() -> Section<V> {
     rsx! {
         let wrapper = div(class = "container-fluid") {
             div(class = "row mb-4") {
-                p() { "Standalone TabList with end spacer:" }
+                p() { "Standalone TabList:" }
                 {&list}
             }
             div(class = "row mb-4") {
@@ -1080,7 +1083,6 @@ fn build_tabs<V: View>() -> Section<V> {
         }
     }
 
-    tab_lists.push(list);
     tab_panels.push(panel_default);
     tab_panels.push(panel_start);
     tab_panels.push(panel_center);
@@ -1091,7 +1093,7 @@ fn build_tabs<V: View>() -> Section<V> {
         "Tabs",
         SectionContent::TabPanel {
             wrapper,
-            tab_lists,
+            tab_list: list,
             tab_panels,
         },
     )

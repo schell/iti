@@ -999,8 +999,10 @@ pre {
 	border-bottom: 1px solid var(--black900);
 	position: relative;
 	z-index: 1;
-	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
-	margin-right: 1px;
+	box-shadow:
+	  0 1px 0 rgba(255, 255, 255, 0.6),
+	  2px 0 0 rgb(0, 0, 0);
+	margin-right: 2px;
 }
 
 .nav-tabs:has(.nav-tab-spacer)::after {
@@ -1015,7 +1017,14 @@ pre {
 	list-style: none;
 	position: relative;
 	z-index: 1;
-	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+	box-shadow:
+	  /* highlight on the top of the underlying panel */
+	  0 1px 0 rgba(255, 255, 255, 0.6),
+	  /* */
+	  1px 0 0 rgb(0, 0, 0),
+	  -1px 0 0 rgb(0, 0, 0);
+	margin-left: 1px;
+	margin-right: 1px;
 }
 
 /* ── All tabs (inactive by default) ── */
@@ -1045,8 +1054,7 @@ pre {
 	cursor: pointer;
 	box-shadow:
 		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
-		inset -1px 0px 0 rgba(0, 0, 0, 0.4),
-		inset 0px -1px 0 rgba(38, 38, 38, 1.0);
+		inset -1px 0px 0 rgba(0, 0, 0, 0.4);
 }
 
 .nav-tabs .nav-item .nav-link:hover {
@@ -1872,6 +1880,15 @@ pre {
 	flex-direction: column;
 }
 
+/* Reinforce the bottom border on inactive tabs inside a tab-panel,
+   since it forms part of the content area's top edge. */
+.tab-panel .nav-tabs .nav-item .nav-link:not(.active) {
+	box-shadow:
+		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
+		inset -1px 0px 0 rgba(0, 0, 0, 0.4),
+		inset 0px -1px 0 rgba(38, 38, 38, 1.0);
+}
+
 /* ── Content area ── */
 
 .tab-panel > .container-fluid {
@@ -1880,7 +1897,7 @@ pre {
 	border-top: none;
 	box-shadow:
 		inset -1px -1px 0 rgba(38, 38, 38, 0.4),
-		inset 2px 0 0 rgba(255, 255, 255, 0.6),
+		inset 1px 0 0 rgba(255, 255, 255, 0.6),
 		2px 2px 0 rgba(0, 0, 0, 0.85);
 	padding: 1em;
 }
