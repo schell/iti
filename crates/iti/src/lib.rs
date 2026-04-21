@@ -16,6 +16,7 @@ use wasm_bindgen::prelude::*;
 pub mod assets;
 pub mod color;
 pub mod components;
+pub mod error;
 pub mod id;
 pub mod storage;
 

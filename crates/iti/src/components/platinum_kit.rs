@@ -8,6 +8,7 @@ use futures_lite::FutureExt;
 use mogwai::future::MogwaiFutureExt;
 use mogwai::prelude::*;
 use mogwai::web::prelude::wasm_bindgen_futures;
+use wasm_bindgen::UnwrapThrowExt;
 
 use crate::components::alert::Alert;
 use crate::components::badge::Badge;
@@ -21,27 +22,105 @@ use crate::components::radio::RadioGroup;
 use crate::components::select::Select;
 use crate::components::shadow::{Dither, Shadow};
 use crate::components::slider::SliderWithTicks;
+use crate::components::tab::library::TabListLibraryItem;
+use crate::components::tab::TabPanel;
 use crate::components::title_bar::TitleBar;
 use crate::components::Flavor;
 
-// ── Section separator ───────────────────────────────────────────
+#[derive(ViewChild)]
+struct ProgressBars<V: View> {
+    #[child]
+    wrapper: V::Element,
+    progress: Progress<V>,
+    zero_button: Button<V>,
+    percent_text: V::Text,
+}
+
+impl<V: View> ProgressBars<V> {
+    async fn step(&mut self) {
+        loop {
+            let hit_zero = self.zero_button.step().map(Some);
+            let tick = async {
+                mogwai::time::wait_millis(200).await;
+                None
+            };
+            match hit_zero.or(tick).await {
+                Some(_ev) => {
+                    self.progress.set_value(0);
+                }
+                None => {
+                    let current = self.progress.get_value();
+                    self.progress.set_value(current + 1);
+                }
+            }
+            self.percent_text
+                .set_text(format!("{}%", self.progress.get_value()));
+        }
+    }
+}
+
+pub enum SectionContent<V: View> {
+    Any(V::Element),
+    ProgressBars(ProgressBars<V>),
+    TabPanel(TabPanel<V, V::Element, V::Element>),
+}
+
+impl<V: View> ViewChild<V> for SectionContent<V> {
+    fn as_append_arg(
+        &self,
+    ) -> AppendArg<V, impl Iterator<Item = std::borrow::Cow<'_, <V as View>::Node>>> {
+        match self {
+            SectionContent::Any(el) => el.as_boxed_append_arg(),
+            SectionContent::ProgressBars(progress_bars) => progress_bars.as_boxed_append_arg(),
+            SectionContent::TabPanel(tab_panel) => tab_panel.as_boxed_append_arg(),
+        }
+    }
+}
 
 /// A dashed purple section in the Platinum Kit sandbox.
 ///
 /// Provides a titled container with a purple dashed border and an
-/// editorial section heading. Use [`push`](Section::push) to add
-/// content elements inside the dashed border area.
+/// editorial section heading.
 #[derive(ViewChild)]
 struct Section<V: View> {
     #[child]
     wrapper: V::Element,
-    content: V::Element,
+    content: SectionContent<V>,
+    title: String,
+    enabled: Proxy<bool>,
+    on_click: V::EventListener,
+    toggle: Checkbox<V>,
 }
 
 impl<V: View> Section<V> {
+    fn format_enabled_key(title: &str) -> String {
+        let title = title.replace(" ", "-").to_lowercase();
+        format!("section-{title}-enabled")
+    }
+
+    fn read_enabled(title: &str) -> Result<bool, crate::error::Error> {
+        let key = Self::format_enabled_key(title);
+        let maybe_bool: Option<bool> = crate::storage::get_item(&key)?;
+        Ok(maybe_bool.unwrap_or_else(|| {
+            log::info!("{key} was not stored, defaulting");
+            true
+        }))
+    }
+
+    fn write_enabled(&self) -> Result<(), crate::error::Error> {
+        let key = Self::format_enabled_key(&self.title);
+        let enabled = *self.enabled.as_ref();
+        log::info!("writing {key}: {enabled}");
+        crate::storage::set_item(key, &enabled)?;
+        Ok(())
+    }
+
     /// Create a new section with the given title.
-    fn new(title: &str) -> Self {
-        let mut enabled = Proxy::new(true);
+    fn new(title: &str, section_content: SectionContent<V>) -> Self {
+        let stored_enabled = Self::read_enabled(title).unwrap_throw();
+        log::info!("{title} enabled: {stored_enabled}");
+        let mut enabled = Proxy::new(stored_enabled);
+
         rsx! {
             let wrapper = div(class = "container", style:margin_top = "2em") {
                 span(
@@ -59,7 +138,7 @@ impl<V: View> Section<V> {
                     }}
                     {V::Text::new(title)}
                 }
-                let content = div(
+                div(
                     class = "row",
                     style:border = "2px dashed #7B61FF",
                     style:border_radius = "4px",
@@ -69,31 +148,34 @@ impl<V: View> Section<V> {
                     } else {
                         "none"
                     })
-                ) {}
+                ) {
+                    {&section_content}
+                }
             }
         }
-        wasm_bindgen_futures::spawn_local(async move {
-            let mut toggle = toggle;
-            loop {
-                let _ev = on_click.next().await;
-
-                enabled.modify(|is_enabled| {
-                    *is_enabled = !*is_enabled;
-                });
-
-                if toggle.is_checked() != *enabled {
-                    toggle.set_checked(*enabled);
-                }
-
-                log::info!("enabled: {}", *enabled);
-            }
-        });
-        Self { wrapper, content }
+        Self {
+            wrapper,
+            content: section_content,
+            enabled,
+            title: title.to_string(),
+            on_click,
+            toggle,
+        }
     }
 
-    /// Append a child element to the section content area.
-    fn push(&self, child: &impl ViewChild<V>) {
-        self.content.append_child(child);
+    async fn step(&mut self) {
+        loop {
+            let _ev = self.on_click.next().await;
+
+            self.enabled.modify(|is_enabled| {
+                *is_enabled = !*is_enabled;
+            });
+            self.write_enabled().unwrap_throw();
+
+            if self.toggle.is_checked() != *self.enabled {
+                self.toggle.set_checked(*self.enabled);
+            }
+        }
     }
 }
 
@@ -138,8 +220,6 @@ fn build_header<V: View>() -> V::Element {
 
 /// Build the "Panels and Colors" section with shadow demos and palette swatches.
 fn build_panels_and_colors<V: View>() -> Section<V> {
-    let section = Section::new("Panels and colors");
-
     rsx! {
         let panels = div(class = "d-flex flex-wrap gap-4") {
             div(
@@ -212,14 +292,11 @@ fn build_panels_and_colors<V: View>() -> Section<V> {
             }
         }
     }
-    section.push(&panels);
-    section
+    Section::new("Panels and colors", SectionContent::Any(panels))
 }
 
 /// Build the "Buttons" section with all button variants.
 fn build_buttons<V: View>() -> Section<V> {
-    let section = Section::new("Buttons");
-
     let mut btn_normal = Button::new("Button", None);
     btn_normal.set_has_icon(false);
 
@@ -359,14 +436,11 @@ fn build_buttons<V: View>() -> Section<V> {
             }
         }
     }
-    section.push(&content);
-    section
+    Section::new("Buttons", SectionContent::Any(content))
 }
 
 /// Build the "Checkboxes & Radios" section.
 fn build_checkboxes_and_radios<V: View>() -> Section<V> {
-    let section = Section::new("Checkboxes & Radios");
-
     let cb_default = Checkbox::new("Unchecked", false);
     let cb_checked = Checkbox::new("Checked", true);
 
@@ -417,16 +491,13 @@ fn build_checkboxes_and_radios<V: View>() -> Section<V> {
             }
         }
     }
-    section.push(&content);
-    section
+    Section::new("Checkboxes & Radios", SectionContent::Any(content))
 }
 
 /// Build the "Progress Bars" section.
 fn build_progress_bars<V: View>() -> Section<V> {
-    let section = Section::new("Progress Bars");
-
     rsx! {
-        let content = div(class = "panel", style:padding = "1em") {
+        let wrapper = div(class = "panel", style:padding = "1em") {
             p() {
                 strong() {
                     let percent_text = "0%"
@@ -445,36 +516,19 @@ fn build_progress_bars<V: View>() -> Section<V> {
         }
     }
 
-    section.push(&content);
-    wasm_bindgen_futures::spawn_local(async move {
-        let mut progress = progress;
-        let zero_button = zero_button;
-
-        loop {
-            let hit_zero = zero_button.step().map(Some);
-            let tick = async {
-                mogwai::time::wait_millis(200).await;
-                None
-            };
-            match hit_zero.or(tick).await {
-                Some(_ev) => {
-                    progress.set_value(0);
-                }
-                None => {
-                    let current = progress.get_value();
-                    progress.set_value(current + 1);
-                }
-            }
-            percent_text.set_text(format!("{}%", progress.get_value()));
-        }
-    });
-    section
+    Section::new(
+        "Progress Bars",
+        SectionContent::ProgressBars(ProgressBars {
+            wrapper,
+            progress,
+            zero_button,
+            percent_text,
+        }),
+    )
 }
 
 /// Build the "Sliders" section.
 fn build_sliders<V: View>() -> Section<V> {
-    let section = Section::new("Sliders");
-
     let ticked_slider = SliderWithTicks::new(
         0.0,
         6.0,
@@ -511,14 +565,11 @@ fn build_sliders<V: View>() -> Section<V> {
             {&unlabeled_ticks}
         }
     }
-    section.push(&content);
-    section
+    Section::new("Sliders", SectionContent::Any(content))
 }
 
 /// Build the "Selects" section with native select dropdowns.
 fn build_selects<V: View>() -> Section<V> {
-    let section = Section::new("Selects");
-
     // Default select
     let mut select_default = Select::new(None);
     select_default.push("Apple", "apple");
@@ -552,14 +603,11 @@ fn build_selects<V: View>() -> Section<V> {
             }
         }
     }
-    section.push(&content);
-    section
+    Section::new("Selects", SectionContent::Any(content))
 }
 
 /// Build the "Dropdowns" section with button dropdown menus.
 fn build_dropdowns<V: View>() -> Section<V> {
-    let section = Section::new("Dropdowns");
-
     // Interactive dropdown
     let mut dropdown = Dropdown::new("Click me", Flavor::Primary);
     dropdown.push("Action");
@@ -606,14 +654,11 @@ fn build_dropdowns<V: View>() -> Section<V> {
         }
     });
 
-    section.push(&content);
-    section
+    Section::new("Dropdowns", SectionContent::Any(content))
 }
 
 /// Build the "Text Inputs" section with input variants and textarea.
 fn build_text_inputs<V: View>() -> Section<V> {
-    let section = Section::new("Text Inputs");
-
     rsx! {
         let content = div(class = "d-flex flex-wrap gap-4 panel") {
             // Default and placeholder
@@ -745,14 +790,11 @@ fn build_text_inputs<V: View>() -> Section<V> {
             }
         }
     }
-    section.push(&content);
-    section
+    Section::new("Text Inputs", SectionContent::Any(content))
 }
 
 /// Build the "Alerts" section showing all flavor variants.
 fn build_alerts<V: View>() -> Section<V> {
-    let section = Section::new("Alerts");
-
     const FLAVORS: [Flavor; 8] = [
         Flavor::Primary,
         Flavor::Secondary,
@@ -776,15 +818,16 @@ fn build_alerts<V: View>() -> Section<V> {
             item
         })
         .collect();
-
-    section.push(&alert_items);
-    section
+    rsx! {
+        let content = slot() {
+            {alert_items}
+        }
+    }
+    Section::new("Alerts", SectionContent::Any(content))
 }
 
 /// Build the "Badges" section showing all flavor variants plus pill style.
 fn build_badges<V: View>() -> Section<V> {
-    let section = Section::new("Badges");
-
     const FLAVORS: [Flavor; 8] = [
         Flavor::Primary,
         Flavor::Secondary,
@@ -826,117 +869,57 @@ fn build_badges<V: View>() -> Section<V> {
             }
         }
     }
-    section.push(&content);
-    section
+    Section::new("Badges", SectionContent::Any(content))
 }
 
 /// Build the "Cards" section with a sample card.
-fn build_cards<V: View>() -> Section<V> {
-    let section = Section::new("Cards");
-
-    let mut card = Card::new();
-    card.set_header(&"Card Header".into_text::<V>());
-
+fn build_tabs<V: View>() -> Section<V> {
     rsx! {
-        let body_content = div() {
-            h5(class = "card-title") { "Card Title" }
-            p(class = "card-text") {
-                "Some quick example text to build on the card title and \
-                 make up the bulk of the card\u{2019}s content."
+        let default_pane = p() {
+            "This is the default pane."
+            "One must be supplied."
+        }
+    }
+    let mut tabs: TabPanel<V, V::Element, V::Element> = TabPanel::new(default_pane);
+    {
+        rsx! {
+            let dino_tab = span() {
+                "Dinosaurs"
             }
         }
-    }
-    card.set_body(&body_content);
-
-    rsx! {
-        let footer_text = small(class = "text-body-secondary") {
-            "Last updated 3 mins ago"
+        rsx! {
+            let dino_pane = div(class = "row") {
+                ul() {
+                    li() { "Galimimus" }
+                    li() { "Deinonychus" }
+                    li() { "Ankylosaurus" }
+                    li() { "Barney" }
+                }
+            }
         }
-    }
-    card.set_footer(&footer_text);
-
-    rsx! {
-        let content = div(class = "panel", style:max_width = "24rem") {
-            {&card}
+        rsx! {
+            let plant_tab = span() {
+                "Plants"
+            }
         }
-    }
-    section.push(&content);
-    section
-}
-
-/// Build the "Shadows" section showing the three dither levels.
-fn build_shadows<V: View>() -> Section<V> {
-    let section = Section::new("Shadows");
-
-    // Fine dither (default)
-    let mut shadow_fine = Shadow::new();
-    rsx! {
-        let box_fine = div(
-            class = "p-3 bg-white border",
-            style:width = "140px",
-            style:text_align = "center",
-        ) {
-            strong() { "Fine" }
-            br() {}
-            small(class = "text-muted") { "2px dither" }
+        rsx! {
+            let plant_pane = div(class = "row") {
+                ul() {
+                    li() { "Fern" }
+                    li() { "Tree Fern" }
+                    li() { "Other Ferns" }
+                }
+            }
         }
-    }
-    shadow_fine.set_content(&box_fine);
 
-    // Medium dither
-    let mut shadow_medium = Shadow::new();
-    shadow_medium.set_dither(Dither::Medium);
-    shadow_medium.set_color("#333399");
-    rsx! {
-        let box_medium = div(
-            class = "p-3 bg-white border",
-            style:width = "140px",
-            style:text_align = "center",
-        ) {
-            strong() { "Medium" }
-            br() {}
-            small(class = "text-muted") { "4px dither" }
-        }
+        let _ = tabs.push(dino_tab, dino_pane);
+        let _ = tabs.push(plant_tab, plant_pane);
     }
-    shadow_medium.set_content(&box_medium);
-
-    // Coarse dither
-    let mut shadow_coarse = Shadow::new();
-    shadow_coarse.set_dither(Dither::Coarse);
-    shadow_coarse.set_color("#006600");
-    shadow_coarse.set_offset(8);
-    rsx! {
-        let box_coarse = div(
-            class = "p-3 bg-white border",
-            style:width = "140px",
-            style:text_align = "center",
-        ) {
-            strong() { "Coarse" }
-            br() {}
-            small(class = "text-muted") { "8px dither" }
-        }
-    }
-    shadow_coarse.set_content(&box_coarse);
-
-    rsx! {
-        let content = div(
-            class = "d-flex flex-wrap gap-4",
-            style:background_color = "var(--gray200)",
-            style:padding = "1.5em",
-        ) {
-            {&shadow_fine}
-            {&shadow_medium}
-            {&shadow_coarse}
-        }
-    }
-    section.push(&content);
-    section
+    Section::new("Tabs", SectionContent::TabPanel(tabs))
 }
 
 /// Build the "Icons" section with a sampling from each category.
 fn build_icons<V: View>() -> Section<V> {
-    let section = Section::new("Icons");
-
     // Representative sampling: ~3 per category
     const SAMPLE_ICONS: &[(IconGlyph, &str)] = &[
         // Navigation
@@ -996,14 +979,11 @@ fn build_icons<V: View>() -> Section<V> {
             }
         }
     }
-    section.push(&content);
-    section
+    Section::new("Icons", SectionContent::Any(content))
 }
 
 /// Build the "Title Bars" section showing various title bar configurations.
 fn build_title_bars<V: View>() -> Section<V> {
-    let section = Section::new("Title Bars");
-
     // Basic title bar (no close button, no icon)
     let title_bar_basic = TitleBar::new("My Window");
 
@@ -1048,8 +1028,7 @@ fn build_title_bars<V: View>() -> Section<V> {
             }
         }
     }
-    section.push(&content);
-    section
+    Section::new("Title Bars", SectionContent::Any(content))
 }
 
 // ── Main component ──────────────────────────────────────────────
@@ -1062,32 +1041,45 @@ fn build_title_bars<V: View>() -> Section<V> {
 pub struct OverhaulLibraryItem<V: View> {
     #[child]
     pub wrapper: V::Element,
+    sections: Vec<Section<V>>,
 }
 
 impl<V: View> Default for OverhaulLibraryItem<V> {
     fn default() -> Self {
+        // Add the section, but don't append it to the DOM.
+        // Instead, returns the root element to be appended manually.
+        let mut sections = vec![];
+        let mut add_section = |section: Section<V>| -> V::Element {
+            let root = section.wrapper.clone();
+            sections.push(section);
+            root
+        };
+
         let header = build_header::<V>();
-        let panels = build_panels_and_colors::<V>();
-        let buttons = build_buttons::<V>();
-        let checkboxes = build_checkboxes_and_radios::<V>();
-        let progress = build_progress_bars::<V>();
-        let sliders = build_sliders::<V>();
-        let selects = build_selects::<V>();
-        let dropdowns = build_dropdowns::<V>();
-        let text_inputs = build_text_inputs::<V>();
-        let alerts = build_alerts::<V>();
-        let badges = build_badges::<V>();
-        let cards = build_cards::<V>();
-        let shadows = build_shadows::<V>();
-        let icons = build_icons::<V>();
-        let title_bars = build_title_bars::<V>();
+        let panels = add_section(build_panels_and_colors::<V>());
+        let buttons = add_section(build_buttons::<V>());
+        let checkboxes = add_section(build_checkboxes_and_radios::<V>());
+        let progress = add_section(build_progress_bars::<V>());
+        let sliders = add_section(build_sliders::<V>());
+        let selects = add_section(build_selects::<V>());
+        let dropdowns = add_section(build_dropdowns::<V>());
+        let text_inputs = add_section(build_text_inputs::<V>());
+        let alerts = add_section(build_alerts::<V>());
+        let badges = add_section(build_badges::<V>());
+        let tabs = add_section(build_tabs::<V>());
+        let icons = add_section(build_icons::<V>());
+        let title_bars = add_section(build_title_bars::<V>());
 
         rsx! {
             let wrapper = div(class = "container") {
                 {header}
-                {&panels}
-                {&buttons}
                 div(class = "row") {
+                    div(class = "col-auto") {
+                        {&panels}
+                    }
+                    div(class = "col-auto") {
+                        {&buttons}
+                    }
                     div(class = "col-auto") {
                         {&checkboxes}
                     }
@@ -1103,9 +1095,9 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     div(class = "col-auto") {
                         {&dropdowns}
                     }
-                }
-                {&text_inputs}
-                div(class = "row") {
+                    div(class = "col-auto") {
+                        {&text_inputs}
+                    }
                     div(class = "col-auto") {
                         {&alerts}
                     }
@@ -1113,12 +1105,7 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                         {&badges}
                     }
                     div(class = "col-auto") {
-                        {&cards}
-                    }
-                }
-                div(class = "row") {
-                    div(class = "col-auto") {
-                        {&shadows}
+                        {&tabs}
                     }
                     div(class = "col-auto") {
                         {&icons}
@@ -1130,6 +1117,17 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
             }
         }
 
-        Self { wrapper }
+        Self { wrapper, sections }
+    }
+}
+
+impl<V: View> OverhaulLibraryItem<V> {
+    pub async fn step(&mut self) {
+        let sections = self
+            .sections
+            .iter_mut()
+            .map(|section| section.step())
+            .collect::<Vec<_>>();
+        mogwai::future::race_all(sections).await
     }
 }

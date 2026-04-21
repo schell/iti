@@ -110,9 +110,10 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::Slider(item) => item.step().await,
             LibraryListPane::TabList(item) => item.step().await,
             LibraryListPane::Toast(item) => item.step().await,
-            LibraryListPane::Default(_) | LibraryListPane::Overhaul(_) => {
-                std::future::pending().await
+            LibraryListPane::Overhaul(item) => {
+                item.step().await;
             }
+            LibraryListPane::Default(_) => std::future::pending().await,
         }
     }
 }

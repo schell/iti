@@ -236,6 +236,16 @@ impl<V: View, T: ViewChild<V>> Panes<V, T> {
             was_selected,
         })
     }
+
+    /// Returns an iterator over all panes.
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.panes.values()
+    }
+
+    /// Returns a mutable iterator over all panes.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+        self.panes.values_mut()
+    }
 }
 
 #[cfg(feature = "library")]

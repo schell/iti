@@ -70,10 +70,8 @@ impl<V: View> Checkbox<V> {
 
     /// Programmatically set the checked state.
     pub fn set_checked(&mut self, checked: bool) {
-        log::info!("set checked {checked}");
         self.checked = checked;
         self.input.dyn_el(|input: &web_sys::HtmlInputElement| {
-            log::info!("checked: {checked}");
             input.set_checked(checked);
         });
         // if checked {

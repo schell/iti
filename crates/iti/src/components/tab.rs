@@ -1,10 +1,13 @@
 //! Page tabs (Bootstrap nav-tabs).
-use std::future::Future;
+use std::{collections::HashMap, future::Future};
 
 use futures_lite::FutureExt;
 use mogwai::prelude::*;
 
-use crate::id::{Id, IdPool};
+use crate::{
+    components::pane::Panes,
+    id::{Id, IdPool},
+};
 
 /// A single tab within a [`TabList`].
 #[derive(ViewChild, ViewProperties)]
@@ -78,7 +81,7 @@ pub struct TabItemRemoval<T> {
     pub was_selected: bool,
 }
 
-/// A Bootstrap nav-tabs component.
+/// A nav-tabs component.
 #[derive(ViewChild, ViewProperties)]
 pub struct TabList<V: View, T> {
     #[child]
@@ -221,6 +224,97 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
 
     pub async fn step(&self) -> TabListEvent<V, T> {
         self.item_events().await
+    }
+}
+
+/// A panel topped with a tab list.
+#[derive(ViewChild, ViewProperties)]
+pub struct TabPanel<V: View, T, P> {
+    #[child]
+    #[properties]
+    window: V::Element,
+
+    tabs: TabList<V, T>,
+    panes: Panes<V, P>,
+
+    tabs_to_panes: HashMap<Id<T>, Id<P>>,
+}
+
+impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
+    /// Create a new `TabPanel` with the default pane.
+    pub fn new(default_pane: P) -> Self {
+        rsx! {
+            let window = div(class = "window tab-panel") {
+                let tabs = {TabList::<V, T>::default()}
+                let content = div(class = "container-fluid") { }
+            }
+        }
+        let panes = Panes::new_retained(content, default_pane);
+
+        Self {
+            window,
+            tabs,
+            panes,
+            tabs_to_panes: Default::default(),
+        }
+    }
+
+    /// Push a new tab onto the end of the stack.
+    pub fn push(&mut self, tab: T, pane: P) -> Id<T> {
+        let tid = self.tabs.push(tab);
+        self.tabs.select_by_id(&tid);
+        let pid = self.panes.add_pane(pane);
+        self.panes.select(&pid);
+        self.tabs_to_panes.insert(tid.clone(), pid);
+        tid
+    }
+
+    /// Select a tab.
+    ///
+    /// Returns `Some(())` when the tab exists and was selected, otherwise `None`.
+    pub fn select(&mut self, tab_id: &Id<T>) -> Option<()> {
+        let pane_id = self.tabs_to_panes.get(tab_id)?;
+        self.tabs.select_by_id(tab_id);
+        self.panes.select(pane_id).then_some(())
+    }
+
+    /// Returns a reference to the active pane, if any.
+    pub fn get_active_pane(&self) -> Option<&P> {
+        self.tabs.iter().find_map(|tab| {
+            tab.is_active.then_some(())?;
+            let pane_id = self.tabs_to_panes.get(&tab.id)?;
+            self.panes.get_pane(pane_id)
+        })
+    }
+
+    /// Returns a reference to the active pane, if any.
+    pub fn get_active_pane_mut(&mut self) -> Option<&mut P> {
+        let pane_id = self
+            .tabs
+            .iter()
+            .find_map(|tab| {
+                tab.is_active.then_some(())?;
+                self.tabs_to_panes.get(&tab.id)
+            })?
+            .clone();
+        self.panes.get_pane_mut(&pane_id)
+    }
+
+    /// Step the panel.
+    pub async fn step(&mut self) -> TabListEvent<V, T> {
+        let ev = self.tabs.step().await;
+        match &ev {
+            TabListEvent::ItemClicked {
+                id,
+                index: _,
+                event: _,
+            } => {
+                if let Some(pane_id) = self.tabs_to_panes.get(&id) {
+                    self.panes.select(pane_id);
+                }
+            }
+        }
+        ev
     }
 }
 
