@@ -1818,45 +1818,87 @@ pre {
 /* -- Tab Panel -- */
 
 .tab-panel {
-	margin-top: var(--tab-height-offset);
+	display: flex;
+	flex-direction: column;
 }
+
+/* ── Tab bar ── */
 
 .tab-panel .nav.nav-tabs {
-	position: relative;
-	top: calc(0px - var(--tab-height-offset));
-	left: -12px;
+	display: flex;
+	align-items: flex-end;
 	border-bottom: none;
-	margin-bottom: calc(1em - var(--tab-height-offset));
 }
 
+/* Start spacer — pushes tabs inward from the left edge */
+.tab-panel .nav.nav-tabs::before {
+	content: "";
+	width: 12px;
+	border-bottom: 1px solid var(--black900);
+	align-self: flex-end;
+}
+
+/* End spacer — fills remaining width, provides bottom border + drop shadow */
+.tab-panel .nav.nav-tabs::after {
+	content: "";
+	flex-grow: 1;
+	border-bottom: 1px solid var(--black900);
+	box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.85);
+	align-self: flex-end;
+}
+
+/* ── All tabs (inactive by default) ── */
+
 .tab-panel .nav.nav-tabs .nav-item {
-	/* position: relative; */
-	/* top: -1px; */
-	border: solid 1px black;
-	border-bottom: none;
+	border: 1px solid var(--black900);
+	border-radius: 2px 2px 0px 0px;
+	margin-bottom: -1px;
+	box-shadow:
+		2px 2px #262626,
+		inset 1px 0px rgba(38, 38, 38, 0.4),
+		inset -2px -2px rgba(0, 0, 0, 1.0);
 }
 
 .tab-panel .nav.nav-tabs .nav-item .nav-link {
+	display: block;
 	border: none;
-	border-bottom: solid 1px #262626;
+	border-radius: 2px 2px 0px 0px;
 	margin-bottom: 0;
-	height: 25px;
+	padding: 3px 12px;
+	background-color: var(--iti-bg-dark);
 	box-shadow:
-	  inset 1px 1px 0 rgba(255, 255, 255, 0.6),
-	  inset -1px 0 0 rgba(38, 38, 38, 0.4);
+	  /* lightening from top-left */
+		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
+		inset -1px 0px 0 rgba(0, 0, 0, 0.4),
+		/* almost black to continue the outline of the panel */
+		inset 0px -1px 0 rgba(38, 38, 38, 1.0);
 }
+
+/* ── Active tab ── */
 
 .tab-panel .nav.nav-tabs .nav-item:has(.nav-link.active) {
-	border: solid 1px #262626;
-	border-bottom: solid 1px var(--gray200);
+	border-bottom: 1px solid var(--gray200);
 }
 
-
 .tab-panel .nav.nav-tabs .nav-item .nav-link.active {
-	border-bottom: solid 1px var(--gray200);
-	/* height: 27px; */
-	/* position: relative; */
-	/* top: -2px; */
+	background-color: var(--gray200);
+	box-shadow:
+	  /* lightening from top-left */
+		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
+		inset -1px 0px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ── Content area ── */
+
+.tab-panel > .container-fluid {
+	background-color: var(--gray200);
+	border: 1px solid var(--black900);
+	border-top: none;
+	box-shadow:
+		inset -1px -1px 0 rgba(38, 38, 38, 0.4),
+		inset 2px 0 0 rgba(255, 255, 255, 0.6),
+		2px 2px 0 rgba(0, 0, 0, 0.85);
+	padding: 1em;
 }
 
 

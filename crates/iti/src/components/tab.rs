@@ -244,7 +244,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// Create a new `TabPanel` with the default pane.
     pub fn new(default_pane: P) -> Self {
         rsx! {
-            let window = div(class = "window tab-panel") {
+            let window = div(class = "tab-panel") {
                 let tabs = {TabList::<V, T>::default()}
                 let content = div(class = "container-fluid") { }
             }
