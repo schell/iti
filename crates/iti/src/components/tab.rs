@@ -309,9 +309,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
                 index: _,
                 event: _,
             } => {
-                if let Some(pane_id) = self.tabs_to_panes.get(&id) {
-                    self.panes.select(pane_id);
-                }
+                self.select(id);
             }
         }
         ev

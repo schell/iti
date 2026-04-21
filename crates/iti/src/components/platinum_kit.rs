@@ -23,7 +23,7 @@ use crate::components::select::Select;
 use crate::components::shadow::{Dither, Shadow};
 use crate::components::slider::SliderWithTicks;
 use crate::components::tab::library::TabListLibraryItem;
-use crate::components::tab::TabPanel;
+use crate::components::tab::{TabList, TabListEvent, TabPanel};
 use crate::components::title_bar::TitleBar;
 use crate::components::Flavor;
 
@@ -62,7 +62,11 @@ impl<V: View> ProgressBars<V> {
 pub enum SectionContent<V: View> {
     Any(V::Element),
     ProgressBars(ProgressBars<V>),
-    TabPanel(TabPanel<V, V::Element, V::Element>),
+    TabPanel {
+        wrapper: V::Element,
+        tabs: TabList<V, V::Element>,
+        tab_panel: TabPanel<V, V::Element, V::Element>,
+    },
 }
 
 impl<V: View> ViewChild<V> for SectionContent<V> {
@@ -72,27 +76,22 @@ impl<V: View> ViewChild<V> for SectionContent<V> {
         match self {
             SectionContent::Any(el) => el.as_boxed_append_arg(),
             SectionContent::ProgressBars(progress_bars) => progress_bars.as_boxed_append_arg(),
-            SectionContent::TabPanel(tab_panel) => tab_panel.as_boxed_append_arg(),
+            SectionContent::TabPanel { wrapper, .. } => wrapper.as_boxed_append_arg(),
         }
     }
 }
 
-/// A dashed purple section in the Platinum Kit sandbox.
-///
-/// Provides a titled container with a purple dashed border and an
-/// editorial section heading.
 #[derive(ViewChild)]
-struct Section<V: View> {
+struct SectionTop<V: View> {
     #[child]
     wrapper: V::Element,
-    content: SectionContent<V>,
     title: String,
-    enabled: Proxy<bool>,
+    enabled: bool,
     on_click: V::EventListener,
     toggle: Checkbox<V>,
 }
 
-impl<V: View> Section<V> {
+impl<V: View> SectionTop<V> {
     fn format_enabled_key(title: &str) -> String {
         let title = title.replace(" ", "-").to_lowercase();
         format!("section-{title}-enabled")
@@ -109,35 +108,77 @@ impl<V: View> Section<V> {
 
     fn write_enabled(&self) -> Result<(), crate::error::Error> {
         let key = Self::format_enabled_key(&self.title);
-        let enabled = *self.enabled.as_ref();
+        let enabled = self.enabled;
         log::info!("writing {key}: {enabled}");
         crate::storage::set_item(key, &enabled)?;
         Ok(())
     }
 
+    fn new(title: &str) -> Self {
+        let enabled = Self::read_enabled(title).unwrap_throw();
+
+        rsx! {
+            let wrapper = span(
+                class = "editorial row",
+                style:font_size = "2em",
+                style:font_weight = "lighter",
+                style:color = crate::color::PURPLE,
+                style:cursor = "pointer",
+                on:click = on_click
+            ) {
+                let toggle = {{
+                    let c = Checkbox::new("", enabled);
+                    c.set_style("float", "left");
+                    c
+                }}
+                {V::Text::new(title)}
+            }
+        }
+
+        Self {
+            wrapper,
+            title: title.to_string(),
+            enabled,
+            on_click,
+            toggle,
+        }
+    }
+
+    /// Awaits a click and returns the toggled "enabled" state.
+    async fn step(&mut self) -> bool {
+        let _ev = self.on_click.next().await;
+
+        self.enabled = !self.enabled;
+
+        if self.toggle.is_checked() != self.enabled {
+            self.toggle.set_checked(self.enabled);
+        }
+
+        self.enabled
+    }
+}
+/// A dashed purple section in the Platinum Kit sandbox.
+///
+/// Provides a titled container with a purple dashed border and an
+/// editorial section heading.
+#[derive(ViewChild)]
+struct Section<V: View> {
+    #[child]
+    wrapper: V::Element,
+    top: SectionTop<V>,
+    content: SectionContent<V>,
+    enabled: Proxy<bool>,
+}
+
+impl<V: View> Section<V> {
     /// Create a new section with the given title.
     fn new(title: &str, section_content: SectionContent<V>) -> Self {
-        let stored_enabled = Self::read_enabled(title).unwrap_throw();
-        log::info!("{title} enabled: {stored_enabled}");
-        let mut enabled = Proxy::new(stored_enabled);
+        let top = SectionTop::new(title);
+        let mut enabled = Proxy::new(top.enabled);
 
         rsx! {
             let wrapper = div(class = "container", style:margin_top = "2em") {
-                span(
-                    class = "editorial row",
-                    style:font_size = "2em",
-                    style:font_weight = "lighter",
-                    style:color = crate::color::PURPLE,
-                    style:cursor = "pointer",
-                    on:click = on_click
-                ) {
-                    let toggle = {{
-                        let c = Checkbox::new("", *enabled);
-                        c.set_style("float", "left");
-                        c
-                    }}
-                    {V::Text::new(title)}
-                }
+                {&top}
                 div(
                     class = "row",
                     style:border = "2px dashed #7B61FF",
@@ -157,23 +198,48 @@ impl<V: View> Section<V> {
             wrapper,
             content: section_content,
             enabled,
-            title: title.to_string(),
-            on_click,
-            toggle,
+            top,
         }
     }
 
     async fn step(&mut self) {
+        enum Step<V: View> {
+            None,
+            Top(bool),
+            TabList(TabListEvent<V, V::Element>),
+            TabPanel(TabListEvent<V, V::Element>),
+        }
         loop {
-            let _ev = self.on_click.next().await;
+            let top_toggled = self.top.step().map(Step::Top);
+            let content = match &mut self.content {
+                SectionContent::ProgressBars(progress_bars) => {
+                    progress_bars.step().map(|_| Step::None).boxed_local()
+                }
+                SectionContent::TabPanel {
+                    wrapper: _,
+                    tabs,
+                    tab_panel,
+                } => {
+                    let tab_list = tabs.step().map(Step::TabList);
+                    let tab_panel = tab_panel.step().map(Step::TabPanel);
+                    tab_list.or(tab_panel).boxed_local()
+                }
+                _ => futures_lite::future::pending().boxed_local(),
+            };
 
-            self.enabled.modify(|is_enabled| {
-                *is_enabled = !*is_enabled;
-            });
-            self.write_enabled().unwrap_throw();
-
-            if self.toggle.is_checked() != *self.enabled {
-                self.toggle.set_checked(*self.enabled);
+            match top_toggled.or(content).await {
+                Step::None => {}
+                Step::Top(enabled) => {
+                    log::info!("section {} toggled: {enabled}", self.top.title);
+                    self.top.write_enabled().unwrap_throw();
+                    self.enabled.set(enabled);
+                }
+                Step::TabList(ev) => {
+                    log::info!("tab list stepped");
+                }
+                Step::TabPanel(ev) => {
+                    log::info!("tab panel stepped");
+                }
             }
         }
     }
@@ -880,7 +946,7 @@ fn build_tabs<V: View>() -> Section<V> {
             "One must be supplied."
         }
     }
-    let mut tabs: TabPanel<V, V::Element, V::Element> = TabPanel::new(default_pane);
+    let mut panel: TabPanel<V, V::Element, V::Element> = TabPanel::new(default_pane);
     {
         rsx! {
             let dino_tab = span() {
@@ -911,11 +977,64 @@ fn build_tabs<V: View>() -> Section<V> {
                 }
             }
         }
+        rsx! {
+            let cave_tab = span() {
+                "Cave Folks"
+            }
+        }
+        rsx! {
+            let cave_pane = div(class = "row") {
+                ul() {
+                    li() { "Zog" }
+                    li() { "Zug" }
+                    li() { "Zub" }
+                }
+            }
+        }
 
-        let _ = tabs.push(dino_tab, dino_pane);
-        let _ = tabs.push(plant_tab, plant_pane);
+        let _ = panel.push(dino_tab, dino_pane);
+        let _ = panel.push(plant_tab, plant_pane);
+        let _ = panel.push(cave_tab, cave_pane);
     }
-    Section::new("Tabs", SectionContent::TabPanel(tabs))
+
+    let mut list = TabList::default();
+    list.push({
+        rsx! {
+            let item = span() { "Mammals" }
+        }
+        item
+    });
+    list.push({
+        rsx! {
+            let item = span() { "Birds" }
+        }
+        item
+    });
+    list.push({
+        rsx! {
+            let item = span() { "Rocks" }
+        }
+        item
+    });
+
+    rsx! {
+        let wrapper = div(class = "container-fluid") {
+            div(class = "row mb-4") {
+                {&list}
+            }
+            div(class = "row") {
+                {&panel}
+            }
+        }
+    }
+    Section::new(
+        "Tabs",
+        SectionContent::TabPanel {
+            wrapper,
+            tabs: list,
+            tab_panel: panel,
+        },
+    )
 }
 
 /// Build the "Icons" section with a sampling from each category.
