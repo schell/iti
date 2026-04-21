@@ -984,39 +984,89 @@ pre {
 }
 
 .nav-tabs {
-	border-bottom: 2px solid var(--iti-border-dark);
+	display: flex;
+	align-items: flex-end;
+	border-bottom: none;
 }
 
-.nav-item {
-	margin-bottom: 0;
+/* Fallback fill — extends the bottom border across the full width
+   when no explicit spacer elements are present.
+   Hidden when spacers are present (they handle the fill instead). */
+.nav-tabs::after {
+	content: "";
+	flex-grow: 1;
+	align-self: flex-end;
+	border-bottom: 1px solid var(--black900);
+	position: relative;
+	z-index: 1;
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+	margin-right: 1px;
 }
 
-.nav-tabs .nav-link {
+.nav-tabs:has(.nav-tab-spacer)::after {
+	display: none;
+}
+
+/* ── Spacer — flexible element that absorbs available space ── */
+
+.nav-tabs .nav-tab-spacer {
+	flex-grow: 1;
+	border-bottom: 1px solid var(--black900);
+	list-style: none;
+	position: relative;
+	z-index: 1;
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* ── All tabs (inactive by default) ── */
+
+.nav-tabs .nav-item {
+	border: 1px solid var(--black900);
+	border-radius: 2px 2px 0px 0px;
+	margin-bottom: -1px;
+	box-shadow:
+		2px 2px #262626,
+		inset 1px 0px rgba(38, 38, 38, 0.4),
+		inset -2px -2px rgba(0, 0, 0, 1.0);
+}
+
+.nav-tabs .nav-item .nav-link {
 	display: block;
 	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	color: var(--iti-text);
 	background-color: var(--iti-bg-dark);
-	border: 2px solid;
-	border-color: var(--iti-border-light) var(--iti-border-dark) transparent var(--iti-border-light);
-	margin-bottom: -2px;
+	border: none;
+	border-radius: 2px 2px 0px 0px;
+	margin-bottom: 0;
 	padding: 3px 12px;
 	transition: none;
 	text-decoration: none;
 	cursor: pointer;
+	box-shadow:
+		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
+		inset -1px 0px 0 rgba(0, 0, 0, 0.4),
+		inset 0px -1px 0 rgba(38, 38, 38, 1.0);
 }
 
-.nav-tabs .nav-link:hover {
+.nav-tabs .nav-item .nav-link:hover {
 	background-color: var(--iti-bg-medium);
 	color: var(--iti-text);
-	border-color: var(--iti-border-light) var(--iti-border-dark) transparent var(--iti-border-light);
 }
 
-.nav-tabs .nav-link.active {
-	background-color: var(--iti-bg-light);
+/* ── Active tab ── */
+
+.nav-tabs .nav-item:has(.nav-link.active) {
+	border-bottom: 1px solid var(--gray200);
+}
+
+.nav-tabs .nav-item .nav-link.active {
+	background-color: var(--gray200);
 	color: var(--iti-text);
-	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-bg-light) var(--iti-border-light);
 	font-weight: normal;
+	box-shadow:
+		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
+		inset -1px 0px 0 rgba(0, 0, 0, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1820,83 +1870,6 @@ pre {
 .tab-panel {
 	display: flex;
 	flex-direction: column;
-}
-
-/* ── Tab bar ── */
-
-.tab-panel .nav.nav-tabs {
-	display: flex;
-	align-items: flex-end;
-	border-bottom: none;
-}
-
-/* Fallback fill — extends the panel's top border across the
-   full width when no explicit spacer elements are present.
-   When spacers exist, they share the flex-grow equally. */
-.tab-panel .nav.nav-tabs::after {
-	content: "";
-	flex-grow: 1;
-	align-self: flex-end;
-	border-bottom: 1px solid var(--black900);
-	position: relative;
-	z-index: 1;
-	box-shadow:
-		0 1px 0 rgba(255, 255, 255, 0.6),
-		1px 0 0 #262626;
-	margin-right: 1px;
-}
-
-/* ── Spacer — flexible element that absorbs available space ── */
-
-.tab-panel .nav.nav-tabs .nav-tab-spacer {
-	flex-grow: 1;
-	border-bottom: 1px solid var(--black900);
-	list-style: none;
-	position: relative;
-	z-index: 1;
-	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-/* ── All tabs (inactive by default) ── */
-
-.tab-panel .nav.nav-tabs .nav-item {
-	border: 1px solid var(--black900);
-	border-radius: 2px 2px 0px 0px;
-	margin-bottom: -1px;
-	box-shadow:
-		2px 2px #262626,
-		inset 1px 0px rgba(38, 38, 38, 0.4),
-		inset -2px -2px rgba(0, 0, 0, 1.0);
-}
-
-.tab-panel .nav.nav-tabs .nav-item .nav-link {
-	display: block;
-	border: none;
-	border-radius: 2px 2px 0px 0px;
-	margin-bottom: 0;
-	padding: 3px 12px;
-	background-color: var(--iti-bg-dark);
-	box-shadow:
-	  /* lightening from top-left */
-		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
-		/* darkening on the right */
-		inset -1px 0px 0 rgba(0, 0, 0, 0.4),
-		/* almost black to continue the outline of the panel */
-		inset 0px -1px 0 rgba(38, 38, 38, 1.0); 
-}
-
-/* ── Active tab ── */
-
-.tab-panel .nav.nav-tabs .nav-item:has(.nav-link.active) {
-	border-bottom: 1px solid var(--gray200);
-}
-
-.tab-panel .nav.nav-tabs .nav-item .nav-link.active {
-	background-color: var(--gray200);
-	box-shadow:
-	  /* lightening from top-left */
-		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
-		inset -1px 0px 0 rgba(0, 0, 0, 0.4);
 }
 
 /* ── Content area ── */

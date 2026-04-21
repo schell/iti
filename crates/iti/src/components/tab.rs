@@ -461,6 +461,26 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
         tid
     }
 
+    /// Push a spacer onto the end of the tab bar.
+    pub fn push_spacer(&mut self) {
+        self.tabs.push_spacer();
+    }
+
+    /// Insert a spacer before the tab identified by `tab_id`.
+    pub fn insert_spacer_before(&mut self, tab_id: &Id<T>) {
+        self.tabs.insert_spacer_before(tab_id);
+    }
+
+    /// Insert a spacer after the tab identified by `tab_id`.
+    pub fn insert_spacer_after(&mut self, tab_id: &Id<T>) {
+        self.tabs.insert_spacer_after(tab_id);
+    }
+
+    /// Remove all spacers from the tab bar.
+    pub fn remove_all_spacers(&mut self) {
+        self.tabs.remove_all_spacers();
+    }
+
     /// Set the alignment of tabs within the panel.
     ///
     /// This inserts or removes spacers to achieve the desired alignment.

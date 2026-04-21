@@ -23,7 +23,7 @@ use crate::components::select::Select;
 use crate::components::shadow::{Dither, Shadow};
 use crate::components::slider::SliderWithTicks;
 use crate::components::tab::library::TabListLibraryItem;
-use crate::components::tab::{TabList, TabListEvent, TabPanel};
+use crate::components::tab::{TabAlignment, TabList, TabListEvent, TabPanel};
 use crate::components::title_bar::TitleBar;
 use crate::components::Flavor;
 
@@ -64,8 +64,8 @@ pub enum SectionContent<V: View> {
     ProgressBars(ProgressBars<V>),
     TabPanel {
         wrapper: V::Element,
-        tabs: TabList<V, V::Element>,
-        tab_panel: TabPanel<V, V::Element, V::Element>,
+        tab_lists: Vec<TabList<V, V::Element>>,
+        tab_panels: Vec<TabPanel<V, V::Element, V::Element>>,
     },
 }
 
@@ -217,12 +217,17 @@ impl<V: View> Section<V> {
                 }
                 SectionContent::TabPanel {
                     wrapper: _,
-                    tabs,
-                    tab_panel,
+                    tab_lists,
+                    tab_panels,
                 } => {
-                    let tab_list = tabs.step().map(Step::TabList);
-                    let tab_panel = tab_panel.step().map(Step::TabPanel);
-                    tab_list.or(tab_panel).boxed_local()
+                    let mut race = futures_lite::future::pending().boxed_local();
+                    for list in tab_lists.iter() {
+                        race = race.or(list.step().map(Step::TabList)).boxed_local();
+                    }
+                    for panel in tab_panels.iter_mut() {
+                        race = race.or(panel.step().map(Step::TabPanel)).boxed_local();
+                    }
+                    race
                 }
                 _ => futures_lite::future::pending().boxed_local(),
             };
@@ -938,102 +943,156 @@ fn build_badges<V: View>() -> Section<V> {
     Section::new("Badges", SectionContent::Any(content))
 }
 
-/// Build the "Cards" section with a sample card.
-fn build_tabs<V: View>() -> Section<V> {
+/// Helper to build a simple [`TabPanel`] with the given tab/pane pairs.
+fn make_tab_panel<V: View>(items: &[(&str, &[&str])]) -> TabPanel<V, V::Element, V::Element> {
     rsx! {
-        let default_pane = p() {
-            "This is the default pane."
-            "One must be supplied."
-        }
+        let default_pane = p() { "Empty." }
     }
     let mut panel: TabPanel<V, V::Element, V::Element> = TabPanel::new(default_pane);
-    panel.set_style("min-width", "500px");
-    {
+    for (tab_label, pane_items) in items {
         rsx! {
-            let dino_tab = span() {
-                "Dinosaurs"
-            }
+            let tab = span() { {(*tab_label).into_text::<V>()} }
         }
         rsx! {
-            let dino_pane = div(class = "row") {
-                ul() {
-                    li() { "Galimimus" }
-                    li() { "Deinonychus" }
-                    li() { "Ankylosaurus" }
-                    li() { "Barney" }
-                }
+            let pane = div(class = "row", style:padding = "0 1em") {
+                let list = ul() {}
             }
         }
-        rsx! {
-            let plant_tab = span() {
-                "Plants"
+        for pane_item in *pane_items {
+            rsx! {
+                let item = li() { {(*pane_item).into_text::<V>()} }
             }
+            list.append_child(&item);
         }
-        rsx! {
-            let plant_pane = div(class = "row") {
-                ul() {
-                    li() { "Fern" }
-                    li() { "Tree Fern" }
-                    li() { "Other Ferns" }
-                }
-            }
-        }
-        rsx! {
-            let cave_tab = span() {
-                "Cave Folks"
-            }
-        }
-        rsx! {
-            let cave_pane = div(class = "row") {
-                ul() {
-                    li() { "Zog" }
-                    li() { "Zug" }
-                    li() { "Zub" }
-                }
-            }
-        }
-
-        let _ = panel.push(dino_tab, dino_pane);
-        let _ = panel.push(plant_tab, plant_pane);
-        let _ = panel.push(cave_tab, cave_pane);
+        let _ = panel.push(tab, pane);
     }
+    panel
+}
 
+/// Build the "Tabs" section with multiple tab panel alignment demos.
+fn build_tabs<V: View>() -> Section<V> {
+    let mut tab_lists: Vec<TabList<V, V::Element>> = vec![];
+    let mut tab_panels: Vec<TabPanel<V, V::Element, V::Element>> = vec![];
+
+    // ── Standalone TabList ──
     let mut list = TabList::default();
     list.push({
-        rsx! {
-            let item = span() { "Mammals" }
-        }
+        rsx! { let item = span() { "Mammals" } }
         item
     });
     list.push({
-        rsx! {
-            let item = span() { "Birds" }
-        }
+        rsx! { let item = span() { "Birds" } }
         item
     });
     list.push({
-        rsx! {
-            let item = span() { "Rocks" }
-        }
+        rsx! { let item = span() { "Rocks" } }
         item
     });
+    list.push_spacer();
+
+    // ── TabPanel: no alignment (tabs fill naturally) ──
+    let panel_default = make_tab_panel::<V>(&[
+        (
+            "Dinosaurs",
+            &["Galimimus", "Deinonychus", "Ankylosaurus", "Barney"],
+        ),
+        ("Plants", &["Fern", "Tree Fern", "Other Ferns"]),
+        ("Cave Folks", &["Zog", "Zug", "Zub"]),
+    ]);
+    panel_default.set_style("min-width", "500px");
+
+    // ── TabPanel: Start alignment (tabs left, spacer right) ──
+    let mut panel_start = make_tab_panel::<V>(&[
+        ("Alpha", &["First item", "Second item"]),
+        ("Beta", &["Another item"]),
+    ]);
+    panel_start.set_style("min-width", "500px");
+    panel_start.set_alignment(TabAlignment::Start);
+
+    // ── TabPanel: Center alignment ──
+    let mut panel_center = make_tab_panel::<V>(&[
+        ("Left", &["Port side"]),
+        ("Middle", &["Amidships"]),
+        ("Right", &["Starboard side"]),
+    ]);
+    panel_center.set_style("min-width", "500px");
+    panel_center.set_alignment(TabAlignment::Center);
+
+    // ── TabPanel: End alignment (spacer left, tabs right) ──
+    let mut panel_end = make_tab_panel::<V>(&[
+        ("Settings", &["Volume", "Brightness"]),
+        ("About", &["Version 1.0"]),
+    ]);
+    panel_end.set_style("min-width", "500px");
+    panel_end.set_alignment(TabAlignment::End);
+
+    // ── TabPanel: Split groups (two left, spacer, two right) ──
+    rsx! { let split_default = p() { "Select a tab." } }
+    let mut panel_split: TabPanel<V, V::Element, V::Element> = TabPanel::new(split_default);
+    panel_split.set_style("min-width", "500px");
+    {
+        rsx! { let tab = span() { "File" } }
+        rsx! { let pane = div(class = "row", style:padding = "0 1em") { ul() { li() { "New" } li() { "Open" } li() { "Save" } } } }
+        let _ = panel_split.push(tab, pane);
+
+        rsx! { let tab = span() { "Edit" } }
+        rsx! { let pane = div(class = "row", style:padding = "0 1em") { ul() { li() { "Cut" } li() { "Copy" } li() { "Paste" } } } }
+        let edit_id = panel_split.push(tab, pane);
+
+        rsx! { let tab = span() { "View" } }
+        rsx! { let pane = div(class = "row", style:padding = "0 1em") { ul() { li() { "Zoom In" } li() { "Zoom Out" } } } }
+        let _ = panel_split.push(tab, pane);
+
+        rsx! { let tab = span() { "Help" } }
+        rsx! { let pane = div(class = "row", style:padding = "0 1em") { ul() { li() { "About" } li() { "Docs" } } } }
+        let _ = panel_split.push(tab, pane);
+
+        // Insert a spacer between "Edit" and "View".
+        panel_split.insert_spacer_after(&edit_id);
+    }
 
     rsx! {
         let wrapper = div(class = "container-fluid") {
             div(class = "row mb-4") {
+                p() { "Standalone TabList with end spacer:" }
                 {&list}
             }
-            div(class = "row") {
-                {&panel}
+            div(class = "row mb-4") {
+                p() { "No alignment (tabs fill naturally):" }
+                {&panel_default}
+            }
+            div(class = "row mb-4") {
+                p() { "Start alignment:" }
+                {&panel_start}
+            }
+            div(class = "row mb-4") {
+                p() { "Center alignment:" }
+                {&panel_center}
+            }
+            div(class = "row mb-4") {
+                p() { "End alignment:" }
+                {&panel_end}
+            }
+            div(class = "row mb-4") {
+                p() { "Split groups (spacer between Edit and View):" }
+                {&panel_split}
             }
         }
     }
+
+    tab_lists.push(list);
+    tab_panels.push(panel_default);
+    tab_panels.push(panel_start);
+    tab_panels.push(panel_center);
+    tab_panels.push(panel_end);
+    tab_panels.push(panel_split);
+
     Section::new(
         "Tabs",
         SectionContent::TabPanel {
             wrapper,
-            tabs: list,
-            tab_panel: panel,
+            tab_lists,
+            tab_panels,
         },
     )
 }
