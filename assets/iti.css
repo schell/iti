@@ -1881,12 +1881,27 @@ pre {
 }
 
 /* Reinforce the bottom border on inactive tabs inside a tab-panel,
-   since it forms part of the content area's top edge. */
+   since it forms part of the content area's top edge.
+   Also position: relative so the ::after highlight can be placed. */
 .tab-panel .nav-tabs .nav-item .nav-link:not(.active) {
+	position: relative;
 	box-shadow:
 		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
 		inset -1px 0px 0 rgba(0, 0, 0, 0.4),
 		inset 0px -1px 0 rgba(38, 38, 38, 1.0);
+}
+
+/* White highlight below inactive tabs inside a tab-panel,
+   matching the panel's inner bevel. */
+.tab-panel .nav-tabs .nav-item .nav-link:not(.active)::after {
+	content: "";
+	position: absolute;
+	bottom: -1px;
+	left: 0px;
+	right: 0px;
+	height: 1px;
+	background: rgba(255, 255, 255, 0.6);
+	z-index: 1;
 }
 
 /* ── Content area ── */
