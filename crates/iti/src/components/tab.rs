@@ -556,26 +556,25 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
         ev
     }
 
-    /// Step the panel and step all panes with the given function.
-    pub async fn step_with<Ev, Fut>(
+    /// Step the panel, racing tab clicks against all pane steps.
+    ///
+    /// The closure `f` is called once per pane and should return a future that
+    /// completes when that pane has something to report. All pane futures are
+    /// raced against the tab-click future; the first to resolve wins.
+    ///
+    /// When a tab click wins, the panel automatically selects the clicked tab
+    /// and its corresponding pane.
+    pub async fn step_with<Ev>(
         &mut self,
-        f: impl FnMut(&mut P) -> Fut,
-    ) -> TabPanelEvent<V, T, Ev>
-    where
-        Fut: std::future::Future<Output = Ev>,
-    {
-        let tabs = self.tabs.step().map(TabPanelEvent::Tabs);
-        let panes =
+        f: impl FnMut(&mut P) -> std::pin::Pin<Box<dyn std::future::Future<Output = Ev> + '_>>,
+    ) -> TabPanelEvent<V, T, Ev> {
+        let tab_fut = self.tabs.step().map(TabPanelEvent::Tabs);
+        let pane_fut =
             mogwai::future::race_all(self.panes.iter_mut().map(f)).map(TabPanelEvent::Panes);
-        let ev = tabs.or(panes).await;
-        if let TabPanelEvent::Tabs(TabListEvent::ItemClicked {
-            id,
-            index: _,
-            event: _,
-        }) = &ev
-        {
+        let ev = tab_fut.or(pane_fut).await;
+        if let TabPanelEvent::Tabs(TabListEvent::ItemClicked { id, .. }) = &ev {
             self.select(id);
-        };
+        }
         ev
     }
 }
