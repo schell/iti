@@ -541,7 +541,17 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
         self.panes.get_pane_mut(&pane_id)
     }
 
-    /// Step the panel.
+    /// Iterate over the panes.
+    pub fn iter_panes(&self) -> impl Iterator<Item = &P> {
+        self.panes.iter()
+    }
+
+    /// Iterate over the panes, mutably.
+    pub fn iter_mut_panes(&mut self) -> impl Iterator<Item = &mut P> {
+        self.panes.iter_mut()
+    }
+
+    /// Step the tabs.
     pub async fn step(&mut self) -> TabListEvent<V, T> {
         let ev = self.tabs.step().await;
         match &ev {

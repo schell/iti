@@ -1,7 +1,5 @@
 //! Reusable UI components with a Mac OS 9 Platinum aesthetic.
 
-use mogwai::view::View;
-
 pub mod alert;
 pub mod badge;
 pub mod button;
