@@ -16,6 +16,10 @@ use crate::components::button::{Button, PrimaryButton};
 use crate::components::checkbox::Checkbox;
 use crate::components::dropdown::{Dropdown, DropdownEvent};
 use crate::components::icon::{Icon, IconGlyph, IconSize};
+use crate::components::icon_classic::{
+    ApplicationsIcon, ControlPanelIcon, ControlStripIcon, FolderIcon, IconClassic,
+    IconClassicGlyph, MenuBarIcon, SystemIcon,
+};
 use crate::components::progress::Progress;
 use crate::components::radio::RadioGroup;
 use crate::components::select::Select;
@@ -26,7 +30,7 @@ use crate::components::title_bar::TitleBar;
 use crate::components::Flavor;
 
 #[derive(ViewChild)]
-struct ProgressBars<V: View> {
+pub struct ProgressBars<V: View> {
     #[child]
     wrapper: V::Element,
     progress: Progress<V>,
@@ -57,10 +61,69 @@ impl<V: View> ProgressBars<V> {
     }
 }
 
+#[derive(ViewChild)]
+pub struct IconClassicLibraryItem<V: View> {
+    #[child]
+    container: V::Element,
+}
+
+impl<V: View> Default for IconClassicLibraryItem<V> {
+    fn default() -> Self {
+        fn make_icons<V: View>(
+            title: &str,
+            glyphs: impl IntoIterator<Item = IconClassicGlyph>,
+        ) -> V::Element {
+            rsx! {
+                let wrapper = div(class = "panel mb-4") {
+                    p(class = "mb-2") {
+                        {title.into_text::<V>()}
+                    }
+                    div(class = "row") {
+                        {{
+                            glyphs
+                                .into_iter()
+                                .map(|icon| {
+                                    rsx! {
+                                        let wrapper = div(class = "col-auto mb-3") {
+                                            {IconClassic::<V>::new(icon)}
+                                        }
+                                    }
+                                    wrapper
+                                })
+                                .collect::<Vec<_>>()
+                        }}
+                    }
+                }
+            }
+            wrapper
+        }
+        rsx! {
+            let container = slot() {
+                {make_icons::<V>("System Icons (41)", SystemIcon::ALL.map(IconClassicGlyph::System))}
+                {make_icons::<V>("Application Icons (22)", ApplicationsIcon::ALL.map(IconClassicGlyph::Applications))}
+                {make_icons::<V>("Control Panel Icons (34)", ControlPanelIcon::ALL.map(IconClassicGlyph::ControlPanel))}
+                {make_icons::<V>("Control Strip Icons (12)", ControlStripIcon::ALL.map(IconClassicGlyph::ControlStrip))}
+                {make_icons::<V>("Folder Icons (24)", FolderIcon::ALL.map(IconClassicGlyph::Folder))}
+                {make_icons::<V>("Menu Bar Icons (16)", MenuBarIcon::ALL.map(IconClassicGlyph::MenuBar))}
+            }
+        }
+
+        Self { container }
+    }
+}
+
+impl<V: View> IconClassicLibraryItem<V> {
+    pub async fn step(&mut self) {
+        // Await on pending to keep the event loop running
+        futures_lite::future::pending().await
+    }
+}
+
 pub enum SectionContent<V: View> {
     Any(V::Element),
     ProgressBars(ProgressBars<V>),
     TableLibrary(TableLibraryItem<V>),
+    IconClassicLibrary(IconClassicLibraryItem<V>),
     TabPanel {
         wrapper: V::Element,
         tab_list: TabList<V, V::Element>,
@@ -76,6 +139,7 @@ impl<V: View> ViewChild<V> for SectionContent<V> {
             SectionContent::Any(el) => el.as_boxed_append_arg(),
             SectionContent::ProgressBars(progress_bars) => progress_bars.as_boxed_append_arg(),
             SectionContent::TableLibrary(table_library) => table_library.as_boxed_append_arg(),
+            SectionContent::IconClassicLibrary(icon_library) => icon_library.as_boxed_append_arg(),
             SectionContent::TabPanel { wrapper, .. } => wrapper.as_boxed_append_arg(),
         }
     }
@@ -93,6 +157,9 @@ impl<V: View> SectionContent<V> {
             }
             SectionContent::TableLibrary(table_library) => {
                 table_library.step().await;
+            }
+            SectionContent::IconClassicLibrary(icon_library) => {
+                icon_library.step().await;
             }
             SectionContent::TabPanel {
                 wrapper: _,
@@ -1163,7 +1230,7 @@ fn build_icons<V: View>() -> Section<V> {
             }
         }
     }
-    Section::new("Icons", SectionContent::Any(content))
+    Section::new("FontAwesome Icons", SectionContent::Any(content))
 }
 
 /// Build the "Title Bars" section showing various title bar configurations.
@@ -1215,6 +1282,15 @@ fn build_title_bars<V: View>() -> Section<V> {
     Section::new("Title Bars", SectionContent::Any(content))
 }
 
+/// Build the "Classic Icons" section showing the System classic Mac OS icons.
+fn build_icon_classic<V: View>() -> Section<V> {
+    let icon_library = IconClassicLibraryItem::default();
+    Section::new(
+        "Classic Icons",
+        SectionContent::IconClassicLibrary(icon_library),
+    )
+}
+
 /// Build the "Tables" section showing the Platinum folder list style table.
 fn build_tables<V: View>() -> Section<V> {
     let table_library = TableLibraryItem::default();
@@ -1258,6 +1334,7 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         let badges = add_section(build_badges::<V>());
         let tabs = add_section(build_tabs::<V>());
         let icons = add_section(build_icons::<V>());
+        let icon_classics = add_section(build_icon_classic::<V>());
         let title_bars = add_section(build_title_bars::<V>());
         let tables = add_section(build_tables::<V>());
 
@@ -1300,6 +1377,9 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     }
                     div(class = "col-auto") {
                         {&icons}
+                    }
+                    div(class = "col-auto") {
+                        {&icon_classics}
                     }
                     div(class = "col-auto") {
                         {&title_bars}

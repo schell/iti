@@ -8,6 +8,7 @@ pub mod card;
 pub mod checkbox;
 pub mod dropdown;
 pub mod icon;
+pub mod icon_classic;
 pub mod list;
 pub mod modal;
 pub mod pane;
