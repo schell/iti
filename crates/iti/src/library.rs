@@ -16,7 +16,6 @@ use crate::components::{
     radio::library::RadioLibraryItem,
     select::library::SelectLibraryItem,
     slider::library::SliderLibraryItem,
-    tab::library::TabListLibraryItem,
     toast::library::ToastLibraryItem,
 };
 
@@ -55,7 +54,6 @@ pub enum LibraryListPane<V: View> {
     Radio(RadioLibraryItem<V>),
     Select(SelectLibraryItem<V>),
     Slider(SliderLibraryItem<V>),
-    TabList(TabListLibraryItem<V>),
     Toast(ToastLibraryItem<V>),
 }
 
@@ -86,7 +84,6 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::Radio(item) => item.as_boxed_append_arg(),
             LibraryListPane::Select(item) => item.as_boxed_append_arg(),
             LibraryListPane::Slider(item) => item.as_boxed_append_arg(),
-            LibraryListPane::TabList(item) => item.as_boxed_append_arg(),
             LibraryListPane::Toast(item) => item.as_boxed_append_arg(),
         }
     }
@@ -108,7 +105,6 @@ impl<V: View> LibraryListPane<V> {
             LibraryListPane::Radio(item) => item.step().await,
             LibraryListPane::Select(item) => item.step().await,
             LibraryListPane::Slider(item) => item.step().await,
-            LibraryListPane::TabList(item) => item.step().await,
             LibraryListPane::Toast(item) => item.step().await,
             LibraryListPane::Overhaul(item) => {
                 item.step().await;
@@ -200,10 +196,6 @@ impl<V: View> Default for Library<V> {
 
         lib.add_item("components::Panes<T> (Retain)", || {
             LibraryListPane::PaneRetain(Default::default())
-        });
-
-        lib.add_item("components::TabList<T>", || {
-            LibraryListPane::TabList(Default::default())
         });
 
         lib.add_item("components::Toast", || {

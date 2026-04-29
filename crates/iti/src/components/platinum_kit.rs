@@ -13,17 +13,15 @@ use wasm_bindgen::UnwrapThrowExt;
 use crate::components::alert::Alert;
 use crate::components::badge::Badge;
 use crate::components::button::{Button, PrimaryButton};
-use crate::components::card::Card;
 use crate::components::checkbox::Checkbox;
 use crate::components::dropdown::{Dropdown, DropdownEvent};
 use crate::components::icon::{Icon, IconGlyph, IconSize};
 use crate::components::progress::Progress;
 use crate::components::radio::RadioGroup;
 use crate::components::select::Select;
-use crate::components::shadow::{Dither, Shadow};
 use crate::components::slider::SliderWithTicks;
-use crate::components::tab::library::TabListLibraryItem;
 use crate::components::tab::{TabAlignment, TabList, TabListEvent, TabPanel};
+use crate::components::table::library::TableLibraryItem;
 use crate::components::title_bar::TitleBar;
 use crate::components::Flavor;
 
@@ -62,6 +60,7 @@ impl<V: View> ProgressBars<V> {
 pub enum SectionContent<V: View> {
     Any(V::Element),
     ProgressBars(ProgressBars<V>),
+    TableLibrary(TableLibraryItem<V>),
     TabPanel {
         wrapper: V::Element,
         tab_list: TabList<V, V::Element>,
@@ -76,6 +75,7 @@ impl<V: View> ViewChild<V> for SectionContent<V> {
         match self {
             SectionContent::Any(el) => el.as_boxed_append_arg(),
             SectionContent::ProgressBars(progress_bars) => progress_bars.as_boxed_append_arg(),
+            SectionContent::TableLibrary(table_library) => table_library.as_boxed_append_arg(),
             SectionContent::TabPanel { wrapper, .. } => wrapper.as_boxed_append_arg(),
         }
     }
@@ -90,6 +90,9 @@ impl<V: View> SectionContent<V> {
         match self {
             SectionContent::ProgressBars(progress_bars) => {
                 progress_bars.step().await;
+            }
+            SectionContent::TableLibrary(table_library) => {
+                table_library.step().await;
             }
             SectionContent::TabPanel {
                 wrapper: _,
@@ -1212,6 +1215,12 @@ fn build_title_bars<V: View>() -> Section<V> {
     Section::new("Title Bars", SectionContent::Any(content))
 }
 
+/// Build the "Tables" section showing the Platinum folder list style table.
+fn build_tables<V: View>() -> Section<V> {
+    let table_library = TableLibraryItem::default();
+    Section::new("Tables", SectionContent::TableLibrary(table_library))
+}
+
 // ── Main component ──────────────────────────────────────────────
 
 /// Sandbox library item for the Platinum design system overhaul.
@@ -1250,6 +1259,7 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         let tabs = add_section(build_tabs::<V>());
         let icons = add_section(build_icons::<V>());
         let title_bars = add_section(build_title_bars::<V>());
+        let tables = add_section(build_tables::<V>());
 
         rsx! {
             let wrapper = div(class = "container") {
@@ -1293,6 +1303,9 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     }
                     div(class = "col-auto") {
                         {&title_bars}
+                    }
+                    div(class = "col-auto") {
+                        {&tables}
                     }
                 }
             }
