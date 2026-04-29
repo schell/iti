@@ -95,7 +95,7 @@ pub struct TableRow<V: View, T> {
 
 /// Events emitted by the table.
 #[derive(Debug)]
-pub enum TableEvent {
+pub enum TableEvent<Ev = ()> {
     /// User clicked a column header to set it as the active sort column.
     HeaderClicked { col_index: usize },
 
@@ -103,6 +103,11 @@ pub enum TableEvent {
     ///
     /// Includes the new sort order.
     SortArrowClicked { sort_order: SortOrder },
+
+    /// A user event.
+    ///
+    /// One of the cells is returning an event, called from `step_with`.
+    User(Ev),
 }
 
 /// Internal state for column resize operation.
@@ -115,10 +120,11 @@ struct ResizeState {
 }
 
 /// Internal events for table interaction (not exposed to users).
-enum InternalEvent {
+enum InternalEvent<Ev = ()> {
     HeaderClick(usize),
     SortArrowClick,
     ResizeStart { col_index: usize, mouse_x: i32 },
+    User(Ev),
 }
 
 /// Events during a resize operation (internal only).
@@ -184,6 +190,13 @@ impl<V: View, T> TableBuilder<V, T> {
     }
 
     /// Add a column with header label and accessor function.
+    ///
+    /// ## Parameters
+    /// * **header** - name of the column, displayed in the header.
+    /// * **create_cell_fn** - cell creation function.
+    ///   Takes a reference to row data `T` and the index of the column.
+    /// * **compare_cell_fn** - sort comparison function.
+    ///   Compares two rows for sort ordering.
     pub fn column(
         mut self,
         header: impl Into<String>,
@@ -596,51 +609,62 @@ impl<V: View, T> Table<V, T> {
     }
 
     /// Wait for any user action (header click, sort click, or resize start).
-    fn wait_for_user_action(&self) -> impl Future<Output = InternalEvent> + '_ {
-        let mut all_futures: Vec<Pin<Box<dyn Future<Output = InternalEvent> + '_>>> = vec![];
-
+    async fn wait_for_user_action<Ev>(
+        &mut self,
+        cell_step: &mut impl FnMut(&mut T) -> Pin<Box<dyn Future<Output = Ev> + '_>>,
+    ) -> InternalEvent<Ev> {
+        let Self {
+            headers,
+            sort_header,
+            rows,
+            ..
+        } = self;
         // Data column header clicks
-        for h in &self.headers {
-            let col_idx = h.col_index;
-            let fut = h
-                .on_click
-                .next()
-                .map(move |_| InternalEvent::HeaderClick(col_idx))
-                .boxed_local();
-            all_futures.push(fut);
-        }
+        let _header_clicks = headers.iter().map(|h| {
+            async {
+                let col_idx = h.col_index;
+                let _ev = h.on_click.next().await;
+                InternalEvent::HeaderClick(col_idx)
+            }
+            .boxed_local()
+        });
 
         // Resize handle mousedown events
-        for h in &self.headers {
-            let col_idx = h.col_index;
-            let fut = h
-                .on_resize_mousedown
-                .next()
-                .map(move |event| {
-                    // Extract mouse X position from the event
-                    let mouse_x = event
-                        .dyn_ev(|e: &web_sys::MouseEvent| e.client_x())
-                        .unwrap_or(0);
-                    InternalEvent::ResizeStart {
-                        col_index: col_idx,
-                        mouse_x,
-                    }
-                })
-                .boxed_local();
-            all_futures.push(fut);
-        }
+        let _header_mousedowns = headers.iter().map(|h| {
+            async {
+                let col_idx = h.col_index;
+                let event = h.on_resize_mousedown.next().await;
+                // Extract mouse X position from the event
+                let mouse_x = event
+                    .dyn_ev(|e: &web_sys::MouseEvent| e.client_x())
+                    .unwrap_or(0);
+                InternalEvent::ResizeStart {
+                    col_index: col_idx,
+                    mouse_x,
+                }
+            }
+            .boxed_local()
+        });
 
         // Sort arrow column click
-        let sort_fut = self
-            .sort_header
-            .on_click
-            .next()
-            .map(|_| InternalEvent::SortArrowClick)
-            .boxed_local();
-        all_futures.push(sort_fut);
+        let sort_fut = async {
+            sort_header.on_click.next().await;
+            InternalEvent::SortArrowClick
+        }
+        .boxed_local();
+
+        let user = rows.iter_mut().map(|row| {
+            let t = &mut row.data;
+            cell_step(t).map(InternalEvent::User).boxed_local()
+        });
 
         // Race all futures
-        race_all(all_futures)
+        let mut all_futures = vec![];
+        all_futures.extend(_header_clicks);
+        all_futures.extend(_header_mousedowns);
+        all_futures.push(sort_fut);
+        all_futures.extend(user);
+        race_all(all_futures).await
     }
 
     /// Wait for resize drag events (mousemove or mouseup on document).
@@ -668,7 +692,7 @@ impl<V: View, T> Table<V, T> {
         mousemove_fut.or(mouseup_fut).await
     }
 
-    /// Wait for the next table event.
+    /// Wait for the next table event, or a user event from a table cell.
     ///
     /// This method handles both normal user interactions (header clicks, sort clicks)
     /// and column resizing internally. Resize operations are handled in a loop and
@@ -677,7 +701,10 @@ impl<V: View, T> Table<V, T> {
     /// ## Note
     /// By the time the event is returned, the table has already reacted to the event.
     /// For example, if `HeaderClick` is returned, the table has already re-sorted accordingly.
-    pub async fn step(&mut self) -> TableEvent {
+    pub async fn step_with<Ev>(
+        &mut self,
+        mut cell_step: impl FnMut(&mut T) -> Pin<Box<dyn Future<Output = Ev> + '_>>,
+    ) -> TableEvent<Ev> {
         // Lazy mount-time normalization. On the first call after the table is
         // laid out, measure rendered widths and write them back to state. This
         // ensures the layout is self-consistent (no browser rescaling) before
@@ -697,7 +724,7 @@ impl<V: View, T> Table<V, T> {
 
         loop {
             // Wait for a user action
-            let event = self.wait_for_user_action().await;
+            let event = self.wait_for_user_action(&mut cell_step).await;
 
             match event {
                 InternalEvent::HeaderClick(col_index) => {
@@ -749,8 +776,22 @@ impl<V: View, T> Table<V, T> {
                     }
                     // Loop continues - wait for next user action
                 }
+                InternalEvent::User(ev) => return TableEvent::User(ev),
             }
         }
+    }
+
+    /// Wait for the next table event.
+    ///
+    /// This method handles both normal user interactions (header clicks, sort clicks)
+    /// and column resizing internally. Resize operations are handled in a loop and
+    /// don't return events to the caller.
+    ///
+    /// ## Note
+    /// By the time the event is returned, the table has already reacted to the event.
+    /// For example, if `HeaderClick` is returned, the table has already re-sorted accordingly.
+    pub async fn step(&mut self) -> TableEvent {
+        self.step_with(|_| std::future::pending().boxed()).await
     }
 
     /// Measure rendered widths of all data column headers and write them back
@@ -1173,6 +1214,8 @@ pub mod library {
                             .set(format!("Reversed entry order: {:?}", sort_order));
                     }
                 }
+
+                TableEvent::User(_) => {}
             }
         }
     }
