@@ -21,6 +21,17 @@ pub enum SortOrder {
     Descending,
 }
 
+/// Column width sizing mode.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ColumnSize {
+    /// Fixed width in pixels (sub-pixel precision).
+    Pixels(f64),
+    /// Percentage of table width (0.0 - 100.0).
+    Percent(f64),
+    /// Auto-size: equal-share of remaining space.
+    Auto,
+}
+
 type CreateCellFn<V, T> = Box<dyn Fn(&T, usize) -> <V as View>::Element>;
 type CompareCellFn<T> = Box<dyn Fn(&T, &T) -> std::cmp::Ordering>;
 
@@ -29,16 +40,16 @@ pub struct Column<V: View, T> {
     header: String,
     create_cell_fn: CreateCellFn<V, T>,
     compare_cell_fn: CompareCellFn<T>,
-    width: Option<u32>, // None = auto-size based on content
-    min_width: u32,     // Minimum width for resizing (default 50px)
-    resizable: bool,    // Whether column can be resized (default true)
+    declared_size: ColumnSize, // User-declared width mode
+    min_width: u32,            // Minimum width for resizing (default 50px)
+    resizable: bool,           // Whether column can be resized (default true)
 }
 
 /// Private reactive state for column headers.
 struct ColumnHeaderState {
-    is_active: bool,    // True when this column is the active sort column
-    is_resizing: bool,  // True during resize drag operation
-    width: Option<f64>, // Current width in pixels, sub-pixel precise (None = auto)
+    is_active: bool,   // True when this column is the active sort column
+    is_resizing: bool, // True during resize drag operation
+    size: ColumnSize,  // Current width mode (pixels/percent/auto)
 }
 
 impl ColumnHeaderState {
@@ -57,9 +68,11 @@ impl ColumnHeaderState {
         // Sub-pixel precision: format to 4 decimal places to avoid noisy long
         // floating-point representations while preserving more precision than the
         // browser can render. CSS accepts fractional pixel values directly.
-        self.width
-            .map(|w| format!("width: {:.4}px; max-width: {:.4}px", w, w))
-            .unwrap_or_default()
+        match self.size {
+            ColumnSize::Pixels(w) => format!("width: {:.4}px; max-width: {:.4}px", w, w),
+            ColumnSize::Percent(p) => format!("width: {:.4}%", p),
+            ColumnSize::Auto => String::new(),
+        }
     }
 }
 
@@ -158,12 +171,7 @@ enum ResizeEvent {
 pub struct Table<V: View, T> {
     #[child]
     #[properties]
-    container: V::Element,
-    #[allow(dead_code)]
     table: V::Element,
-    #[allow(dead_code)]
-    thead: V::Element,
-    #[allow(dead_code)]
     tbody: V::Element,
     headers: Vec<ColumnHeader<V>>,
     sort_header: SortArrowHeader<V>,
@@ -207,17 +215,33 @@ impl<V: View, T> TableBuilder<V, T> {
             header: header.into(),
             create_cell_fn: Box::new(create_cell_fn),
             compare_cell_fn: Box::new(compare_cell_fn),
-            width: None,
+            declared_size: ColumnSize::Auto,
             min_width: 50,
             resizable: true,
         });
         self
     }
 
-    /// Set width for the last added column.
+    /// Set fixed pixel width for the last added column.
     pub fn width(mut self, width: u32) -> Self {
         if let Some(col) = self.columns.last_mut() {
-            col.width = Some(width);
+            col.declared_size = ColumnSize::Pixels(width as f64);
+        }
+        self
+    }
+
+    /// Set percentage width for the last added column.
+    pub fn width_percent(mut self, percent: f64) -> Self {
+        if let Some(col) = self.columns.last_mut() {
+            col.declared_size = ColumnSize::Percent(percent);
+        }
+        self
+    }
+
+    /// Set auto-sizing for the last added column (equal-share remaining space).
+    pub fn width_auto(mut self) -> Self {
+        if let Some(col) = self.columns.last_mut() {
+            col.declared_size = ColumnSize::Auto;
         }
         self
     }
@@ -260,7 +284,7 @@ impl<V: View, T> Table<V, T> {
             let mut state = Proxy::new(ColumnHeaderState {
                 is_active: false,
                 is_resizing: false,
-                width: col.width.map(|w| w as f64),
+                size: col.declared_size,
             });
 
             // Resize handle - only add to columns that have a right neighbor (not last column)
@@ -386,16 +410,8 @@ impl<V: View, T> Table<V, T> {
             }
         }
 
-        rsx! {
-            let container = div(class = "table-platinum-container") {
-                {&table}
-            }
-        }
-
         Self {
-            container,
             table,
-            thead,
             tbody,
             headers,
             sort_header,
@@ -717,7 +733,7 @@ impl<V: View, T> Table<V, T> {
                 .dyn_el(|el: &web_sys::Element| el.get_bounding_client_rect().width())
                 .unwrap_or(0.0);
             if table_width > 0.0 {
-                self.normalize_widths();
+                self.convert_all_to_pixels();
                 self.normalized = true;
             }
         }
@@ -795,22 +811,22 @@ impl<V: View, T> Table<V, T> {
     }
 
     /// Measure rendered widths of all data column headers and write them back
-    /// into state.
+    /// into state as Pixels.
     ///
     /// With `table-layout: fixed; width: 100%`, the browser scales configured
-    /// column widths to fill the table. This means `state.width` (what we set)
-    /// and the rendered width diverge. As soon as we change one width, the
+    /// column widths to fill the table. This means `state.size` (what we set)
+    /// and the rendered width diverge. As soon as we change one size, the
     /// browser re-scales every column, amplifying our change by the scale factor.
     ///
     /// To break this cycle, we measure each column's rendered width using
     /// `getBoundingClientRect().width()` (sub-pixel precise) and write that exact
-    /// value back into state. The configured widths now equal the rendered widths
+    /// value back into state. The configured sizes now equal the rendered widths
     /// and sum to the full table width, so the browser produces an identical
     /// layout with no shift. Sub-pixel precision avoids the integer-rounding snap
     /// that would occur when writing only `clientWidth`.
     ///
     /// Returns the captured widths so callers can use them as resize baselines.
-    fn normalize_widths(&mut self) -> Vec<f64> {
+    fn convert_all_to_pixels(&mut self) -> Vec<f64> {
         let widths: Vec<f64> = self
             .headers
             .iter()
@@ -822,16 +838,57 @@ impl<V: View, T> Table<V, T> {
 
         for (idx, header) in self.headers.iter_mut().enumerate() {
             let w = widths[idx];
-            header.state.modify(|s| s.width = Some(w));
+            header.state.modify(|s| s.size = ColumnSize::Pixels(w));
         }
         widths
+    }
+
+    /// Convert all column sizes from Pixels (or other) to Percent based on current rendered widths.
+    ///
+    /// Measures each column's current rendered width and computes its percentage relative to
+    /// the total table width.
+    fn convert_all_to_percent(&mut self) {
+        let table_width = self
+            .table
+            .dyn_el(|el: &web_sys::Element| el.get_bounding_client_rect().width())
+            .unwrap_or(1.0)
+            .max(1.0); // Prevent division by zero
+
+        let widths: Vec<f64> = self
+            .headers
+            .iter()
+            .map(|h| {
+                h.th.dyn_el(|el: &web_sys::Element| el.get_bounding_client_rect().width())
+                    .unwrap_or(100.0)
+            })
+            .collect();
+
+        for (idx, header) in self.headers.iter_mut().enumerate() {
+            let w = widths[idx];
+            let percent = (w / table_width) * 100.0;
+            header
+                .state
+                .modify(|s| s.size = ColumnSize::Percent(percent));
+        }
+    }
+
+    /// Restore all column sizes to their originally declared sizes.
+    ///
+    /// Used after container resize ends to reset the layout to the user's original intent.
+    #[allow(dead_code)]
+    fn restore_declared_sizes(&mut self) {
+        for (idx, header) in self.headers.iter_mut().enumerate() {
+            if let Some(col) = self.columns.get(idx) {
+                header.state.modify(|s| s.size = col.declared_size);
+            }
+        }
     }
 
     /// Handle the start of a column resize operation.
     fn handle_resize_start(&mut self, col_index: usize, mouse_x: i32) {
         // Re-normalize on every resize start so the system self-heals if the
         // container has been resized between operations.
-        let initial_widths = self.normalize_widths();
+        let initial_widths = self.convert_all_to_pixels();
 
         // Store resize state
         let new_state = Some(ResizeState {
@@ -924,13 +981,13 @@ impl<V: View, T> Table<V, T> {
                 let final_left_width = start_width + space_collected;
                 self.headers[col_index]
                     .state
-                    .modify(|s| s.width = Some(final_left_width));
+                    .modify(|s| s.size = ColumnSize::Pixels(final_left_width));
 
                 // Shrink donor columns
                 for (donor_idx, new_width) in adjustments {
                     self.headers[donor_idx]
                         .state
-                        .modify(|s| s.width = Some(new_width));
+                        .modify(|s| s.size = ColumnSize::Pixels(new_width));
                 }
             } else {
                 // DRAG LEFT: handle moves left, taking space from col_index and
@@ -977,7 +1034,7 @@ impl<V: View, T> Table<V, T> {
                 for (donor_idx, new_width) in adjustments {
                     self.headers[donor_idx]
                         .state
-                        .modify(|s| s.width = Some(new_width));
+                        .modify(|s| s.size = ColumnSize::Pixels(new_width));
                 }
 
                 // Grow right neighbor by the total space collected
@@ -986,7 +1043,7 @@ impl<V: View, T> Table<V, T> {
                 let new_right_width = right_initial + space_collected;
                 self.headers[right_neighbor_idx]
                     .state
-                    .modify(|s| s.width = Some(new_right_width));
+                    .modify(|s| s.size = ColumnSize::Pixels(new_right_width));
             }
 
             // Update last processed mouse position to prevent duplicate processing
@@ -1034,6 +1091,9 @@ impl<V: View, T> Table<V, T> {
             .boxed_local(),
         );
         race_all(clicks_or_timeout).await;
+
+        // After resize ends, convert all columns back to percentages for fluid responsive layout
+        self.convert_all_to_percent();
     }
 }
 
@@ -1072,7 +1132,7 @@ pub mod library {
                     },
                     |a, b| a.name.cmp(&b.name),
                 )
-                .width(250)
+                .width_percent(40.0)
                 .column(
                     "Date Modified",
                     |file: &FileEntry, _| {
@@ -1083,7 +1143,7 @@ pub mod library {
                     },
                     |a, b| a.date_modified.cmp(&b.date_modified),
                 )
-                .width(200)
+                .width_percent(30.0)
                 .column(
                     "Size",
                     |file: &FileEntry, _| {
@@ -1105,7 +1165,7 @@ pub mod library {
                     },
                     |a, b| a.kind.cmp(&b.kind),
                 )
-                .width(180)
+                .width_auto()
                 .build();
 
             // Sample data from reference image
@@ -1158,7 +1218,7 @@ pub mod library {
             );
 
             rsx! {
-                let container = div() {
+                let container = div(class = "panel") {
                     {&table}
                     div(class = "mt-3 p-2") {
                         let alert = {Alert::new("Awaiting user events...", crate::components::Flavor::Info)}
