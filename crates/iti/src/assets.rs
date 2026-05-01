@@ -127,6 +127,30 @@ pub mod embedded {
     const GARAMOND_REGULAR_TTF: &[u8] = include_bytes!("../../../assets/fonts/AppleGaramond.ttf");
     const GARAMOND_BOLD_TTF: &[u8] = include_bytes!("../../../assets/fonts/AppleGaramond-Bold.ttf");
 
+    // ── SVG assets ──────────────────────────────────────────────
+    //
+    // SVG bytes referenced from `iti.css` (as CSS `background-image`
+    // urls) and from Rust components (as `<img src>` attributes). They
+    // are exposed as Blob URLs at runtime to avoid network requests
+    // when the consumer ships only the WASM binary.
+    //
+    // The orphan `dropdown-arrow.svg` (no references in CSS or Rust)
+    // is intentionally NOT embedded.
+
+    const SVG_CHECKBOX_CHECKMARK: &[u8] =
+        include_bytes!("../../../assets/svg/checkbox-checkmark.svg");
+    const SVG_SELECT_ARROWS_PLATINUM: &[u8] =
+        include_bytes!("../../../assets/svg/select-arrows-platinum.svg");
+    const SVG_SLIDER_THUMB: &[u8] = include_bytes!("../../../assets/svg/slider-thumb.svg");
+    const SVG_TITLE_BAR_ALUMINUM: &[u8] =
+        include_bytes!("../../../assets/svg/title-bar-aluminum.svg");
+    const SVG_TITLE_BAR_CLOSE_DEFAULT: &[u8] =
+        include_bytes!("../../../assets/svg/title-bar-close-default.svg");
+    const SVG_TITLE_BAR_CLOSE_ACTIVE: &[u8] =
+        include_bytes!("../../../assets/svg/title-bar-close-active.svg");
+    const SVG_TABLE_SORT_ASC: &[u8] = include_bytes!("../../../assets/svg/table-sort-asc.svg");
+    const SVG_TABLE_SORT_DESC: &[u8] = include_bytes!("../../../assets/svg/table-sort-desc.svg");
+
     // ── Classic Mac OS Icons (149 PNGs) ──
 
     // APPLICATIONS
@@ -489,10 +513,22 @@ pub mod embedded {
             )
     }
 
-    /// Rewrite iti CSS to use Blob URLs for the embedded fonts.
+    /// Bundle of Blob URLs for SVG assets referenced from `iti.css`.
+    struct SvgBlobUrls {
+        checkbox_checkmark: String,
+        select_arrows_platinum: String,
+        slider_thumb: String,
+        title_bar_aluminum: String,
+        title_bar_close_default: String,
+        title_bar_close_active: String,
+    }
+
+    /// Rewrite iti CSS to use Blob URLs for the embedded fonts and SVGs.
     ///
     /// Replaces the ttf paths for Geneva, ChicagoFLF, and Apple Garamond
-    /// with Blob URLs.
+    /// with Blob URLs. Also replaces all `url("svg/...")` references with
+    /// Blob URLs so that consumers using the `embed-assets` feature do
+    /// not need to ship the `assets/svg/` directory separately.
     fn rewrite_iti_css(
         css: &str,
         chicago_url: &str,
@@ -500,6 +536,7 @@ pub mod embedded {
         garamond_light_url: &str,
         garamond_regular_url: &str,
         garamond_bold_url: &str,
+        svg_urls: &SvgBlobUrls,
     ) -> String {
         css.replace(
             "url('fonts/ChicagoFLF.ttf')",
@@ -517,6 +554,30 @@ pub mod embedded {
         .replace(
             "url('fonts/AppleGaramond-Bold.ttf')",
             &format!("url(\"{garamond_bold_url}\")"),
+        )
+        .replace(
+            "url(\"svg/checkbox-checkmark.svg\")",
+            &format!("url(\"{}\")", svg_urls.checkbox_checkmark),
+        )
+        .replace(
+            "url(\"svg/select-arrows-platinum.svg\")",
+            &format!("url(\"{}\")", svg_urls.select_arrows_platinum),
+        )
+        .replace(
+            "url(\"svg/slider-thumb.svg\")",
+            &format!("url(\"{}\")", svg_urls.slider_thumb),
+        )
+        .replace(
+            "url(\"svg/title-bar-aluminum.svg\")",
+            &format!("url(\"{}\")", svg_urls.title_bar_aluminum),
+        )
+        .replace(
+            "url(\"svg/title-bar-close-default.svg\")",
+            &format!("url(\"{}\")", svg_urls.title_bar_close_default),
+        )
+        .replace(
+            "url(\"svg/title-bar-close-active.svg\")",
+            &format!("url(\"{}\")", svg_urls.title_bar_close_active),
         )
     }
 
@@ -545,6 +606,18 @@ pub mod embedded {
         let garamond_regular_url = create_blob_url(GARAMOND_REGULAR_TTF, "font/ttf");
         let garamond_bold_url = create_blob_url(GARAMOND_BOLD_TTF, "font/ttf");
 
+        // Create Blob URLs for each embedded SVG asset referenced from
+        // iti.css. These are one-shot URLs scoped to the lifetime of
+        // the page.
+        let svg_urls = SvgBlobUrls {
+            checkbox_checkmark: create_blob_url(SVG_CHECKBOX_CHECKMARK, "image/svg+xml"),
+            select_arrows_platinum: create_blob_url(SVG_SELECT_ARROWS_PLATINUM, "image/svg+xml"),
+            slider_thumb: create_blob_url(SVG_SLIDER_THUMB, "image/svg+xml"),
+            title_bar_aluminum: create_blob_url(SVG_TITLE_BAR_ALUMINUM, "image/svg+xml"),
+            title_bar_close_default: create_blob_url(SVG_TITLE_BAR_CLOSE_DEFAULT, "image/svg+xml"),
+            title_bar_close_active: create_blob_url(SVG_TITLE_BAR_CLOSE_ACTIVE, "image/svg+xml"),
+        };
+
         // Rewrite CSS @font-face declarations to use Blob URLs
         let fa_css = rewrite_fontawesome_css(
             FONTAWESOME_CSS,
@@ -559,12 +632,39 @@ pub mod embedded {
             &garamond_light_url,
             &garamond_regular_url,
             &garamond_bold_url,
+            &svg_urls,
         );
 
         // Inject everything as <style> elements — zero network requests
         inject_color_tokens();
         append_style(&iti_css);
         append_style(&fa_css);
+    }
+
+    /// Get a Blob URL for the ascending table sort arrow SVG.
+    ///
+    /// Memoized so that every `Table` instance shares a single Blob URL
+    /// for the ascending arrow.
+    pub fn blob_url_for_table_sort_asc() -> String {
+        use std::sync::OnceLock;
+
+        static CACHE: OnceLock<String> = OnceLock::new();
+        CACHE
+            .get_or_init(|| create_blob_url(SVG_TABLE_SORT_ASC, "image/svg+xml"))
+            .clone()
+    }
+
+    /// Get a Blob URL for the descending table sort arrow SVG.
+    ///
+    /// Memoized so that every `Table` instance shares a single Blob URL
+    /// for the descending arrow.
+    pub fn blob_url_for_table_sort_desc() -> String {
+        use std::sync::OnceLock;
+
+        static CACHE: OnceLock<String> = OnceLock::new();
+        CACHE
+            .get_or_init(|| create_blob_url(SVG_TABLE_SORT_DESC, "image/svg+xml"))
+            .clone()
     }
 
     /// Get a Blob URL for a classic Mac OS icon.

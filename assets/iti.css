@@ -1871,6 +1871,7 @@ pre {
 		2px 2px 0 rgba(0, 0, 0, 0.85);
 	outline: 1px solid var(--black900);
 	outline-offset: -1px;
+	padding: 0;
 }
 
 /* -- Tab Panel -- */

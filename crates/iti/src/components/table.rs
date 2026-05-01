@@ -334,12 +334,41 @@ impl<V: View, T> Table<V, T> {
         // Create sort arrow column
         let mut sort_order = Proxy::new(SortOrder::Ascending);
 
+        // Resolve sort-arrow image URLs. With `embed-assets`, the SVG
+        // bytes are compiled in and exposed as Blob URLs (memoized in
+        // `assets::embedded`). Without the feature we fall back to the
+        // relative path served by Trunk's `copy-dir` directive.
+        let asc_src: String = if cfg!(feature = "embed-assets") {
+            #[cfg(feature = "embed-assets")]
+            {
+                crate::assets::embedded::blob_url_for_table_sort_asc()
+            }
+            #[cfg(not(feature = "embed-assets"))]
+            {
+                unreachable!()
+            }
+        } else {
+            "svg/table-sort-asc.svg".to_string()
+        };
+        let desc_src: String = if cfg!(feature = "embed-assets") {
+            #[cfg(feature = "embed-assets")]
+            {
+                crate::assets::embedded::blob_url_for_table_sort_desc()
+            }
+            #[cfg(not(feature = "embed-assets"))]
+            {
+                unreachable!()
+            }
+        } else {
+            "svg/table-sort-desc.svg".to_string()
+        };
+
         rsx! {
             let arrow_img = img(
                 class = "table-sort-arrow",
                 src = sort_order(order => match order {
-                    SortOrder::Ascending => "svg/table-sort-asc.svg",
-                    SortOrder::Descending => "svg/table-sort-desc.svg",
+                    SortOrder::Ascending => asc_src.clone(),
+                    SortOrder::Descending => desc_src.clone(),
                 }),
                 alt = "Sort"
             ) {}
