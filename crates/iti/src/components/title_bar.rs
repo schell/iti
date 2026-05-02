@@ -94,6 +94,11 @@ impl<V: View> TitleBar<V> {
         self.title.set_text(title);
     }
 
+    /// Get the title text.
+    pub fn get_title(&self) -> String {
+        self.title.get_text().to_string()
+    }
+
     /// Show or hide the close button.
     pub fn set_show_close_button(&mut self, show: bool) {
         self.close_visible.set(show);
