@@ -527,15 +527,16 @@ impl<V: View, T> Table<V, T> {
         let row = TableRow { tr, cells, data };
 
         // Insert row at the specified index in tbody
-        // Note: mogwai doesn't expose insert_before, so we just append for now
-        // TODO: Implement proper insertion order if needed
-        self.tbody.append_child(&row.tr);
+        let maybe_current_row_at_index = self.rows.get(index);
+        self.tbody
+            .insert_child_before(&row.tr, maybe_current_row_at_index.as_ref().map(|r| &r.tr));
         self.rows.insert(index, row);
     }
 
     /// Remove a row by index.
     pub fn remove(&mut self, index: usize) -> T {
         let row = self.rows.remove(index);
+        self.tbody.remove_child(&row.tr);
         row.data
     }
 

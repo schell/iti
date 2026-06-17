@@ -55,7 +55,13 @@ impl<V: View> TitleBar<V> {
         let mut close_visible = Proxy::new(false);
 
         rsx! {
-            let wrapper = div(class = "title-bar") {
+            let wrapper = div(
+                class = close_visible(show => if *show {
+                    "title-bar has-close-button"
+                } else {
+                    "title-bar"
+                }),
+            ) {
                 button(
                     type = "button",
                     class = "title-bar-close",
@@ -102,11 +108,6 @@ impl<V: View> TitleBar<V> {
     /// Show or hide the close button.
     pub fn set_show_close_button(&mut self, show: bool) {
         self.close_visible.set(show);
-        if show {
-            self.wrapper.add_class("has-close-button");
-        } else {
-            self.wrapper.remove_class("has-close-button");
-        }
     }
 
     /// Returns `true` if the close button is visible.
