@@ -178,7 +178,6 @@ pub struct Table<V: View, T> {
     rows: Vec<TableRow<V, T>>,
     columns: Vec<Column<V, T>>,
     active_sort_col: Proxy<Option<usize>>, // None = entry order
-    active_sort_col_val: Option<usize>,    // Cached value for reading
     sort_order: SortOrder,                 // Cached sort order value
     resize_state: Proxy<Option<ResizeState>>, // None when not resizing
     /// True once column widths have been measured and locked into state to
@@ -447,7 +446,6 @@ impl<V: View, T> Table<V, T> {
             rows: vec![],
             columns,
             active_sort_col: Proxy::new(None),
-            active_sort_col_val: None,
             sort_order: SortOrder::Ascending,
             resize_state: Proxy::new(None),
             normalized: false,
@@ -568,7 +566,6 @@ impl<V: View, T> Table<V, T> {
     /// Set which column is actively sorted (None = entry order).
     pub fn set_active_sort_column(&mut self, col_index: Option<usize>) {
         self.active_sort_col.set(col_index);
-        self.active_sort_col_val = col_index;
 
         // Update header active states
         for (idx, header) in self.headers.iter_mut().enumerate() {
@@ -595,7 +592,7 @@ impl<V: View, T> Table<V, T> {
 
     /// Get the currently active sort column (None = entry order).
     pub fn get_active_sort_column(&self) -> Option<usize> {
-        self.active_sort_col_val
+        *self.active_sort_col
     }
 
     /// Get the current sort order (always has a value).
