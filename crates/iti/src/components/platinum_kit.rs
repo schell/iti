@@ -122,7 +122,7 @@ impl<V: View> IconClassicLibraryItem<V> {
 pub enum SectionContent<V: View> {
     Any(V::Element),
     ProgressBars(ProgressBars<V>),
-    TableLibrary(TableLibraryItem<V>),
+    TableLibrary(Box<TableLibraryItem<V>>),
     IconClassicLibrary(IconClassicLibraryItem<V>),
     TabPanel {
         wrapper: V::Element,
@@ -1294,7 +1294,10 @@ fn build_icon_classic<V: View>() -> Section<V> {
 /// Build the "Tables" section showing the Platinum folder list style table.
 fn build_tables<V: View>() -> Section<V> {
     let table_library = TableLibraryItem::default();
-    Section::new("Tables", SectionContent::TableLibrary(table_library))
+    Section::new(
+        "Tables",
+        SectionContent::TableLibrary(Box::new(table_library)),
+    )
 }
 
 // ── Main component ──────────────────────────────────────────────

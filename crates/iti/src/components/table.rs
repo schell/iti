@@ -171,6 +171,7 @@ enum ResizeEvent {
 pub struct Table<V: View, T> {
     #[child]
     #[properties]
+    container: V::Element,
     table: V::Element,
     tbody: V::Element,
     headers: Vec<ColumnHeader<V>>,
@@ -188,12 +189,16 @@ pub struct Table<V: View, T> {
 
 /// Builder for constructing tables with a fluent API.
 pub struct TableBuilder<V: View, T> {
+    use_scrollbar: bool,
     columns: Vec<Column<V, T>>,
 }
 
 impl<V: View, T> TableBuilder<V, T> {
     pub fn new() -> Self {
-        Self { columns: vec![] }
+        Self {
+            use_scrollbar: false,
+            columns: vec![],
+        }
     }
 
     /// Add a column with header label and accessor function.
@@ -261,9 +266,14 @@ impl<V: View, T> TableBuilder<V, T> {
         self
     }
 
+    pub fn use_scrollbar(mut self, use_scrollbar: bool) -> Self {
+        self.use_scrollbar = use_scrollbar;
+        self
+    }
+
     /// Build the table.
     pub fn build(self) -> Table<V, T> {
-        Table::from_columns(self.columns)
+        Table::from_builder(self)
     }
 }
 
@@ -275,7 +285,11 @@ impl<V: View, T> Default for TableBuilder<V, T> {
 
 impl<V: View, T> Table<V, T> {
     /// Create table from column definitions.
-    fn from_columns(columns: Vec<Column<V, T>>) -> Self {
+    fn from_builder(builder: TableBuilder<V, T>) -> Self {
+        let TableBuilder {
+            use_scrollbar,
+            columns,
+        } = builder;
         // Create data column headers
         let mut headers = vec![];
         let num_columns = columns.len();
@@ -431,14 +445,17 @@ impl<V: View, T> Table<V, T> {
         colgroup_el.append_child(&sort_col_el);
 
         rsx! {
-            let table = table(class = "table-platinum") {
-                {&colgroup_el}
-                {&thead}
-                {&tbody}
+            let container = div(class = "table-container inner-stroke") {
+                let table = table(class = "table") {
+                    {&colgroup_el}
+                    {&thead}
+                    {&tbody}
+                }
             }
         }
 
-        Self {
+        let table = Self {
+            container,
             table,
             tbody,
             headers,
@@ -449,20 +466,24 @@ impl<V: View, T> Table<V, T> {
             sort_order: SortOrder::Ascending,
             resize_state: Proxy::new(None),
             normalized: false,
+        };
+        table.set_use_scrollbar(use_scrollbar);
+        table
+    }
+
+    /// Set whether the table scrolls or not.
+    pub fn set_use_scrollbar(&self, use_scrollbar: bool) {
+        if use_scrollbar {
+            self.add_class("table-scroll");
+        } else {
+            self.remove_class("table-scroll");
         }
     }
 
-    /// Add a row to the table.
-    pub fn push(&mut self, data: T)
-    where
-        T: 'static,
-    {
+    fn create_row(&mut self, data: T) -> TableRow<V, T> {
         let mut cells = vec![];
 
-        // Create cells using column accessors
-        for (col_idx, column) in self.columns.iter().enumerate() {
-            let cell_content = (column.create_cell_fn)(&data, col_idx);
-
+        fn create_td<V: View>(cell_content: Option<V::Element>, col_idx: usize) -> V::Element {
             rsx! {
                 let td = td(
                     class = "table-cell",
@@ -471,9 +492,17 @@ impl<V: View, T> Table<V, T> {
                     {cell_content}
                 }
             }
+            td
+        }
 
+        // Create cells using column accessors
+        for (col_idx, column) in self.columns.iter().enumerate() {
+            let cell_content = (column.create_cell_fn)(&data, col_idx);
+            let td = create_td::<V>(Some(cell_content), col_idx);
             cells.push(td);
         }
+        // Create the last cell, which is always empty because it's under the sort header/button.
+        cells.push(create_td::<V>(None, self.columns.len()));
 
         rsx! {
             let tr = tr(class = "table-row") {}
@@ -484,46 +513,20 @@ impl<V: View, T> Table<V, T> {
             tr.append_child(cell);
         }
 
-        let row = TableRow { tr, cells, data };
+        TableRow { tr, cells, data }
+    }
 
+    /// Add a row to the table.
+    pub fn push(&mut self, data: T) {
+        let row = self.create_row(data);
         // Append row to tbody
         self.tbody.append_child(&row.tr);
         self.rows.push(row);
     }
 
     /// Insert a row at the specified index.
-    pub fn insert(&mut self, index: usize, data: T)
-    where
-        T: 'static,
-    {
-        let mut cells = vec![];
-
-        for (col_idx, column) in self.columns.iter().enumerate() {
-            let cell_content = (column.create_cell_fn)(&data, col_idx);
-
-            rsx! {
-                let td = td(
-                    class = "table-cell",
-                    data:col_index = col_idx.to_string()
-                ) {
-                    {cell_content}
-                }
-            }
-
-            cells.push(td);
-        }
-
-        rsx! {
-            let tr = tr(class = "table-row") {}
-        }
-
-        // Append cells to row
-        for cell in &cells {
-            tr.append_child(cell);
-        }
-
-        let row = TableRow { tr, cells, data };
-
+    pub fn insert(&mut self, index: usize, data: T) {
+        let row = self.create_row(data);
         // Insert row at the specified index in tbody
         let maybe_current_row_at_index = self.rows.get(index);
         self.tbody
@@ -1139,15 +1142,15 @@ pub mod library {
     }
 
     #[derive(ViewChild)]
-    pub struct TableLibraryItem<V: View> {
+    struct TableLibraryItemInner<V: View> {
         #[child]
         container: V::Element,
         table: Table<V, FileEntry>,
         log_text: Proxy<String>,
     }
 
-    impl<V: View> Default for TableLibraryItem<V> {
-        fn default() -> Self {
+    impl<V: View> TableLibraryItemInner<V> {
+        fn new(with_scrollbar: bool) -> Self {
             let mut table = TableBuilder::new()
                 .column(
                     "Name",
@@ -1193,6 +1196,7 @@ pub mod library {
                     |a, b| a.kind.cmp(&b.kind),
                 )
                 .width_auto()
+                .use_scrollbar(with_scrollbar)
                 .build();
 
             // Sample data from reference image
@@ -1238,6 +1242,22 @@ pub mod library {
                 size: "24 K".into(),
                 kind: "application program".into(),
             });
+            table.push(FileEntry {
+                name: "Autobots".into(),
+                date_modified: "Sat, Dec 19, 1337, 4:55 PM".into(),
+                size: "666 K".into(),
+                kind: "artificial intelligence".into(),
+            });
+            table.push(FileEntry {
+                name: "Decepticons".into(),
+                date_modified: "Sat, Dec 19, 1337, 4:55 PM".into(),
+                size: "666 K".into(),
+                kind: "artificial intelligence".into(),
+            });
+
+            if with_scrollbar {
+                table.set_style("max-height", "200px");
+            }
 
             let mut log_text = Proxy::new(
                 "Click column headers to sort. Click arrow to toggle direction or restore entry order."
@@ -1264,8 +1284,8 @@ pub mod library {
         }
     }
 
-    impl<V: View> TableLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> TableLibraryItemInner<V> {
+        async fn step(&mut self) {
             let event = self.table.step().await;
 
             match event {
@@ -1303,6 +1323,48 @@ pub mod library {
                 }
 
                 TableEvent::User(_) => {}
+            }
+        }
+    }
+
+    #[derive(ViewChild)]
+    pub struct TableLibraryItem<V: View> {
+        #[child]
+        container: V::Element,
+        table_with_scrollbar: TableLibraryItemInner<V>,
+        table_without_scrollbar: TableLibraryItemInner<V>,
+    }
+
+    impl<V: View> Default for TableLibraryItem<V> {
+        fn default() -> Self {
+            let table_with_scrollbar = TableLibraryItemInner::new(true);
+            let table_without_scrollbar = TableLibraryItemInner::new(false);
+            rsx! {
+                let container = div(class = "container-fluid") {
+                    div(class = "row mb-4") {
+                        p() { "With a scrollbar:" }
+                        {&table_with_scrollbar}
+                    }
+                    div(class = "row mb-4") {
+                        p() { bold() { "Without" } "a scrollbar:" }
+                        {&table_without_scrollbar}
+                    }
+                }
+            }
+            Self {
+                container,
+                table_with_scrollbar,
+                table_without_scrollbar,
+            }
+        }
+    }
+
+    impl<V: View> TableLibraryItem<V> {
+        pub async fn step(&mut self) {
+            loop {
+                let with = self.table_with_scrollbar.step();
+                let without = self.table_without_scrollbar.step();
+                with.or(without).await;
             }
         }
     }

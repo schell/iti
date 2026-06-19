@@ -2002,20 +2002,19 @@ pre {
    ═══════════════════════════════════════════════════════════════════ */
 
 /* Container with inset border and scroll overflow */
-.table-platinum-container {
+.table-container {
 	background-color: var(--iti-bg-light);
-	box-shadow:
-		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
-		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
-		2px 2px 0 rgba(0, 0, 0, 0.85);
-	outline: 1px solid var(--black900);
-	outline-offset: -1px;
-	overflow: auto;
-	max-height: 600px;
+}
+
+.table-scroll {
+	overflow-x: hidden;
+	overflow-y: scroll;	
+	/* scrollbar-width: thin; */
+	scrollbar-color: var(--gray800) var(--gray300);
 }
 
 /* Table base */
-.table-platinum {
+.table {
 	width: 100%;
 	border-collapse: collapse;
 	border-spacing: 0;
@@ -2026,12 +2025,18 @@ pre {
 }
 
 /* Header row */
-.table-platinum thead tr {
+.table thead tr {
 	height: 21px;
 }
 
+/* Make the header row sticky */
+.table thead tr th {
+  position: sticky;
+  top: 0;
+}
+
 /* Column headers - default (raised) state */
-.table-platinum thead th {
+.table thead th {
 	position: relative;
 	padding: 0 0.5em;
 	text-align: left;
@@ -2056,12 +2061,12 @@ pre {
 		inset -2px 0 0 rgba(128, 128, 128, 1);
 }
 
-.table-platinum thead th:first-child {
+.table thead th:first-child {
 	border-left: 1px solid #484848;
 }
 
 /* Active/pressed column header */
-.table-platinum thead th.active {
+.table thead th.active {
 	background-color: #999999;
 	
 	/* Pressed bevel effect (inverted) */
@@ -2073,7 +2078,7 @@ pre {
 }
 
 /* Sort arrow column (rightmost) */
-.table-platinum thead th.table-sort-column {
+.table thead th.table-sort-column {
 	width: 20px;
 	min-width: 20px;
 	max-width: 20px;
@@ -2130,31 +2135,31 @@ body.table-resizing * {
 }
 
 /* Body rows */
-.table-platinum tbody tr {
+.table tbody tr {
 	height: 24px;
 }
 
-.table-platinum tbody tr:last-child {
+.table tbody tr:last-child {
 	border-bottom: none;
 }
 
 /* Zebra striping */
-.table-platinum tbody tr:nth-child(odd) {
+.table tbody tr:nth-child(odd) {
 	background-color: var(--iti-bg-light);
 }
 
-.table-platinum tbody tr:nth-child(even) {
+.table tbody tr:nth-child(even) {
 	background-color: var(--gray200);
 }
 
 /* Hover state (overrides zebra) */
-.table-platinum tbody tr:hover {
+.table tbody tr:hover {
 	background-color: var(--iti-highlight) !important;
 	color: var(--iti-highlight-text);
 }
 
 /* Table cells */
-.table-platinum tbody td {
+.table tbody td {
 	padding: 0.5em;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -2163,10 +2168,10 @@ body.table-resizing * {
 }
 
 /* Active column highlighting */
-.table-platinum tbody td.active-column {
+.table tbody td.active-column {
 	background-color: var(--gray300);
 }
 
-.table-platinum tbody td:last-child {
+.table tbody td:last-child {
 	border-right: none;
 }
