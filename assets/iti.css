@@ -2047,6 +2047,7 @@ pre {
 	outline-offset: -1px;
 	cursor: pointer;
 	user-select: none;
+	-webkit-user-select: none; /* Safari */
 	transition: none;
 	vertical-align: middle;
 	overflow: hidden;
