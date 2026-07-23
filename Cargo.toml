@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/iti"]
+members = ["crates/iti", "crates/mogwai-embed"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -33,6 +33,7 @@ features = [
     "HtmlInputElement",
     "HtmlLinkElement",
     "HtmlOptionElement",
+    "HtmlScriptElement",
     "HtmlSelectElement",
     "HtmlStyleElement",
     "KeyboardEvent",

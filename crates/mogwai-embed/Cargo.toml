@@ -1,0 +1,13 @@
+[package]
+name = "mogwai-embed"
+description = "Helpers for embedding static assets (CSS, fonts, images, scripts) into a mogwai-based WASM binary"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+js-sys.workspace = true
+wasm-bindgen.workspace = true
+web-sys.workspace = true

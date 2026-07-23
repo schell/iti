@@ -15,8 +15,13 @@
 //! 3. **Manual / Trunk** — Consumers can ignore this module entirely and
 //!    wire up assets themselves (e.g. with Trunk `data-trunk` directives
 //!    or plain `<link>` tags in their `index.html`).
+//!
+//! The DOM-injection and Blob-URL primitives live in the
+//! [`mogwai-embed`](https://crates.io/crates/mogwai-embed) crate and are
+//! re-exported here for convenience.
 
-use js_sys::wasm_bindgen::{JsCast, UnwrapThrowExt};
+pub use mogwai_embed::blob::create_blob_url;
+pub use mogwai_embed::head::{append_link, append_style};
 
 /// iti's unified stylesheet (always embedded — includes all component styles).
 pub const ITI_CSS: &str = include_str!("../../../assets/iti.css");
@@ -30,31 +35,6 @@ pub mod cdn {
     /// Solid, Regular, and Brands webfonts).
     pub const FONTAWESOME_CSS: &str =
         "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css";
-}
-
-/// Append a `<link rel="stylesheet">` element to `<head>`.
-fn append_link(href: &str) {
-    let document = web_sys::window().unwrap_throw().document().unwrap_throw();
-    let head = document.head().unwrap_throw();
-    let link = document
-        .create_element("link")
-        .unwrap_throw()
-        .unchecked_into::<web_sys::HtmlLinkElement>();
-    link.set_rel("stylesheet");
-    link.set_href(href);
-    head.append_child(&link).unwrap_throw();
-}
-
-/// Append a `<style>` element with the given CSS text to `<head>`.
-fn append_style(css: &str) {
-    let document = web_sys::window().unwrap_throw().document().unwrap_throw();
-    let head = document.head().unwrap_throw();
-    let style = document
-        .create_element("style")
-        .unwrap_throw()
-        .unchecked_into::<web_sys::HtmlStyleElement>();
-    style.set_text_content(Some(css));
-    head.append_child(&style).unwrap_throw();
 }
 
 /// Inject the design token CSS custom properties as a `<style>` element.
@@ -99,7 +79,8 @@ pub fn inject_cdn_links() {
 /// embedded.
 #[cfg(feature = "embed-assets")]
 pub mod embedded {
-    use js_sys::wasm_bindgen::UnwrapThrowExt;
+    use mogwai_embed::blob::AssetRegistry;
+    use std::sync::OnceLock;
 
     use super::*;
 
@@ -121,7 +102,6 @@ pub mod embedded {
         include_bytes!("../../../assets/fontawesome/webfonts/fa-v4compatibility.woff2");
     // -- Fonts (ttf)
     const CHICAGO_TTF: &[u8] = include_bytes!("../../../assets/fonts/ChicagoFLF.ttf");
-    const GENEVA_TTF: &[u8] = include_bytes!("../../../assets/fonts/Geneva.ttf");
     const GARAMOND_LIGHT_TTF: &[u8] =
         include_bytes!("../../../assets/fonts/AppleGaramond-Light.ttf");
     const GARAMOND_REGULAR_TTF: &[u8] = include_bytes!("../../../assets/fonts/AppleGaramond.ttf");
@@ -456,26 +436,9 @@ pub mod embedded {
         include_bytes!("../../../assets/icons-classic/system/iTunes plugin.png");
 
     // ── Blob URL helper ─────────────────────────────────────────
-
-    /// Create a `blob:` URL from raw bytes with the given MIME type.
-    ///
-    /// The resulting URL is valid for the lifetime of the page. It does
-    /// not need to be revoked for fonts that live forever.
-    fn create_blob_url(bytes: &[u8], mime_type: &str) -> String {
-        let uint8_array = js_sys::Uint8Array::new_with_length(bytes.len() as u32);
-        uint8_array.copy_from(bytes);
-
-        let parts = js_sys::Array::new();
-        parts.push(&uint8_array);
-
-        let options = web_sys::BlobPropertyBag::new();
-        options.set_type(mime_type);
-
-        let blob =
-            web_sys::Blob::new_with_u8_array_sequence_and_options(&parts, &options).unwrap_throw();
-
-        web_sys::Url::create_object_url_with_blob(&blob).unwrap_throw()
-    }
+    //
+    // The `create_blob_url` primitive lives in `mogwai_embed::blob` and
+    // is re-exported at the crate root as `crate::assets::create_blob_url`.
 
     // ── CSS rewriting ───────────────────────────────────────────
 
@@ -525,14 +488,13 @@ pub mod embedded {
 
     /// Rewrite iti CSS to use Blob URLs for the embedded fonts and SVGs.
     ///
-    /// Replaces the ttf paths for Geneva, ChicagoFLF, and Apple Garamond
+    /// Replaces the ttf paths for ChicagoFLF and Apple Garamond
     /// with Blob URLs. Also replaces all `url("svg/...")` references with
     /// Blob URLs so that consumers using the `embed-assets` feature do
     /// not need to ship the `assets/svg/` directory separately.
     fn rewrite_iti_css(
         css: &str,
         chicago_url: &str,
-        geneva_url: &str,
         garamond_light_url: &str,
         garamond_regular_url: &str,
         garamond_bold_url: &str,
@@ -542,7 +504,6 @@ pub mod embedded {
             "url('fonts/ChicagoFLF.ttf')",
             &format!("url(\"{chicago_url}\")"),
         )
-        .replace("url('fonts/Geneva.ttf')", &format!("url(\"{geneva_url}\")"))
         .replace(
             "url('fonts/AppleGaramond-Light.ttf')",
             &format!("url(\"{garamond_light_url}\")"),
@@ -601,7 +562,6 @@ pub mod embedded {
         let fa_regular_url = create_blob_url(FA_REGULAR_WOFF2, "font/woff2");
         let fa_v4compat_url = create_blob_url(FA_V4COMPAT_WOFF2, "font/woff2");
         let chicago_url = create_blob_url(CHICAGO_TTF, "font/ttf");
-        let geneva_url = create_blob_url(GENEVA_TTF, "font/ttf");
         let garamond_light_url = create_blob_url(GARAMOND_LIGHT_TTF, "font/ttf");
         let garamond_regular_url = create_blob_url(GARAMOND_REGULAR_TTF, "font/ttf");
         let garamond_bold_url = create_blob_url(GARAMOND_BOLD_TTF, "font/ttf");
@@ -628,7 +588,6 @@ pub mod embedded {
         let iti_css = rewrite_iti_css(
             ITI_CSS,
             &chicago_url,
-            &geneva_url,
             &garamond_light_url,
             &garamond_regular_url,
             &garamond_bold_url,
@@ -646,12 +605,12 @@ pub mod embedded {
     /// Memoized so that every `Table` instance shares a single Blob URL
     /// for the ascending arrow.
     pub fn blob_url_for_table_sort_asc() -> String {
-        use std::sync::OnceLock;
-
-        static CACHE: OnceLock<String> = OnceLock::new();
-        CACHE
-            .get_or_init(|| create_blob_url(SVG_TABLE_SORT_ASC, "image/svg+xml"))
-            .clone()
+        static REGISTRY: OnceLock<AssetRegistry<&'static str>> = OnceLock::new();
+        REGISTRY.get_or_init(AssetRegistry::new).get_or_insert(
+            "table-sort-asc",
+            SVG_TABLE_SORT_ASC,
+            "image/svg+xml",
+        )
     }
 
     /// Get a Blob URL for the descending table sort arrow SVG.
@@ -659,43 +618,29 @@ pub mod embedded {
     /// Memoized so that every `Table` instance shares a single Blob URL
     /// for the descending arrow.
     pub fn blob_url_for_table_sort_desc() -> String {
-        use std::sync::OnceLock;
-
-        static CACHE: OnceLock<String> = OnceLock::new();
-        CACHE
-            .get_or_init(|| create_blob_url(SVG_TABLE_SORT_DESC, "image/svg+xml"))
-            .clone()
+        static REGISTRY: OnceLock<AssetRegistry<&'static str>> = OnceLock::new();
+        REGISTRY.get_or_init(AssetRegistry::new).get_or_insert(
+            "table-sort-desc",
+            SVG_TABLE_SORT_DESC,
+            "image/svg+xml",
+        )
     }
 
     /// Get a Blob URL for a classic Mac OS icon.
     ///
-    /// Uses a lazy static cache to avoid recreating Blob URLs for the same
-    /// icon multiple times. Icons are loaded on-demand from the compiled
-    /// constants via the embedded icon lookup.
+    /// Uses a lazy static [`AssetRegistry`] to avoid recreating Blob URLs
+    /// for the same icon multiple times. Icons are loaded on-demand from
+    /// the compiled constants via the embedded icon lookup.
     pub fn blob_url_for_classic_icon(
         glyph: &crate::components::icon_classic::IconClassicGlyph,
     ) -> String {
-        use std::collections::HashMap;
-        use std::sync::OnceLock;
+        static REGISTRY: OnceLock<AssetRegistry<(String, String)>> = OnceLock::new();
 
-        static CLASSIC_ICON_CACHE: OnceLock<std::sync::Mutex<HashMap<String, String>>> =
-            OnceLock::new();
+        let key = (glyph.category().to_string(), glyph.filename().to_string());
 
-        let cache = CLASSIC_ICON_CACHE.get_or_init(|| std::sync::Mutex::new(HashMap::new()));
-        let mut cache_map = cache.lock().unwrap();
-
-        let key = format!("{}/{}", glyph.category(), glyph.filename());
-
-        // Check if already cached
-        if let Some(cached_url) = cache_map.get(&key) {
-            return cached_url.clone();
-        }
-
-        // Load the icon from compiled constants
+        let registry = REGISTRY.get_or_init(AssetRegistry::new);
         if let Some(bytes) = get_classic_icon_bytes(glyph) {
-            let blob_url = create_blob_url(bytes, "image/png");
-            cache_map.insert(key, blob_url.clone());
-            blob_url
+            registry.get_or_insert(key, bytes, "image/png")
         } else {
             // Fallback (should not happen with correct icon definitions)
             format!("/icons-classic/{}/{}", glyph.category(), glyph.filename())

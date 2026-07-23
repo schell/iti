@@ -20,6 +20,7 @@ futures-lite.workspace = true
 js-sys.workspace = true
 log.workspace = true
 mogwai.workspace = true
+mogwai-embed = { path = "../mogwai-embed" }
 serde.workspace = true
 serde_json.workspace = true
 snafu.workspace = true

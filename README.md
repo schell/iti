@@ -3,17 +3,17 @@
 A small [mogwai](https://crates.io/crates/mogwai) WASM UI component library
 with a Mac OS 9 Platinum aesthetic.
 
-iti aims for a faithful classic-Mac look — raised/pressed bevels, period-correct
-typography (Chicago FLF, Geneva, Apple Garamond), and a fixed Platinum gray
-palette — wrapped in a modern Rust async API.
+iti aims for a close-enough classic-Mac look, with raised/pressed bevels,
+period-correct-ish typography (Chicago FLF, Apple Garamond), and a fixed Platinum gray
+palette - wrapped in a modern Rust async API.
 
 ## Features
 
 - 20+ components themed in Platinum: forms, containers, display, composition primitives
 - Reactive state via mogwai's `Proxy<T>` cells
-- Async event loop via `step()` — pull-based, no callbacks or channels
+- Async event loop via `step()` - pull-based, no callbacks or channels
 - Built-in component gallery for live exploration
-- Optional fully-embedded mode — single WASM binary deploy with no network requests
+- Optional fully-embedded mode - single WASM binary deploy with no network requests
 
 ## Component Gallery
 
@@ -71,7 +71,7 @@ iti components depend on a single unified stylesheet (`iti.css`) plus
 [Font Awesome 6](https://fontawesome.com/) for icon glyphs. The
 `iti::assets` module provides three ways to load them.
 
-**Option A — CDN (simplest):**
+**Option A - CDN (simplest):**
 
 ```rust
 iti::assets::inject_cdn_links();
@@ -81,7 +81,7 @@ Injects color tokens and `iti.css` as `<style>` tags, plus a `<link>`
 to Font Awesome 6 from a public CDN. Requires an internet connection
 for the icon font.
 
-**Option B — Fully embedded (offline-capable):**
+**Option B - Fully embedded (offline-capable):**
 
 ```toml
 [dependencies]
@@ -93,7 +93,7 @@ iti::assets::embedded::inject_styles();
 ```
 
 Compiles all CSS, Font Awesome icon webfonts (woff2), and Mac OS 9
-typography fonts (Chicago FLF, Geneva, and Apple Garamond TTF) into
+typography fonts (Chicago FLF and Apple Garamond TTF) into
 the WASM binary (~1.2 MB total). At runtime, fonts are exposed via
 Blob URLs created from the embedded bytes. No network connection
 required.
@@ -101,7 +101,7 @@ required.
 Font Awesome Brands icons are not embedded to save space; only Solid,
 Regular, and v4-compatibility fonts are included.
 
-**Option C — Manual / Trunk:**
+**Option C - Manual / Trunk:**
 
 Ignore the `assets` module and wire up assets yourself. With Trunk:
 
@@ -170,14 +170,14 @@ loop {
 Key points:
 
 - **Pull-based, not push-based.** There are no callbacks, no channels,
-  and no `Stream` types in public APIs. `step()` *is* the stream — one
+  and no `Stream` types in public APIs. `step()` *is* the stream - one
   event at a time.
 - **Always named `step`.** Every async method in the library uses this
   name.
 - **Receiver type varies.** Most components take `&self` (mogwai's
   event listeners use interior mutability). Components that manage
-  complex internal state — like `Widget` (which wraps an arbitrary
-  `Stream`) and `Table` (which manages column resize state) — take
+  complex internal state - like `Widget` (which wraps an arbitrary
+  `Stream`) and `Table` (which manages column resize state) - take
   `&mut self`.
 - **Not every component has one.** Purely presentational components
   like `Alert`, `Badge`, and `Progress` expose only synchronous

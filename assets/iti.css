@@ -10,7 +10,7 @@
  * by changing a handful of values.
  *
  * Fonts:
- *   - Geneva (Apple system font) — body text
+ *   - System sans-serif — body text
  *   - ChicagoFLF (public domain recreation of Apple's Chicago) — UI chrome
  *   - Apple Garamond (Light, Regular, Bold) — editorial titles
  */
@@ -47,14 +47,6 @@
 	font-family: 'Apple Garamond';
 	src: url('fonts/AppleGaramond-Bold.ttf') format('truetype');
 	font-weight: 700;
-	font-style: normal;
-	font-display: swap;
-}
-
-@font-face {
-	font-family: 'Geneva';
-	src: url('fonts/Geneva.ttf') format('truetype');
-	font-weight: normal;
 	font-style: normal;
 	font-display: swap;
 }
@@ -123,7 +115,7 @@
 
 	/* ── Fonts ──────────────────────────────────────────────────── */
 
-	--iti-font-body: 'Geneva', "Lucida Grande", "Helvetica Neue", sans-serif;
+	--iti-font-body: sans-serif;
 	--iti-font-ui: 'ChicagoFLF', "Chicago", "Charcoal", sans-serif;
 	--iti-font-editorial: 'Apple Garamond', "Garamond", "Georgia", serif;
 
