@@ -1825,6 +1825,10 @@ pre {
 	outline-offset: -1px;
 }
 
+.stroke {
+	outline: 1px solid var(--black900);
+}
+
 /* ── Validation feedback helper ── */
 
 .validation-feedback {
