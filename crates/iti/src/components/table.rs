@@ -445,7 +445,7 @@ impl<V: View, T> Table<V, T> {
         colgroup_el.append_child(&sort_col_el);
 
         rsx! {
-            let container = div(class = "table-container stroke") {
+            let container = div(class = "table-container") {
                 let table = table(class = "table") {
                     {&colgroup_el}
                     {&thead}
