@@ -265,11 +265,11 @@ impl<V: View> RadioGroup<V> {
         });
         race_all(events)
     }
+}
 
-    /// Wait for the next radio button selection.
-    ///
-    /// Returns a [`RadioEvent`] when the user selects a radio button.
-    pub async fn step(&mut self) -> RadioEvent<V> {
+impl<V: View> StepMut for RadioGroup<V> {
+    type Output = RadioEvent<V>;
+    async fn step_mut(&mut self) -> RadioEvent<V> {
         let event = self.radio_change_events().await;
         self.selected_index = Some(event.index);
         event
@@ -340,13 +340,14 @@ pub mod library {
         }
     }
 
-    impl<V: View> RadioLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for RadioLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             use futures_lite::FutureExt;
             use mogwai::future::MogwaiFutureExt;
 
-            let future1 = self.group1.step().map(|e| ("size", e));
-            let future2 = self.group2.step().map(|e| ("color", e));
+            let future1 = self.group1.step_mut().map(|e| ("size", e));
+            let future2 = self.group2.step_mut().map(|e| ("color", e));
 
             let (group_name, event) = future1.or(future2).await;
 

@@ -100,9 +100,11 @@ impl<V: View> Checkbox<V> {
     pub fn enable(&self) {
         self.input.remove_property("disabled");
     }
+}
 
-    /// Wait for the next change event.
-    pub async fn step(&mut self) -> CheckboxEvent<V> {
+impl<V: View> StepMut for Checkbox<V> {
+    type Output = CheckboxEvent<V>;
+    async fn step_mut(&mut self) -> CheckboxEvent<V> {
         let event = self.on_change.next().await;
 
         let checked = self
@@ -171,14 +173,15 @@ pub mod library {
         }
     }
 
-    impl<V: View> CheckboxLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for CheckboxLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             use futures_lite::FutureExt;
             use mogwai::future::MogwaiFutureExt;
 
-            let future1 = self.checkbox1.step().map(|e| ("default", e));
-            let future2 = self.checkbox2.step().map(|e| ("pre-checked", e));
-            let future3 = self.checkbox3.step().map(|e| ("switch", e));
+            let future1 = self.checkbox1.step_mut().map(|e| ("default", e));
+            let future2 = self.checkbox2.step_mut().map(|e| ("pre-checked", e));
+            let future3 = self.checkbox3.step_mut().map(|e| ("switch", e));
 
             let (name, event) = future1.or(future2.or(future3)).await;
 

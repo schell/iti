@@ -738,16 +738,18 @@ impl<V: View, T> Table<V, T> {
         mousemove_fut.or(mouseup_fut).await
     }
 
-    /// Wait for the next table event, or a user event from a table cell.
+    /// Drive one table interaction, racing header/sort/resize events against
+    /// per-cell futures produced by `cell_step`.
     ///
-    /// This method handles both normal user interactions (header clicks, sort clicks)
-    /// and column resizing internally. Resize operations are handled in a loop and
-    /// don't return events to the caller.
+    /// This is the shared engine behind [`StepMut::step_mut`] and
+    /// [`StepWithMut::step_with_mut`]. Resize operations are handled in a loop
+    /// and don't return events to the caller.
     ///
     /// ## Note
-    /// By the time the event is returned, the table has already reacted to the event.
-    /// For example, if `HeaderClick` is returned, the table has already re-sorted accordingly.
-    pub async fn step_with<Ev>(
+    /// By the time the event is returned, the table has already reacted to the
+    /// event. For example, if `HeaderClick` is returned, the table has already
+    /// re-sorted accordingly.
+    async fn drive<Ev>(
         &mut self,
         mut cell_step: impl FnMut(&mut T) -> Pin<Box<dyn Future<Output = Ev> + '_>>,
     ) -> TableEvent<Ev> {
@@ -826,20 +828,27 @@ impl<V: View, T> Table<V, T> {
             }
         }
     }
-
-    /// Wait for the next table event.
-    ///
-    /// This method handles both normal user interactions (header clicks, sort clicks)
-    /// and column resizing internally. Resize operations are handled in a loop and
-    /// don't return events to the caller.
-    ///
-    /// ## Note
-    /// By the time the event is returned, the table has already reacted to the event.
-    /// For example, if `HeaderClick` is returned, the table has already re-sorted accordingly.
-    pub async fn step(&mut self) -> TableEvent {
-        self.step_with(|_| std::future::pending().boxed()).await
+}
+impl<V: View, T> StepMut for Table<V, T> {
+    type Output = TableEvent;
+    async fn step_mut(&mut self) -> TableEvent {
+        self.drive(|_| std::future::pending().boxed()).await
     }
+}
 
+impl<V: View, T> StepWithMut<T> for Table<V, T> {
+    type Output<Ev: 'static> = TableEvent<Ev>;
+    async fn step_with_mut<Ev>(
+        &mut self,
+        f: impl for<'a> FnMut(&'a mut T) -> Pin<Box<dyn Future<Output = Ev> + 'a>>,
+    ) -> TableEvent<Ev>
+    where
+        Ev: 'static,
+    {
+        self.drive(f).await
+    }
+}
+impl<V: View, T> Table<V, T> {
     /// Measure rendered widths of all data column headers and write them back
     /// into state as Pixels.
     ///
@@ -1284,9 +1293,10 @@ pub mod library {
         }
     }
 
-    impl<V: View> TableLibraryItemInner<V> {
-        async fn step(&mut self) {
-            let event = self.table.step().await;
+    impl<V: View> StepMut for TableLibraryItemInner<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
+            let event = self.table.step_mut().await;
 
             match event {
                 TableEvent::HeaderClicked { col_index } => {
@@ -1359,11 +1369,12 @@ pub mod library {
         }
     }
 
-    impl<V: View> TableLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for TableLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             loop {
-                let with = self.table_with_scrollbar.step();
-                let without = self.table_without_scrollbar.step();
+                let with = self.table_with_scrollbar.step_mut();
+                let without = self.table_without_scrollbar.step_mut();
                 with.or(without).await;
             }
         }

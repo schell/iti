@@ -23,8 +23,11 @@ impl<V: View, T> Widget<V, T> {
             stream: stream.boxed_local(),
         }
     }
+}
 
-    pub async fn step(&mut self) -> T {
+impl<V: View, T: 'static> StepMut for Widget<V, T> {
+    type Output = T;
+    async fn step_mut(&mut self) -> T {
         if let Some(t) = self.stream.next().await {
             t
         } else {

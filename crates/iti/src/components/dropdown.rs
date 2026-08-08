@@ -2,6 +2,8 @@
 //!
 //! A Bootstrap dropdown button with a menu of clickable items.  Open/close and
 //! click-outside-to-dismiss are managed in pure Rust — no Bootstrap JS required.
+use std::future::Future;
+
 use mogwai::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -157,7 +159,7 @@ impl<V: View> Dropdown<V> {
         self.open.set(self.is_open);
     }
 
-    fn item_click_events(&self) -> impl std::future::Future<Output = DropdownEvent<V>> + '_ {
+    fn item_click_events(&self) -> impl Future<Output = DropdownEvent<V>> + '_ {
         use mogwai::future::*;
 
         let events = self.items.iter().enumerate().map(|(index, item)| {
@@ -167,17 +169,11 @@ impl<V: View> Dropdown<V> {
         });
         race_all(events)
     }
+}
 
-    /// Await the next dropdown interaction.
-    ///
-    /// Returns [`None`] when the toggle button was clicked (caller should call
-    /// [`Dropdown::toggle`]), [`Some(ItemClicked)`] when a menu item was
-    /// clicked, or [`Some(Dismissed)`] when the dropdown was dismissed via
-    /// Escape or a click outside.
-    ///
-    /// Escape and click-outside events are only returned when the dropdown is
-    /// open; when closed they are silently ignored.
-    pub async fn step(&self) -> Option<DropdownEvent<V>> {
+impl<V: View> Step for Dropdown<V> {
+    type Output = Option<DropdownEvent<V>>;
+    async fn step(&self) -> Option<DropdownEvent<V>> {
         use futures_lite::FutureExt;
         use mogwai::future::MogwaiFutureExt;
 
@@ -259,8 +255,9 @@ pub mod library {
         }
     }
 
-    impl<V: View> DropdownLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for DropdownLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             match self.dropdown.step().await {
                 None => {
                     self.dropdown.toggle();

@@ -5,6 +5,8 @@
 //!
 //! Buttons may have an icon, a progress spinner, and a reactive text/flavor.
 //! Use `step()` to await the next click event.
+use std::future::Future;
+
 use mogwai::prelude::*;
 
 use crate::components::{
@@ -129,9 +131,12 @@ impl<V: View> Button<V> {
             self.icon_wrapper.remove_child(&self.icon);
         }
     }
+}
 
-    pub async fn step(&self) -> V::Event {
-        self.on_click.next().await
+impl<V: View> Step for Button<V> {
+    type Output = V::Event;
+    fn step(&self) -> impl Future<Output = V::Event> {
+        self.on_click.next()
     }
 }
 
@@ -207,9 +212,12 @@ impl<V: View> PrimaryButton<V> {
     pub fn get_icon_mut(&mut self) -> &mut Icon<V> {
         self.button.get_icon_mut()
     }
+}
 
-    pub async fn step(&self) -> V::Event {
-        self.button.step().await
+impl<V: View> Step for PrimaryButton<V> {
+    type Output = V::Event;
+    fn step(&self) -> impl Future<Output = V::Event> {
+        self.button.step()
     }
 }
 
@@ -303,8 +311,9 @@ pub mod library {
         }
     }
 
-    impl<V: View> ButtonLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for ButtonLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             use futures_lite::StreamExt;
             let btn_fut = self.button.step().map(|e| Ok(Some(e)));
             let primary_fut = self.primary_button.step().map(|e| Ok(Some(e)));

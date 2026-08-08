@@ -1,5 +1,5 @@
 //! Page tabs (Bootstrap nav-tabs).
-use std::{collections::HashMap, future::Future};
+use std::{collections::HashMap, future::Future, pin::Pin};
 
 use futures_lite::FutureExt;
 use mogwai::{future::MogwaiFutureExt, prelude::*};
@@ -300,7 +300,29 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
         }
     }
 
-    /// Deselect all tabs.
+    fn item_events(&self) -> impl Future<Output = TabListEvent<V, T>> + '_ {
+        let mut race = std::future::pending().boxed_local();
+        for (index, item) in self.iter().enumerate() {
+            let click = async move {
+                let event = item.on_click.next().await;
+                TabListEvent::ItemClicked {
+                    id: item.id.clone(),
+                    index,
+                    event,
+                }
+            };
+            race = race.or(click).boxed_local();
+        }
+        race
+    }
+}
+impl<V: View, T: ViewChild<V> + 'static> Step for TabList<V, T> {
+    type Output = TabListEvent<V, T>;
+    async fn step(&self) -> TabListEvent<V, T> {
+        self.item_events().await
+    }
+}
+impl<V: View, T: ViewChild<V>> TabList<V, T> {
     pub fn deselect_all(&mut self) {
         for entry in self.entries.iter_mut() {
             if let Some(item) = entry.as_item_mut() {
@@ -396,26 +418,6 @@ impl<V: View, T: ViewChild<V>> TabList<V, T> {
                 true
             }
         });
-    }
-
-    fn item_events(&self) -> impl Future<Output = TabListEvent<V, T>> + '_ {
-        let mut race = std::future::pending().boxed_local();
-        for (index, item) in self.iter().enumerate() {
-            let click = async move {
-                let event = item.on_click.next().await;
-                TabListEvent::ItemClicked {
-                    id: item.id.clone(),
-                    index,
-                    event,
-                }
-            };
-            race = race.or(click).boxed_local();
-        }
-        race
-    }
-
-    pub async fn step(&self) -> TabListEvent<V, T> {
-        self.item_events().await
     }
 }
 
@@ -550,9 +552,11 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     pub fn iter_mut_panes(&mut self) -> impl Iterator<Item = &mut P> {
         self.panes.iter_mut()
     }
+}
 
-    /// Step the tabs.
-    pub async fn step(&mut self) -> TabListEvent<V, T> {
+impl<V: View, T: ViewChild<V> + 'static, P: ViewChild<V>> StepMut for TabPanel<V, T, P> {
+    type Output = TabListEvent<V, T>;
+    async fn step_mut(&mut self) -> TabListEvent<V, T> {
         let ev = self.tabs.step().await;
         match &ev {
             TabListEvent::ItemClicked {
@@ -565,19 +569,17 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
         }
         ev
     }
+}
 
-    /// Step the panel, racing tab clicks against all pane steps.
-    ///
-    /// The closure `f` is called once per pane and should return a future that
-    /// completes when that pane has something to report. All pane futures are
-    /// raced against the tab-click future; the first to resolve wins.
-    ///
-    /// When a tab click wins, the panel automatically selects the clicked tab
-    /// and its corresponding pane.
-    pub async fn step_with<Ev>(
+impl<V: View, T: ViewChild<V> + 'static, P: ViewChild<V>> StepWithMut<P> for TabPanel<V, T, P> {
+    type Output<Ev: 'static> = TabPanelEvent<V, T, Ev>;
+    async fn step_with_mut<Ev>(
         &mut self,
-        f: impl FnMut(&mut P) -> std::pin::Pin<Box<dyn std::future::Future<Output = Ev> + '_>>,
-    ) -> TabPanelEvent<V, T, Ev> {
+        f: impl for<'a> FnMut(&'a mut P) -> Pin<Box<dyn Future<Output = Ev> + 'a>>,
+    ) -> TabPanelEvent<V, T, Ev>
+    where
+        Ev: 'static,
+    {
         let tab_fut = self.tabs.step().map(TabPanelEvent::Tabs);
         let pane_fut =
             mogwai::future::race_all(self.panes.iter_mut().map(f)).map(TabPanelEvent::Panes);
@@ -721,10 +723,13 @@ pub mod library {
                 let _ = self.panes.select(id);
             }
         }
+    }
 
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for TabListLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             let pane_fut = async {
-                self.panes.current_pane_mut().step().await;
+                self.panes.current_pane_mut().step_mut().await;
                 None::<TabListEvent<V, _>>
             };
             let list_fut = async {

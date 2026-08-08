@@ -172,11 +172,14 @@ impl<V: View, T: ViewChild<V>> List<V, T> {
         });
         race_all(events)
     }
-
-    pub async fn step(&self) -> ListEvent<V> {
+}
+impl<V: View, T: ViewChild<V>> Step for List<V, T> {
+    type Output = ListEvent<V>;
+    async fn step(&self) -> ListEvent<V> {
         self.item_click_events().await
     }
-
+}
+impl<V: View, T: ViewChild<V>> List<V, T> {
     pub fn iter(&self) -> impl Iterator<Item = &ListItem<V, T>> {
         self.items.iter()
     }
@@ -257,8 +260,9 @@ pub mod library {
         Remove,
     }
 
-    impl<V: View> ListLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for ListLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             let action = self
                 .list
                 .step()
