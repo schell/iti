@@ -38,8 +38,9 @@ pub struct ProgressBars<V: View> {
     percent_text: V::Text,
 }
 
-impl<V: View> ProgressBars<V> {
-    async fn step(&mut self) {
+impl<V: View> StepMut for ProgressBars<V> {
+    type Output = ();
+    async fn step_mut(&mut self) {
         loop {
             let hit_zero = self.zero_button.step().map(Some);
             let tick = async {
@@ -112,8 +113,9 @@ impl<V: View> Default for IconClassicLibraryItem<V> {
     }
 }
 
-impl<V: View> IconClassicLibraryItem<V> {
-    pub async fn step(&mut self) {
+impl<V: View> StepMut for IconClassicLibraryItem<V> {
+    type Output = ();
+    async fn step_mut(&mut self) {
         // Await on pending to keep the event loop running
         futures_lite::future::pending().await
     }
@@ -145,21 +147,22 @@ impl<V: View> ViewChild<V> for SectionContent<V> {
     }
 }
 
-impl<V: View> SectionContent<V> {
-    async fn step(&mut self) {
-        enum Step<V: View> {
+impl<V: View> StepMut for SectionContent<V> {
+    type Output = ();
+    async fn step_mut(&mut self) {
+        enum StepEv<V: View> {
             TabList(TabListEvent<V, V::Element>),
             TabPanel(TabListEvent<V, V::Element>),
         }
         match self {
             SectionContent::ProgressBars(progress_bars) => {
-                progress_bars.step().await;
+                progress_bars.step_mut().await;
             }
             SectionContent::TableLibrary(table_library) => {
-                table_library.step().await;
+                table_library.step_mut().await;
             }
             SectionContent::IconClassicLibrary(icon_library) => {
-                icon_library.step().await;
+                icon_library.step_mut().await;
             }
             SectionContent::TabPanel {
                 wrapper: _,
@@ -167,16 +170,16 @@ impl<V: View> SectionContent<V> {
                 tab_panels,
             } => {
                 let mut futs = vec![];
-                futs.push(tab_list.step().map(Step::TabList).boxed_local());
+                futs.push(tab_list.step().map(StepEv::TabList).boxed_local());
 
                 for panel in tab_panels.iter_mut() {
-                    futs.push(panel.step().map(Step::TabPanel).boxed_local());
+                    futs.push(panel.step_mut().map(StepEv::TabPanel).boxed_local());
                 }
                 match mogwai::future::race_all(futs).await {
-                    Step::TabList(TabListEvent::ItemClicked { id, .. }) => {
+                    StepEv::TabList(TabListEvent::ItemClicked { id, .. }) => {
                         tab_list.select_by_id(&id);
                     }
-                    Step::TabPanel(_tab_list_event) => {}
+                    StepEv::TabPanel(_tab_list_event) => {}
                 }
             }
             _ => futures_lite::future::pending().await,
@@ -246,9 +249,11 @@ impl<V: View> SectionTop<V> {
             toggle,
         }
     }
+}
 
-    /// Awaits a click and returns the toggled "enabled" state.
-    async fn step(&mut self) -> bool {
+impl<V: View> StepMut for SectionTop<V> {
+    type Output = bool;
+    async fn step_mut(&mut self) -> bool {
         let _ev = self.on_click.next().await;
 
         self.enabled = !self.enabled;
@@ -304,19 +309,22 @@ impl<V: View> Section<V> {
             top,
         }
     }
+}
 
-    async fn step(&mut self) {
-        enum Step {
+impl<V: View> StepMut for Section<V> {
+    type Output = ();
+    async fn step_mut(&mut self) {
+        enum StepEv {
             Top(bool),
             Content,
         }
 
-        let top_toggled = self.top.step().map(Step::Top);
-        let content = self.content.step().map(|_| Step::Content);
+        let top_toggled = self.top.step_mut().map(StepEv::Top);
+        let content = self.content.step_mut().map(|_| StepEv::Content);
 
         match top_toggled.or(content).await {
-            Step::Content => {}
-            Step::Top(enabled) => {
+            StepEv::Content => {}
+            StepEv::Top(enabled) => {
                 log::info!("section {} toggled: {enabled}", self.top.title);
                 self.top.write_enabled().unwrap_throw();
                 self.enabled.set(enabled);
@@ -1398,12 +1406,13 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
     }
 }
 
-impl<V: View> OverhaulLibraryItem<V> {
-    pub async fn step(&mut self) {
+impl<V: View> StepMut for OverhaulLibraryItem<V> {
+    type Output = ();
+    async fn step_mut(&mut self) {
         let sections = self
             .sections
             .iter_mut()
-            .map(|section| section.step())
+            .map(|section| section.step_mut())
             .collect::<Vec<_>>();
         mogwai::future::race_all(sections).await
     }

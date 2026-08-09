@@ -107,9 +107,11 @@ impl<V: View> Toast<V> {
     pub fn hide(&mut self) {
         self.state.modify(|s| s.visible = false);
     }
+}
 
-    /// Await the next toast event (currently only [`ToastEvent::Closed`]).
-    pub async fn step(&self) -> ToastEvent {
+impl<V: View> Step for Toast<V> {
+    type Output = ToastEvent;
+    async fn step(&self) -> ToastEvent {
         self.close_click.next().await;
         ToastEvent::Closed
     }
@@ -166,8 +168,9 @@ pub mod library {
         }
     }
 
-    impl<V: View> ToastLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for ToastLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             match self
                 .toast
                 .step()

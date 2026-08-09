@@ -186,12 +186,11 @@ impl<V: View> Select<V> {
         self.select
             .set_property("selectedIndex", format!("{index}"));
     }
+}
 
-    /// Await the next selection change.
-    ///
-    /// Returns a [`SelectEvent`] containing the index, value, and raw DOM
-    /// event of the newly selected option.
-    pub async fn step(&self) -> SelectEvent<V> {
+impl<V: View> Step for Select<V> {
+    type Output = SelectEvent<V>;
+    async fn step(&self) -> SelectEvent<V> {
         let event = self.on_change.next().await;
         let index = self.selected_index().unwrap_or(0);
         let value = self
@@ -260,8 +259,9 @@ pub mod library {
         }
     }
 
-    impl<V: View> SelectLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for SelectLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             let ev = self.select.step().await;
             self.status_text
                 .set_text(format!("Selected: {} (index {})", ev.value, ev.index));

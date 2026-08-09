@@ -99,12 +99,11 @@ impl<V: View> Slider<V> {
     pub fn enable(&self) {
         self.input.remove_property("disabled");
     }
+}
 
-    /// Await the next user input and return a [`SliderEvent`] with the new
-    /// value.
-    ///
-    /// The internal `value` field is updated before returning.
-    pub async fn step(&mut self) -> SliderEvent<V> {
+impl<V: View> StepMut for Slider<V> {
+    type Output = SliderEvent<V>;
+    async fn step_mut(&mut self) -> SliderEvent<V> {
         let event = self.on_input.next().await;
         // Read the current value from the DOM input element.
         let dom_value = self
@@ -232,10 +231,12 @@ impl<V: View> SliderWithTicks<V> {
     pub fn enable(&self) {
         self.slider.enable();
     }
+}
 
-    /// Await the next user input and return a [`SliderEvent`] with the new value.
-    pub async fn step(&mut self) -> SliderEvent<V> {
-        self.slider.step().await
+impl<V: View> StepMut for SliderWithTicks<V> {
+    type Output = SliderEvent<V>;
+    async fn step_mut(&mut self) -> SliderEvent<V> {
+        self.slider.step_mut().await
     }
 }
 
@@ -339,8 +340,11 @@ pub mod library {
         fn format_value(v: f64, decimals: usize) -> String {
             format!("{v:.decimals$}")
         }
+    }
 
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for SliderLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             enum Action {
                 SliderA(f64),
                 SliderB(f64),
@@ -351,10 +355,10 @@ pub mod library {
 
             let ev = self
                 .slider_a
-                .step()
+                .step_mut()
                 .map(|e| Action::SliderA(e.value))
-                .or(self.slider_b.step().map(|e| Action::SliderB(e.value)))
-                .or(self.slider_c.step().map(|e| Action::SliderC(e.value)))
+                .or(self.slider_b.step_mut().map(|e| Action::SliderB(e.value)))
+                .or(self.slider_c.step_mut().map(|e| Action::SliderC(e.value)))
                 .or(self.reset_click.next().map(|_| Action::Reset))
                 .or(self.toggle_click.next().map(|_| Action::Toggle))
                 .await;

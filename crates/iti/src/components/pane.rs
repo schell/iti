@@ -453,8 +453,11 @@ pub mod library {
                 let _ = self.panes.select(id);
             }
         }
+    }
 
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for PaneRetainLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             enum Ev<V: View, T> {
                 Timer,
                 Tab(TabListEvent<V, T>),

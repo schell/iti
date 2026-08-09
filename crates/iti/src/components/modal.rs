@@ -122,9 +122,11 @@ impl<V: View> Modal<V> {
     pub fn is_visible(&self) -> bool {
         *self.visible
     }
+}
 
-    /// Await the next modal event (close button, backdrop click, or Escape key).
-    pub async fn step(&self) -> ModalEvent {
+impl<V: View> Step for Modal<V> {
+    type Output = ModalEvent;
+    async fn step(&self) -> ModalEvent {
         use futures_lite::FutureExt;
 
         let close_or_backdrop = self.close_click.next().or(self.backdrop_click.next());
@@ -194,8 +196,9 @@ pub mod library {
         }
     }
 
-    impl<V: View> ModalLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for ModalLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             match self
                 .open_click
                 .next()

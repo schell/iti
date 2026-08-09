@@ -89,25 +89,26 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
     }
 }
 
-impl<V: View> LibraryListPane<V> {
-    pub async fn step(&mut self) {
+impl<V: View> StepMut for LibraryListPane<V> {
+    type Output = ();
+    async fn step_mut(&mut self) {
         let body = body();
         body.set_style("background-color", crate::color::LAVENDER);
         match self {
-            LibraryListPane::Button(item) => item.step().await,
-            LibraryListPane::ButtonGroup(item) => item.step().await,
-            LibraryListPane::Checkbox(item) => item.step().await,
-            LibraryListPane::Dropdown(item) => item.step().await,
-            LibraryListPane::List(item) => item.step().await,
-            LibraryListPane::Modal(item) => item.step().await,
-            LibraryListPane::PaneRetain(item) => item.step().await,
-            LibraryListPane::Progress(item) => item.step().await,
-            LibraryListPane::Radio(item) => item.step().await,
-            LibraryListPane::Select(item) => item.step().await,
-            LibraryListPane::Slider(item) => item.step().await,
-            LibraryListPane::Toast(item) => item.step().await,
+            LibraryListPane::Button(item) => item.step_mut().await,
+            LibraryListPane::ButtonGroup(item) => item.step_mut().await,
+            LibraryListPane::Checkbox(item) => item.step_mut().await,
+            LibraryListPane::Dropdown(item) => item.step_mut().await,
+            LibraryListPane::List(item) => item.step_mut().await,
+            LibraryListPane::Modal(item) => item.step_mut().await,
+            LibraryListPane::PaneRetain(item) => item.step_mut().await,
+            LibraryListPane::Progress(item) => item.step_mut().await,
+            LibraryListPane::Radio(item) => item.step_mut().await,
+            LibraryListPane::Select(item) => item.step_mut().await,
+            LibraryListPane::Slider(item) => item.step_mut().await,
+            LibraryListPane::Toast(item) => item.step_mut().await,
             LibraryListPane::Overhaul(item) => {
-                item.step().await;
+                item.step_mut().await;
             }
             LibraryListPane::Default(_) => std::future::pending().await,
         }
@@ -233,10 +234,13 @@ impl<V: View> Library<V> {
             }
         }
     }
+}
 
-    pub async fn step(&mut self) {
+impl<V: View> StepMut for Library<V> {
+    type Output = ();
+    async fn step_mut(&mut self) {
         let pane_fut = async {
-            self.right_column.current_pane_mut().step().await;
+            self.right_column.current_pane_mut().step_mut().await;
             None
         };
         let list_fut = async {
@@ -273,7 +277,7 @@ pub async fn main() {
 
     wasm_bindgen_futures::spawn_local(async move {
         loop {
-            lib.step().await;
+            lib.step_mut().await;
         }
     });
 }

@@ -144,8 +144,9 @@ pub mod library {
         }
     }
 
-    impl<V: View> ProgressLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for ProgressLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             #[derive(Debug)]
             enum Action {
                 Control(usize),

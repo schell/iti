@@ -145,13 +145,11 @@ impl<V: View> TitleBar<V> {
     pub fn get_icon_mut(&mut self) -> &mut Icon<V> {
         &mut self.icon
     }
+}
 
-    /// Await the next title bar event.
-    ///
-    /// Currently only emits [`TitleBarEvent::CloseClicked`] when the close
-    /// button is clicked. If the close button is hidden, this will wait
-    /// indefinitely.
-    pub async fn step(&self) -> TitleBarEvent {
+impl<V: View> Step for TitleBar<V> {
+    type Output = TitleBarEvent;
+    async fn step(&self) -> TitleBarEvent {
         self.close_click.next().await;
         TitleBarEvent::CloseClicked
     }

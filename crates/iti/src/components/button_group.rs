@@ -162,13 +162,14 @@ impl<V: View> ButtonGroup<V> {
         });
         race_all(events)
     }
-
-    /// Awaits the next click on any child and returns a [`ButtonGroupEvent`]
-    /// indicating which item was clicked.
-    pub async fn step(&self) -> ButtonGroupEvent<V> {
+}
+impl<V: View> Step for ButtonGroup<V> {
+    type Output = ButtonGroupEvent<V>;
+    async fn step(&self) -> ButtonGroupEvent<V> {
         self.item_click_events().await
     }
-
+}
+impl<V: View> ButtonGroup<V> {
     /// Returns an iterator over the items.
     pub fn iter(&self) -> impl Iterator<Item = &Button<V>> {
         self.buttons.iter()
@@ -267,8 +268,9 @@ pub mod library {
         }
     }
 
-    impl<V: View> ButtonGroupLibraryItem<V> {
-        pub async fn step(&mut self) {
+    impl<V: View> StepMut for ButtonGroupLibraryItem<V> {
+        type Output = ();
+        async fn step_mut(&mut self) {
             log::info!("waiting on button group step");
             // Race the two button groups
             enum Group<V: View> {
