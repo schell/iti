@@ -175,6 +175,34 @@ struct SortArrowHeader<V: View> {
     sort_order: Proxy<SortOrder>,
 }
 
+/// A column cell within a table row.
+#[derive(ViewChild, ViewProperties)]
+struct TableCell<V: View, Cell: ViewChild<V>> {
+    #[child]
+    #[properties]
+    td: V::Element,
+    /// Is `None` for the sort column cells
+    maybe_user_cell: Option<Cell>,
+}
+
+impl<V: View, Cell: ViewChild<V>> TableCell<V, Cell> {
+    fn new(maybe_user_cell: Option<Cell>, col_index: usize) -> Self {
+        rsx! {
+            let td = td(
+                class = "table-cell",
+                data:col_index = col_index.to_string()
+            ) {
+                {&maybe_user_cell}
+            }
+        }
+
+        Self {
+            td,
+            maybe_user_cell,
+        }
+    }
+}
+
 /// A single table row with rendered cells.
 ///
 /// # Type parameters
@@ -183,11 +211,36 @@ struct SortArrowHeader<V: View> {
 /// - `T` — the row data carried by this row. Owned by the row and returned by
 ///   value from [`Table::remove`]; accessed by reference via [`Table::get`] /
 ///   [`Table::get_mut`].
-pub struct TableRow<V: View, T> {
+pub struct TableRow<V: View, T, Cell: ViewChild<V>> {
     tr: V::Element,
-    #[allow(dead_code)]
-    cells: Vec<V::Element>,
+    cells: Vec<TableCell<V, Cell>>,
     data: T,
+}
+
+impl<V: View, T, Cell: ViewChild<V>> TableRow<V, T, Cell> {
+    /// Retrieve a reference to the row data.
+    pub fn data(&self) -> &T {
+        &self.data
+    }
+
+    /// Retrieve a mutable reference to the row data.
+    pub fn data_mut(&mut self) -> &mut T {
+        &mut self.data
+    }
+
+    /// Retrieve an iterator over the row's cells.
+    pub fn cells(&self) -> impl Iterator<Item = &Cell> + '_ {
+        self.cells
+            .iter()
+            .filter_map(|tc| tc.maybe_user_cell.as_ref())
+    }
+
+    /// Retrieve a mutable iterator over the row's cells.
+    pub fn cells_mut(&mut self) -> impl Iterator<Item = &mut Cell> + '_ {
+        self.cells
+            .iter_mut()
+            .filter_map(|tc| tc.maybe_user_cell.as_mut())
+    }
 }
 
 /// Events emitted by the table.
@@ -318,7 +371,7 @@ pub struct Table<V: View, T, Cell: ViewChild<V>> {
     tbody: V::Element,
     headers: Vec<ColumnHeader<V>>,
     sort_header: SortArrowHeader<V>,
-    rows: Vec<TableRow<V, T>>,
+    rows: Vec<TableRow<V, T, Cell>>,
     columns: Vec<Column<T, Cell>>,
     active_sort_col: Proxy<Option<usize>>, // None = entry order
     sort_order: SortOrder,                 // Cached sort order value
@@ -713,32 +766,16 @@ impl<V: View, T, Cell: ViewChild<V>> Table<V, T, Cell> {
         }
     }
 
-    fn create_row(&mut self, data: T) -> TableRow<V, T> {
+    fn create_row(&mut self, data: T) -> TableRow<V, T, Cell> {
         let mut cells = vec![];
-
-        fn create_td<V: View, Cell: ViewChild<V>>(
-            cell_content: Option<Cell>,
-            col_idx: usize,
-        ) -> V::Element {
-            rsx! {
-                let td = td(
-                    class = "table-cell",
-                    data:col_index = col_idx.to_string()
-                ) {
-                    {cell_content}
-                }
-            }
-            td
-        }
 
         // Create cells using column accessors
         for (col_idx, column) in self.columns.iter().enumerate() {
-            let cell_content = (column.create_cell_fn)(&data, col_idx);
-            let td = create_td::<V, Cell>(Some(cell_content), col_idx);
-            cells.push(td);
+            let user_cell = (column.create_cell_fn)(&data, col_idx);
+            cells.push(TableCell::new(Some(user_cell), col_idx));
         }
         // Create the last cell, which is always empty because it's under the sort header/button.
-        cells.push(create_td::<V, Cell>(None, self.columns.len()));
+        cells.push(TableCell::new(None, self.columns.len()));
 
         rsx! {
             let tr = tr(class = "table-row") {}
@@ -947,7 +984,7 @@ impl<V: View, T, Cell: ViewChild<V>> Table<V, T, Cell> {
     /// Wait for any user action (header click, sort click, or resize start).
     async fn wait_for_user_action<Ev>(
         &mut self,
-        cell_step: &mut impl FnMut(&mut T) -> Pin<Box<dyn Future<Output = Ev> + '_>>,
+        row_step: &mut impl FnMut(&mut TableRow<V, T, Cell>) -> Pin<Box<dyn Future<Output = Ev> + '_>>,
     ) -> InternalEvent<Ev> {
         let Self {
             headers,
@@ -990,8 +1027,8 @@ impl<V: View, T, Cell: ViewChild<V>> Table<V, T, Cell> {
         .boxed_local();
 
         let user = rows.iter_mut().map(|row| {
-            let t = &mut row.data;
-            cell_step(t).map(InternalEvent::User).boxed_local()
+            let fut = row_step(row);
+            fut.map(InternalEvent::User).boxed_local()
         });
 
         // Race all futures
@@ -1029,7 +1066,7 @@ impl<V: View, T, Cell: ViewChild<V>> Table<V, T, Cell> {
     }
 
     /// Drive one table interaction, racing header/sort/resize events against
-    /// per-cell futures produced by `cell_step`.
+    /// per-row futures produced by `row_step`.
     ///
     /// This is the shared engine behind [`StepMut::step_mut`] and
     /// [`StepWithMut::step_with_mut`]. Resize operations are handled in a loop
@@ -1041,7 +1078,7 @@ impl<V: View, T, Cell: ViewChild<V>> Table<V, T, Cell> {
     /// re-sorted accordingly.
     async fn drive<Ev>(
         &mut self,
-        mut cell_step: impl FnMut(&mut T) -> Pin<Box<dyn Future<Output = Ev> + '_>>,
+        mut row_step: impl FnMut(&mut TableRow<V, T, Cell>) -> Pin<Box<dyn Future<Output = Ev> + '_>>,
     ) -> TableEvent<Ev> {
         // Lazy mount-time normalization. On the first call after the table is
         // laid out, measure rendered widths and write them back to state. This
@@ -1062,7 +1099,7 @@ impl<V: View, T, Cell: ViewChild<V>> Table<V, T, Cell> {
 
         loop {
             // Wait for a user action
-            let event = self.wait_for_user_action(&mut cell_step).await;
+            let event = self.wait_for_user_action(&mut row_step).await;
 
             match event {
                 InternalEvent::HeaderClick(col_index) => {
@@ -1137,19 +1174,20 @@ impl<V: View, T, Cell: ViewChild<V>> StepMut for Table<V, T, Cell> {
 
 /// `step()` that also races per-cell event futures, one per row.
 ///
-/// `f` is invoked once per row on every call, receiving `&mut T` (the row's
-/// data) and returning a future whose output becomes the [`TableEvent::User`]
+/// `f` is invoked once per row on every call, receiving `&mut TableRow`
+/// and returning a future whose output becomes the [`TableEvent::User`]
 /// payload (typed as `Ev`). Whichever resolves first — a cell future or a
 /// table-level action — wins the race and is returned. Use this variant when
 /// cell content (e.g. an interactive control inside a cell) needs to surface
 /// events through the table loop.
 ///
 /// Honors the react-before-return contract: see [`Table`] and [`TableEvent`].
-impl<V: View, T, Cell: ViewChild<V>> StepWithMut<T> for Table<V, T, Cell> {
+impl<V: View, T, Cell: ViewChild<V>> StepWithMut<TableRow<V, T, Cell>> for Table<V, T, Cell> {
     type Output<Ev: 'static> = TableEvent<Ev>;
+
     async fn step_with_mut<Ev>(
         &mut self,
-        f: impl for<'a> FnMut(&'a mut T) -> Pin<Box<dyn Future<Output = Ev> + 'a>>,
+        f: impl for<'a> FnMut(&'a mut TableRow<V, T, Cell>) -> Pin<Box<dyn Future<Output = Ev> + 'a>>,
     ) -> TableEvent<Ev>
     where
         Ev: 'static,
