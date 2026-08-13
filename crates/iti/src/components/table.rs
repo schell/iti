@@ -2,6 +2,71 @@
 //!
 //! Provides a table with sortable, resizable columns matching the classic
 //! Finder folder list view aesthetic with raised/pressed bevel effects.
+//!
+//! # Overview
+//!
+//! The table is constructed with [`TableBuilder`] using a fluent API: each
+//! [`TableBuilder::column`] call registers a column (header label + cell
+//! accessor + sort comparator), and any subsequent sizing methods
+//! ([`TableBuilder::width`], [`TableBuilder::width_percent`],
+//! [`TableBuilder::width_auto`], [`TableBuilder::min_width`],
+//! [`TableBuilder::fixed_width`]) apply to that last-added column. Call
+//! [`TableBuilder::build`] to finish and get a [`Table`].
+//!
+//! Rows are added after construction via [`Table::push`]. The table reacts to
+//! user input (column header clicks, sort-arrow clicks, column resize drags)
+//! through the `step()` event loop driven by the caller; see [`Table`] for
+//! driving semantics and [`TableEvent`] for the emitted events.
+//!
+//! A column's cell content can be any `Cell: ViewChild<V>`. It's inferred from
+//! the `column()` accessor closure's return type — returning a `V::Element`
+//! (e.g. from `rsx! { span() }`) is the common case; return any other
+//! [`ViewChild<V>`] (such as a [`Button`](crate::components::button::Button))
+//! to embed a full iti component as a cell. See [`Table`] for the constraint
+//! that all columns share one `Cell` type.
+//!
+//! # Example
+//!
+//! ```ignore
+//! use mogwai::prelude::*;
+//! use iti::components::table::{TableBuilder, TableEvent, SortOrder};
+//!
+//! // Each row carries a `T` of your choosing; the table never constrains it.
+//! struct FileEntry { name: String, size: String }
+//!
+//! let mut table = TableBuilder::new()
+//!     .column(
+//!         "Name",
+//!         |file: &FileEntry, _| {
+//!             rsx! { let s = span() { {V::Text::new(&file.name)} } }
+//!             s
+//!         },
+//!         |a, b| a.name.cmp(&b.name),
+//!     )
+//!     .width_percent(60.0)
+//!     .column(
+//!         "Size",
+//!         |file: &FileEntry, _| {
+//!             rsx! { let s = span() { {V::Text::new(&file.size)} } }
+//!             s
+//!         },
+//!         |a, b| a.size.cmp(&b.size),
+//!     )
+//!     .width(120)
+//!     .use_scrollbar(true)
+//!     .build();
+//!
+//! table.push(FileEntry { name: "readme.txt".into(), size: "1 KB".into() });
+//! table.push(FileEntry { name: "notes.md".into(), size: "2 KB".into() });
+//!
+//! loop {
+//!     match table.step_mut().await {
+//!         TableEvent::HeaderClicked { col_index } => { /* sorted already */ }
+//!         TableEvent::SortArrowClicked { sort_order } => { /* arrow toggled */ }
+//!         TableEvent::User(()) => unreachable!("no per-cell futures"),
+//!     }
+//! }
+//! ```
 
 use std::future::Future;
 use std::pin::Pin;
@@ -32,13 +97,25 @@ pub enum ColumnSize {
     Auto,
 }
 
-type CreateCellFn<V, T> = Box<dyn Fn(&T, usize) -> <V as View>::Element>;
+type CreateCellFn<T, Cell> = Box<dyn Fn(&T, usize) -> Cell>;
 type CompareCellFn<T> = Box<dyn Fn(&T, &T) -> std::cmp::Ordering>;
 
 /// Column definition with accessor function and sizing constraints.
-pub struct Column<V: View, T> {
+///
+/// # Type parameters
+///
+/// - `T` — the row data model carried by the owning [`Table`]. It is
+///   unconstrained: the column reads from it via `create_cell_fn` /
+///   `compare_cell_fn` rather than via any trait bound on `T`, so `T` needs no
+///   `Ord`/`Clone`/etc. — sorting is delegated to the comparator you supply.
+/// - `Cell` — the cell content type produced by `create_cell_fn`. Inferred
+///   from the return type of the `create_cell_fn` closure (typically `V::Element`
+///   for a plain DOM element returned by `rsx! { span() }`); may be any type
+///   implementing [`ViewChild<V>`]. All columns of a [`Table`] / [`TableBuilder`]
+///   share the same `Cell` type.
+pub struct Column<T, Cell> {
     header: String,
-    create_cell_fn: CreateCellFn<V, T>,
+    create_cell_fn: CreateCellFn<T, Cell>,
     compare_cell_fn: CompareCellFn<T>,
     declared_size: ColumnSize, // User-declared width mode
     min_width: u32,            // Minimum width for resizing (default 50px)
@@ -99,6 +176,13 @@ struct SortArrowHeader<V: View> {
 }
 
 /// A single table row with rendered cells.
+///
+/// # Type parameters
+///
+/// - `V: View` — the mogwai view abstraction.
+/// - `T` — the row data carried by this row. Owned by the row and returned by
+///   value from [`Table::remove`]; accessed by reference via [`Table::get`] /
+///   [`Table::get_mut`].
 pub struct TableRow<V: View, T> {
     tr: V::Element,
     #[allow(dead_code)]
@@ -107,19 +191,44 @@ pub struct TableRow<V: View, T> {
 }
 
 /// Events emitted by the table.
+///
+/// # Type parameters
+///
+/// - `Ev` — the user-defined event type yielded by the per-cell future passed
+///   to [`StepWithMut::step_with_mut`]. Defaults to `()`: when the table is
+///   driven via [`StepMut::step_mut`] (no per-cell futures) `Ev` stays `()` and
+///   [`TableEvent::User`] is effectively unreachable, which is why it carries a
+///   default. Use a non-`()` `Ev` only when at least one column's cell content
+///   produces its own events that need to bubble up through the table loop.
+///
+/// # React-before-return contract
+///
+/// By the time any variant is returned, the table has **already** updated its
+/// internal state and DOM to match the user action. For example, when
+/// [`TableEvent::HeaderClicked`] is returned the column has already been
+/// activated and the rows re-sorted; when [`TableEvent::SortArrowClicked`] is
+/// returned the arrow icon has already toggled and rows re-sorted. The returned
+/// event is therefore an observation, not a command to react to.
 #[derive(Debug)]
 pub enum TableEvent<Ev = ()> {
     /// User clicked a column header to set it as the active sort column.
+    ///
+    /// The table has already activated the column (or returned to entry order
+    /// if the same column was clicked again) and re-sorted the rows. `col_index`
+    /// is the column that was clicked.
     HeaderClicked { col_index: usize },
 
     /// User clicked the sort arrow to toggle direction or restore entry order.
     ///
-    /// Includes the new sort order.
+    /// The arrow icon and row order have already been updated. `sort_order` is
+    /// the new sort order in effect.
     SortArrowClicked { sort_order: SortOrder },
 
     /// A user event.
     ///
-    /// One of the cells is returning an event, called from `step_with`.
+    /// One of the cells is returning an event from the per-cell future supplied
+    /// via `step_with`. The table itself does not react to `User` events; it
+    /// only forwards them.
     User(Ev),
 }
 
@@ -148,7 +257,7 @@ enum ResizeEvent {
 
 /// MacOS System 9 Platinum-styled table with sortable columns.
 ///
-/// ## Features
+/// # Features
 ///
 /// - Column headers with raised/pressed bevel effects
 /// - Dedicated sort arrow column (always visible)
@@ -157,18 +266,51 @@ enum ResizeEvent {
 /// - Single active sort column (or entry order when none active)
 /// - Horizontal scroll overflow
 ///
-/// ## Example
+/// # Type parameters
 ///
-/// ```ignore
-/// let table = TableBuilder::new()
-///     .column("Name", |item, _| rsx! { span() { {V::Text::new(&item.name)} } })
-///     .width(200)
-///     .column("Size", |item, _| rsx! { span() { {V::Text::new(&item.size)} } })
-///     .width(100)
-///     .build();
-/// ```
+/// - `V: View` — the mogwai view abstraction (e.g. the web/DOM view).
+/// - `T` — the per-row data model. Unconstrained; the table owns a `T` per
+///   row, returns it by value from [`Table::remove`], and exposes `&T` /
+///   `&mut T` via [`Table::get`] / [`Table::get_mut`]. Sorting and cell
+///   rendering are delegated to per-column closures supplied at build time, so
+///   `T` needs no trait bounds.
+/// - `Cell` — the cell content type produced by the column accessor closures.
+///   Inferred from the closure return type: returning a `V::Element` (e.g. from
+///   `rsx! { span() }`) infers `Cell = V::Element`, the common case; returning
+///   any other [`ViewChild<V>`], such as a full iti component (e.g.
+///   [`Button`](crate::components::button::Button),
+///   [`Checkbox`](crate::components::checkbox::Checkbox), etc.), infers that
+///   component as `Cell` so a cell can be a full interactive component instead
+///   of a bare element. All columns of a single `Table` share the same `Cell`
+///   type, so mixing different component types across columns requires a
+///   common `Cell` (often an enum with a manual [`ViewChild`] impl).
+///
+/// # Driving the event loop
+///
+/// The table does not run its own event loop. The caller drives it with the
+/// `step()` convention (see [`StepMut::step_mut`] /
+/// [`StepWithMut::step_with_mut`]) in a `loop { table.step_mut().await }`
+/// pattern. Each `step` call awaits the next user action — a column header
+/// click, sort-arrow click, column resize drag, or a per-cell future event —
+/// and returns a [`TableEvent`].
+///
+/// ## React-before-return contract
+///
+/// By the time [`step_mut`] / [`step_with_mut`] returns, the table has already
+/// updated its internal state and DOM to match the action (e.g. the active
+/// column has been switched and rows re-sorted). The returned [`TableEvent`] is
+/// an observation, not a command to react to. See [`TableEvent`] for the full
+/// per-variant contract.
+///
+/// # Construction
+///
+/// Build a `Table` with [`TableBuilder`]; see the module-level example for a
+/// complete usage walkthrough.
+///
+/// [`step_mut`]: StepMut::step_mut
+/// [`step_with_mut`]: StepWithMut::step_with_mut
 #[derive(ViewChild, ViewProperties)]
-pub struct Table<V: View, T> {
+pub struct Table<V: View, T, Cell: ViewChild<V>> {
     #[child]
     #[properties]
     container: V::Element,
@@ -177,7 +319,7 @@ pub struct Table<V: View, T> {
     headers: Vec<ColumnHeader<V>>,
     sort_header: SortArrowHeader<V>,
     rows: Vec<TableRow<V, T>>,
-    columns: Vec<Column<V, T>>,
+    columns: Vec<Column<T, Cell>>,
     active_sort_col: Proxy<Option<usize>>, // None = entry order
     sort_order: SortOrder,                 // Cached sort order value
     resize_state: Proxy<Option<ResizeState>>, // None when not resizing
@@ -187,32 +329,84 @@ pub struct Table<V: View, T> {
     normalized: bool,
 }
 
-/// Builder for constructing tables with a fluent API.
-pub struct TableBuilder<V: View, T> {
+/// Builder for constructing a [`Table`] with a fluent API.
+///
+/// Each [`TableBuilder::column`] call registers a new column (header label +
+/// cell accessor + sort comparator). Sizing methods —
+/// [`TableBuilder::width`], [`TableBuilder::width_percent`],
+/// [`TableBuilder::width_auto`], [`TableBuilder::min_width`],
+/// [`TableBuilder::fixed_width`] — apply to the **last-added** column, so the
+/// chaining order is `column(...)` then sizing methods, repeat. Finish with
+/// [`TableBuilder::build`] to obtain the [`Table`].
+///
+/// # Type parameters
+///
+/// - `V: View` — the mogwai view abstraction.
+/// - `T` — the row data model the built [`Table`] will hold. Passed unchanged
+///   to the table; see [`Table`] for what `T` requires (nothing).
+/// - `Cell` — the cell content type the column accessor closures will return.
+///   Inferred from the closure return type (see [`Table`]); see [`Table`] for
+///   constraints on mixing different `Cell` types across columns.
+///
+/// # Example
+///
+/// See the module-level docs for a complete example. Short form:
+///
+/// ```ignore
+/// let table = TableBuilder::new()
+///     .column("Name", |item: &Row, _| { /* cell */ }, |a, b| a.name.cmp(&b.name))
+///     .width_percent(60.0)
+///     .column("Size", |item: &Row, _| { /* cell */ }, |a, b| a.size.cmp(&b.size))
+///     .width(120)
+///     .build();
+/// ```
+pub struct TableBuilder<V: View, T, Cell: ViewChild<V>> {
     use_scrollbar: bool,
-    columns: Vec<Column<V, T>>,
+    columns: Vec<Column<T, Cell>>,
+    _view: std::marker::PhantomData<V>,
 }
 
-impl<V: View, T> TableBuilder<V, T> {
+impl<V: View, T, Cell: ViewChild<V>> TableBuilder<V, T, Cell> {
+    /// Create a new empty builder with no columns.
+    ///
+    /// Columns (and their sizing) are added via [`Self::column`] and the
+    /// chaining methods; horizontal scrolling defaults to off (use
+    /// [`Self::use_scrollbar`] to enable it).
     pub fn new() -> Self {
         Self {
             use_scrollbar: false,
             columns: vec![],
+            _view: std::marker::PhantomData,
         }
     }
 
-    /// Add a column with header label and accessor function.
+    /// Add a column with a header label, cell accessor, and sort comparator.
     ///
-    /// ## Parameters
-    /// * **header** - name of the column, displayed in the header.
-    /// * **create_cell_fn** - cell creation function.
-    ///   Takes a reference to row data `T` and the index of the column.
-    /// * **compare_cell_fn** - sort comparison function.
-    ///   Compares two rows for sort ordering.
+    /// # Parameters
+    ///
+    /// - **header** — name of the column, displayed in the header.
+    /// - **create_cell_fn** — cell creation function. Takes a reference to the
+    ///   row data `T` and the column index, returns the cell content of type
+    ///   `Cell`. `Cell` is inferred from this closure's return type — returning
+    ///   a `V::Element` (e.g. from `rsx! { span() }`) yields `Cell = V::Element`,
+    ///   the common case; returning any other [`ViewChild<V>`] (such as a full
+    ///   iti component) infers that type as `Cell`. Called once per row when the
+    ///   row is added (e.g. via [`Table::push`]).
+    /// - **compare_cell_fn** — sort comparison function. Compares two rows for
+    ///   sort ordering and is invoked by [`Table::sort_by_column`].
+    ///
+    /// # Note
+    ///
+    /// Sizing methods ([`Self::width`], [`Self::width_percent`],
+    /// [`Self::width_auto`], [`Self::min_width`], [`Self::fixed_width`]) apply
+    /// to the column registered by the *immediately preceding* `column()` call.
+    /// Call them right after `column()` to target the intended column. A newly
+    /// added column defaults to [`ColumnSize::Auto`] sizing, `min_width` of
+    /// `50`, and resizable `true`.
     pub fn column(
         mut self,
         header: impl Into<String>,
-        create_cell_fn: impl Fn(&T, usize) -> V::Element + 'static,
+        create_cell_fn: impl Fn(&T, usize) -> Cell + 'static,
         compare_cell_fn: impl Fn(&T, &T) -> std::cmp::Ordering + 'static,
     ) -> Self {
         self.columns.push(Column {
@@ -226,7 +420,13 @@ impl<V: View, T> TableBuilder<V, T> {
         self
     }
 
-    /// Set fixed pixel width for the last added column.
+    /// Set a fixed pixel width for the **last-added** column.
+    ///
+    /// Overrides any prior [`Self::width_percent`] / [`Self::width_auto`] on
+    /// the same column. Note that under `table-layout: fixed` the browser may
+    /// still proportionally scale configured widths to fill the table; the
+    /// table re-normalizes on the first `step()` after layout to make the
+    /// configured widths match the rendered widths.
     pub fn width(mut self, width: u32) -> Self {
         if let Some(col) = self.columns.last_mut() {
             col.declared_size = ColumnSize::Pixels(width as f64);
@@ -234,7 +434,11 @@ impl<V: View, T> TableBuilder<V, T> {
         self
     }
 
-    /// Set percentage width for the last added column.
+    /// Set a percentage width (0.0 – 100.0) for the **last-added** column.
+    ///
+    /// Overrides any prior [`Self::width`] / [`Self::width_auto`] on the same
+    /// column. See [`Self::width`] for the normalization caveat under
+    /// `table-layout: fixed`.
     pub fn width_percent(mut self, percent: f64) -> Self {
         if let Some(col) = self.columns.last_mut() {
             col.declared_size = ColumnSize::Percent(percent);
@@ -242,7 +446,12 @@ impl<V: View, T> TableBuilder<V, T> {
         self
     }
 
-    /// Set auto-sizing for the last added column (equal-share remaining space).
+    /// Set the **last-added** column to auto-sizing.
+    ///
+    /// Auto columns share equally in any width left over after the fixed
+    /// (pixel) and percentage columns are laid out. This is the default for a
+    /// newly added column; this method is only useful to revert a prior
+    /// [`Self::width`] / [`Self::width_percent`] on the same column.
     pub fn width_auto(mut self) -> Self {
         if let Some(col) = self.columns.last_mut() {
             col.declared_size = ColumnSize::Auto;
@@ -250,7 +459,11 @@ impl<V: View, T> TableBuilder<V, T> {
         self
     }
 
-    /// Set minimum resize width for the last added column.
+    /// Set the minimum width in pixels for the **last-added** column.
+    ///
+    /// This is a floor for user resize-drag operations only; it does **not**
+    /// affect the column's initial layout width. Defaults to `50` for a newly
+    /// added column.
     pub fn min_width(mut self, min_width: u32) -> Self {
         if let Some(col) = self.columns.last_mut() {
             col.min_width = min_width;
@@ -258,7 +471,15 @@ impl<V: View, T> TableBuilder<V, T> {
         self
     }
 
-    /// Make the last added column non-resizable.
+    /// Make the **last-added** column non-resizable by the user.
+    ///
+    /// # Note
+    ///
+    /// Despite the name, this does **not** mean "fixed pixel width" — it only
+    /// disables the resize-drag handle. The column's width still comes from
+    /// [`Self::width`] / [`Self::width_percent`] / [`Self::width_auto`] (or
+    /// the `Auto` default). To make a column both fixed-pixel and non-resizable,
+    /// call both `width(px)` and `fixed_width()`.
     pub fn fixed_width(mut self) -> Self {
         if let Some(col) = self.columns.last_mut() {
             col.resizable = false;
@@ -266,29 +487,37 @@ impl<V: View, T> TableBuilder<V, T> {
         self
     }
 
+    /// Enable or disable a horizontal scrollbar on the built table.
+    ///
+    /// When enabled, the table's body clips to its container and shows a
+    /// horizontal scrollbar for overflow; when disabled, overflow extends the
+    /// layout. Defaults to `false`.
     pub fn use_scrollbar(mut self, use_scrollbar: bool) -> Self {
         self.use_scrollbar = use_scrollbar;
         self
     }
 
-    /// Build the table.
-    pub fn build(self) -> Table<V, T> {
+    /// Consume the builder and return the constructed [`Table`].
+    ///
+    /// The returned table starts empty; add rows with [`Table::push`].
+    pub fn build(self) -> Table<V, T, Cell> {
         Table::from_builder(self)
     }
 }
 
-impl<V: View, T> Default for TableBuilder<V, T> {
+impl<V: View, T, Cell: ViewChild<V>> Default for TableBuilder<V, T, Cell> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<V: View, T> Table<V, T> {
+impl<V: View, T, Cell: ViewChild<V>> Table<V, T, Cell> {
     /// Create table from column definitions.
-    fn from_builder(builder: TableBuilder<V, T>) -> Self {
+    fn from_builder(builder: TableBuilder<V, T, Cell>) -> Self {
         let TableBuilder {
             use_scrollbar,
             columns,
+            _view,
         } = builder;
         // Create data column headers
         let mut headers = vec![];
@@ -471,7 +700,11 @@ impl<V: View, T> Table<V, T> {
         table
     }
 
-    /// Set whether the table scrolls or not.
+    /// Set whether the table body clips to its container with a horizontal
+    /// scrollbar (`true`) or lets overflow extend the layout (`false`).
+    ///
+    /// This is the post-construction equivalent of
+    /// [`TableBuilder::use_scrollbar`].
     pub fn set_use_scrollbar(&self, use_scrollbar: bool) {
         if use_scrollbar {
             self.add_class("table-scroll");
@@ -483,7 +716,10 @@ impl<V: View, T> Table<V, T> {
     fn create_row(&mut self, data: T) -> TableRow<V, T> {
         let mut cells = vec![];
 
-        fn create_td<V: View>(cell_content: Option<V::Element>, col_idx: usize) -> V::Element {
+        fn create_td<V: View, Cell: ViewChild<V>>(
+            cell_content: Option<Cell>,
+            col_idx: usize,
+        ) -> V::Element {
             rsx! {
                 let td = td(
                     class = "table-cell",
@@ -498,11 +734,11 @@ impl<V: View, T> Table<V, T> {
         // Create cells using column accessors
         for (col_idx, column) in self.columns.iter().enumerate() {
             let cell_content = (column.create_cell_fn)(&data, col_idx);
-            let td = create_td::<V>(Some(cell_content), col_idx);
+            let td = create_td::<V, Cell>(Some(cell_content), col_idx);
             cells.push(td);
         }
         // Create the last cell, which is always empty because it's under the sort header/button.
-        cells.push(create_td::<V>(None, self.columns.len()));
+        cells.push(create_td::<V, Cell>(None, self.columns.len()));
 
         rsx! {
             let tr = tr(class = "table-row") {}
@@ -516,7 +752,13 @@ impl<V: View, T> Table<V, T> {
         TableRow { tr, cells, data }
     }
 
-    /// Add a row to the table.
+    /// Add a row carrying `data` to the end of the table.
+    ///
+    /// The row's cells are produced immediately by the column accessor
+    /// functions supplied via [`TableBuilder::column`]; the rendered cells
+    /// reflect `data` at the moment `push` is called and are not reactive to
+    /// later mutations of `T`. Use [`Table::get_mut`] to mutate the stored
+    /// data (note that this does not re-render the existing cells).
     pub fn push(&mut self, data: T) {
         let row = self.create_row(data);
         // Append row to tbody
@@ -524,7 +766,11 @@ impl<V: View, T> Table<V, T> {
         self.rows.push(row);
     }
 
-    /// Insert a row at the specified index.
+    /// Insert a row carrying `data` at `index`, shifting later rows down.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index > len` (out of bounds), matching `Vec::insert`.
     pub fn insert(&mut self, index: usize, data: T) {
         let row = self.create_row(data);
         // Insert row at the specified index in tbody
@@ -534,39 +780,55 @@ impl<V: View, T> Table<V, T> {
         self.rows.insert(index, row);
     }
 
-    /// Remove a row by index.
+    /// Remove and return the row at `index`, dropping it from the DOM.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index` is out of bounds, matching `Vec::remove`.
     pub fn remove(&mut self, index: usize) -> T {
         let row = self.rows.remove(index);
         self.tbody.remove_child(&row.tr);
         row.data
     }
 
-    /// Get row data reference.
+    /// Borrow the row data at `index`, or `None` if out of bounds.
     pub fn get(&self, index: usize) -> Option<&T> {
         self.rows.get(index).map(|r| &r.data)
     }
 
-    /// Get mutable row data reference.
+    /// Mutably borrow the row data at `index`, or `None` if out of bounds.
+    ///
+    /// Note: mutating the returned `&mut T` does not re-render the row's cells,
+    /// which were built from `data` at insertion time.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         self.rows.get_mut(index).map(|r| &mut r.data)
     }
 
-    /// Get the number of rows.
+    /// Number of rows currently in the table.
     pub fn len(&self) -> usize {
         self.rows.len()
     }
 
-    /// Check if the table is empty.
+    /// `true` if the table has no rows.
     pub fn is_empty(&self) -> bool {
         self.rows.is_empty()
     }
 
-    /// Iterate over row data.
+    /// Iterator over the row data (`&T`) in current DOM order.
+    ///
+    /// Note that DOM order reflects the last sort applied, not necessarily the
+    /// original insertion order.
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.rows.iter().map(|r| &r.data)
     }
 
-    /// Set which column is actively sorted (None = entry order).
+    /// Set which column is actively sorted.
+    ///
+    /// Pass `Some(idx)` to activate column `idx` (highlighting its header and
+    /// cells); pass `None` to deactivate the active column and return to entry
+    /// order. This updates header/cell highlighting only — it does **not** sort
+    /// the rows. Pair with [`Table::sort_by_column`] or
+    /// [`Table::sort_by_entry_order`] to also reorder rows.
     pub fn set_active_sort_column(&mut self, col_index: Option<usize>) {
         self.active_sort_col.set(col_index);
 
@@ -577,39 +839,48 @@ impl<V: View, T> Table<V, T> {
                 .modify(|s| s.is_active = Some(idx) == col_index);
         }
 
-        // Update cell highlighting for active column
+        // Update cell highlighting for active column. The `<td>` wrappers (in
+        // `row.cells`) are `V::Element` and implement `ViewProperties`, so the
+        // generic `add_class`/`remove_class` methods work without a web-specific
+        // cast.
         for row in &self.rows {
             for (cell_idx, cell) in row.cells.iter().enumerate() {
                 if Some(cell_idx) == col_index {
-                    cell.dyn_el(|el: &web_sys::Element| {
-                        el.class_list().add_1("active-column").ok();
-                    });
+                    cell.add_class("active-column");
                 } else {
-                    cell.dyn_el(|el: &web_sys::Element| {
-                        el.class_list().remove_1("active-column").ok();
-                    });
+                    cell.remove_class("active-column");
                 }
             }
         }
     }
 
-    /// Get the currently active sort column (None = entry order).
+    /// Get the currently active sort column, or `None` when no column is
+    /// active (entry order is in effect).
     pub fn get_active_sort_column(&self) -> Option<usize> {
         *self.active_sort_col
     }
 
-    /// Get the current sort order (always has a value).
+    /// Get the current sort order in effect.
+    ///
+    /// Always returns a value (defaults to [`SortOrder::Ascending`] on a newly
+    /// built table); see also [`Table::set_sort_order`] / [`Table::toggle_sort_order`].
     pub fn get_sort_order(&self) -> SortOrder {
         self.sort_order
     }
 
-    /// Set the sort order (updates arrow icon).
+    /// Set the sort order, updating the sort-arrow icon to match.
+    ///
+    /// Reorders nothing on its own — pair with [`Table::sort_by_column`] or
+    /// [`Table::sort_by_entry_order`] to apply the new order to the rows.
     pub fn set_sort_order(&mut self, order: SortOrder) {
         self.sort_header.sort_order.set(order);
         self.sort_order = order;
     }
 
-    /// Toggle sort order and return new value.
+    /// Toggle the sort order between ascending and descending, update the
+    /// sort-arrow icon, and return the new order.
+    ///
+    /// Like [`Table::set_sort_order`], this does not reorder rows on its own.
     pub fn toggle_sort_order(&mut self) -> SortOrder {
         let new_order = match self.sort_order {
             SortOrder::Ascending => SortOrder::Descending,
@@ -620,9 +891,17 @@ impl<V: View, T> Table<V, T> {
         new_order
     }
 
-    /// Sort rows by the given column index and order.
+    /// Sort rows in place by the comparator of column `col_index`, in the
+    /// given direction, and re-append them to the DOM in that order.
     ///
     /// Does nothing if `col_index` is out of bounds.
+    ///
+    /// # Note
+    ///
+    /// This does **not** update the active sort column — call
+    /// [`Table::set_active_sort_column`] separately if you want the header and
+    /// cells to reflect the active column. It also does not update the sort
+    /// order / arrow icon; use [`Table::set_sort_order`] for that.
     pub fn sort_by_column(&mut self, col_index: usize, sort_order: SortOrder) {
         if let Some(col) = self.columns.get(col_index) {
             let mut rows = self.rows.iter().collect::<Vec<_>>();
@@ -642,7 +921,18 @@ impl<V: View, T> Table<V, T> {
         }
     }
 
-    /// Restore original insertion order.
+    /// Re-append rows in original insertion order (`Ascending`) or the reverse
+    /// (`Descending`) to restore entry order in the DOM.
+    ///
+    /// # Note
+    ///
+    /// This does **not** clear the active sort column — call
+    /// [`Table::set_active_sort_column`] with `None` separately if you want
+    /// the header and cells to return to the un-highlighted state. It also does
+    /// not update the sort order / arrow icon; use [`Table::set_sort_order`]
+    /// for that.
+    ///
+    /// [`set_active_sort_column`]: Table::set_active_sort_column
     pub fn sort_by_entry_order(&self, sort_order: SortOrder) {
         let mut rows = self.rows.iter().collect::<Vec<_>>();
         if matches!(sort_order, SortOrder::Descending) {
@@ -829,14 +1119,33 @@ impl<V: View, T> Table<V, T> {
         }
     }
 }
-impl<V: View, T> StepMut for Table<V, T> {
+/// `step()` for tables with no per-cell event futures.
+///
+/// Each call awaits the next user action (header click, sort-arrow click, or
+/// column resize drag) and returns the corresponding [`TableEvent`]. Per-cell
+/// futures are not raced, so [`TableEvent::User`] is effectively unreachable
+/// and `Ev` stays `()` — use [`StepWithMut`] (`step_with_mut`) instead when
+/// individual cells produce their own events that need to bubble up.
+///
+/// Honors the react-before-return contract: see [`Table`] and [`TableEvent`].
+impl<V: View, T, Cell: ViewChild<V>> StepMut for Table<V, T, Cell> {
     type Output = TableEvent;
     async fn step_mut(&mut self) -> TableEvent {
         self.drive(|_| std::future::pending().boxed()).await
     }
 }
 
-impl<V: View, T> StepWithMut<T> for Table<V, T> {
+/// `step()` that also races per-cell event futures, one per row.
+///
+/// `f` is invoked once per row on every call, receiving `&mut T` (the row's
+/// data) and returning a future whose output becomes the [`TableEvent::User`]
+/// payload (typed as `Ev`). Whichever resolves first — a cell future or a
+/// table-level action — wins the race and is returned. Use this variant when
+/// cell content (e.g. an interactive control inside a cell) needs to surface
+/// events through the table loop.
+///
+/// Honors the react-before-return contract: see [`Table`] and [`TableEvent`].
+impl<V: View, T, Cell: ViewChild<V>> StepWithMut<T> for Table<V, T, Cell> {
     type Output<Ev: 'static> = TableEvent<Ev>;
     async fn step_with_mut<Ev>(
         &mut self,
@@ -848,7 +1157,7 @@ impl<V: View, T> StepWithMut<T> for Table<V, T> {
         self.drive(f).await
     }
 }
-impl<V: View, T> Table<V, T> {
+impl<V: View, T, Cell: ViewChild<V>> Table<V, T, Cell> {
     /// Measure rendered widths of all data column headers and write them back
     /// into state as Pixels.
     ///
@@ -1154,7 +1463,7 @@ pub mod library {
     struct TableLibraryItemInner<V: View> {
         #[child]
         container: V::Element,
-        table: Table<V, FileEntry>,
+        table: Table<V, FileEntry, V::Element>,
         log_text: Proxy<String>,
     }
 
