@@ -552,6 +552,18 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     pub fn iter_mut_panes(&mut self) -> impl Iterator<Item = &mut P> {
         self.panes.iter_mut()
     }
+
+    /// Iterate over tab id, tab and panes.
+    pub fn iter(&self) -> impl Iterator<Item = (Id<T>, &T, &P)> {
+        self.tabs.entries.iter().filter_map(|entry| {
+            let item = entry.as_item()?;
+            let t_id = item.id().clone();
+            let p_id = self.tabs_to_panes.get(&t_id)?;
+            let tab = item.inner();
+            let pane = self.panes.get_pane(p_id)?;
+            Some((t_id, tab, pane))
+        })
+    }
 }
 
 impl<V: View, T: ViewChild<V> + 'static, P: ViewChild<V>> StepMut for TabPanel<V, T, P> {

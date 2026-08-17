@@ -851,12 +851,20 @@ impl<V: View, T, Cell: ViewChild<V>> Table<V, T, Cell> {
         self.rows.is_empty()
     }
 
-    /// Iterator over the row data (`&T`) in current DOM order.
+    /// Iterator over the rows in current DOM order.
     ///
     /// Note that DOM order reflects the last sort applied, not necessarily the
     /// original insertion order.
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.rows.iter().map(|r| &r.data)
+    pub fn iter(&self) -> impl Iterator<Item = &TableRow<V, T, Cell>> {
+        self.rows.iter()
+    }
+
+    /// Iterator over the rows in current DOM order.
+    ///
+    /// Note that DOM order reflects the last sort applied, not necessarily the
+    /// original insertion order.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TableRow<V, T, Cell>> {
+        self.rows.iter_mut()
     }
 
     /// Set which column is actively sorted.
