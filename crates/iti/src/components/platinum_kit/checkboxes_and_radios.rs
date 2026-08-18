@@ -1,12 +1,25 @@
-use futures_lite::FutureExt;
+use std::future::Future;
+use std::pin::Pin;
+
 use mogwai::{future::MogwaiFutureExt, prelude::*};
 
 use crate::components::{checkbox::*, radio::*};
+
+enum DemoEvent<V: View> {
+    Checkbox(&'static str, CheckboxEvent<V>),
+    Radio(&'static str, RadioEvent<V>),
+}
 
 #[derive(ViewChild)]
 pub struct PlatinumKitCheckboxesAndRadios<V: View> {
     #[child]
     container: V::Element,
+    cb_default: Checkbox<V>,
+    cb_checked: Checkbox<V>,
+    cb_disabled: Checkbox<V>,
+    cb_disabled_checked: Checkbox<V>,
+    cb_switch: Checkbox<V>,
+    cb_switch_on: Checkbox<V>,
     group1: RadioGroup<V>,
     group2: RadioGroup<V>,
     log_text: V::Text,
@@ -74,6 +87,12 @@ impl<V: View> Default for PlatinumKitCheckboxesAndRadios<V> {
 
         Self {
             container,
+            cb_default,
+            cb_checked,
+            cb_disabled,
+            cb_disabled_checked,
+            cb_switch,
+            cb_switch_on,
             group1,
             group2,
             log_text,
@@ -85,13 +104,54 @@ impl<V: View> StepMut for PlatinumKitCheckboxesAndRadios<V> {
     type Output = ();
 
     async fn step_mut(&mut self) {
-        let future1 = self.group1.step_mut().map(|e| ("size", e));
-        let future2 = self.group2.step_mut().map(|e| ("color", e));
-        let (group_name, event) = future1.or(future2).await;
+        let futs: Vec<Pin<Box<dyn Future<Output = DemoEvent<V>> + '_>>> = vec![
+            Box::pin(
+                self.cb_default
+                    .step_mut()
+                    .map(|e| DemoEvent::Checkbox("default", e)),
+            ),
+            Box::pin(
+                self.cb_checked
+                    .step_mut()
+                    .map(|e| DemoEvent::Checkbox("pre-checked", e)),
+            ),
+            Box::pin(
+                self.cb_disabled
+                    .step_mut()
+                    .map(|e| DemoEvent::Checkbox("disabled", e)),
+            ),
+            Box::pin(
+                self.cb_disabled_checked
+                    .step_mut()
+                    .map(|e| DemoEvent::Checkbox("disabled checked", e)),
+            ),
+            Box::pin(
+                self.cb_switch
+                    .step_mut()
+                    .map(|e| DemoEvent::Checkbox("switch off", e)),
+            ),
+            Box::pin(
+                self.cb_switch_on
+                    .step_mut()
+                    .map(|e| DemoEvent::Checkbox("switch on", e)),
+            ),
+            Box::pin(self.group1.step_mut().map(|e| DemoEvent::Radio("size", e))),
+            Box::pin(self.group2.step_mut().map(|e| DemoEvent::Radio("color", e))),
+        ];
 
-        self.log_text.set_text(format!(
-            "{}: Selected '{}' (index {})",
-            group_name, event.value, event.index
-        ));
+        let event = mogwai::future::race_all(futs).await;
+
+        let msg = match event {
+            DemoEvent::Checkbox(name, e) => format!(
+                "{}: {} (checked: {})",
+                name,
+                if e.checked { "checked" } else { "unchecked" },
+                e.checked
+            ),
+            DemoEvent::Radio(name, e) => {
+                format!("{}: Selected '{}' (index {})", name, e.value, e.index)
+            }
+        };
+        self.log_text.set_text(msg);
     }
 }
