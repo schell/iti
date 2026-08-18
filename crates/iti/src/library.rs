@@ -13,7 +13,6 @@ use crate::components::{
     pane::{library::PaneRetainLibraryItem, RestartPanes},
     platinum_kit::OverhaulLibraryItem,
     progress::library::ProgressLibraryItem,
-    radio::library::RadioLibraryItem,
     select::library::SelectLibraryItem,
     slider::library::SliderLibraryItem,
     toast::library::ToastLibraryItem,
@@ -51,7 +50,6 @@ pub enum LibraryListPane<V: View> {
     Overhaul(OverhaulLibraryItem<V>),
     PaneRetain(Box<PaneRetainLibraryItem<V>>),
     Progress(ProgressLibraryItem<V>),
-    Radio(RadioLibraryItem<V>),
     Select(SelectLibraryItem<V>),
     Slider(SliderLibraryItem<V>),
     Toast(ToastLibraryItem<V>),
@@ -81,7 +79,6 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
             LibraryListPane::Overhaul(item) => item.as_boxed_append_arg(),
             LibraryListPane::PaneRetain(item) => item.as_boxed_append_arg(),
             LibraryListPane::Progress(item) => item.as_boxed_append_arg(),
-            LibraryListPane::Radio(item) => item.as_boxed_append_arg(),
             LibraryListPane::Select(item) => item.as_boxed_append_arg(),
             LibraryListPane::Slider(item) => item.as_boxed_append_arg(),
             LibraryListPane::Toast(item) => item.as_boxed_append_arg(),
@@ -103,7 +100,6 @@ impl<V: View> StepMut for LibraryListPane<V> {
             LibraryListPane::Modal(item) => item.step_mut().await,
             LibraryListPane::PaneRetain(item) => item.step_mut().await,
             LibraryListPane::Progress(item) => item.step_mut().await,
-            LibraryListPane::Radio(item) => item.step_mut().await,
             LibraryListPane::Select(item) => item.step_mut().await,
             LibraryListPane::Slider(item) => item.step_mut().await,
             LibraryListPane::Toast(item) => item.step_mut().await,
@@ -181,10 +177,6 @@ impl<V: View> Default for Library<V> {
 
         lib.add_item("components::Progress", || {
             LibraryListPane::Progress(Default::default())
-        });
-
-        lib.add_item("components::RadioGroup", || {
-            LibraryListPane::Radio(Default::default())
         });
 
         lib.add_item("components::Select", || {

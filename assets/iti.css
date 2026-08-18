@@ -1447,6 +1447,10 @@ pre {
 	margin-right: 1rem;
 }
 
+.radio-group .form-check-inline {
+	margin-right: 0;
+}
+
 /* Base checkbox input (square) */
 .form-check-input {
 	appearance: none;

@@ -3,9 +3,9 @@
 //! Manages a group of mutually-exclusive radio buttons with Platinum styling and a
 //! pull-based async event model.
 
-use std::future::Future;
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use futures_lite::FutureExt;
 use mogwai::prelude::*;
 use mogwai::web::WebElement;
 
@@ -37,10 +37,17 @@ struct RadioOption<V: View> {
     label: V::Element,
     value: String,
     on_change: V::EventListener,
+    on_click: V::EventListener,
+    index: usize,
 }
 
 impl<V: View> RadioOption<V> {
-    fn new(name: impl AsRef<str>, label: impl AsRef<str>, value: impl AsRef<str>) -> Self {
+    fn new(
+        name: impl AsRef<str>,
+        label: impl AsRef<str>,
+        value: impl AsRef<str>,
+        index: usize,
+    ) -> Self {
         let value = value.as_ref().to_string();
         let label_text = V::Text::new(label);
         let name_attr = name.as_ref().to_string();
@@ -54,7 +61,10 @@ impl<V: View> RadioOption<V> {
                     on:change = on_change,
                 ) {}
 
-                let label = label(class = "form-check-label") {
+                let label = label(
+                    class = "form-check-label",
+                    on:click = on_click
+                ) {
                     {label_text}
                 }
             }
@@ -66,6 +76,8 @@ impl<V: View> RadioOption<V> {
             label,
             value,
             on_change,
+            on_click,
+            index,
         }
     }
 
@@ -75,6 +87,27 @@ impl<V: View> RadioOption<V> {
                 .set_property("class", "form-check form-check-inline");
         } else {
             self.wrapper.set_property("class", "form-check");
+        }
+    }
+
+    async fn click(&self) -> RadioEvent<V> {
+        let ev = self.on_click.next().await;
+        self.input.dyn_el::<web_sys::HtmlInputElement, _>(|input| {
+            input.set_checked(true);
+        });
+        RadioEvent {
+            index: self.index,
+            value: self.value.clone(),
+            event: ev,
+        }
+    }
+
+    async fn changed(&self) -> RadioEvent<V> {
+        let ev = self.on_change.next().await;
+        RadioEvent {
+            index: self.index,
+            value: self.value.clone(),
+            event: ev,
         }
     }
 }
@@ -87,9 +120,9 @@ struct RadioGroupState {
 impl RadioGroupState {
     fn wrapper_class(&self) -> &str {
         if self.inline {
-            "d-flex flex-wrap gap-2"
+            "radio-group d-flex flex-wrap gap-2"
         } else {
-            ""
+            "radio-group"
         }
     }
 }
@@ -165,7 +198,7 @@ impl<V: View> RadioGroup<V> {
     /// Returns the index of the newly added option.
     pub fn push(&mut self, label: impl AsRef<str>, value: impl AsRef<str>) -> usize {
         let index = self.options.len();
-        let option = RadioOption::new(&self.name, label, value);
+        let option = RadioOption::new(&self.name, label, value, index);
 
         // Apply current inline state
         if self.inline {
@@ -250,126 +283,22 @@ impl<V: View> RadioGroup<V> {
         self.options.is_empty()
     }
 
-    fn radio_change_events(&self) -> impl Future<Output = RadioEvent<V>> + '_ {
-        use mogwai::future::*;
+    async fn label_clicked(&self) -> RadioEvent<V> {
+        let events = self.options.iter().map(|option| option.click());
+        mogwai::future::race_all(events).await
+    }
 
-        let events = self.options.iter().enumerate().map(|(index, option)| {
-            option.on_change.next().map(move |event| {
-                let value = option.value.clone();
-                RadioEvent {
-                    index,
-                    value,
-                    event,
-                }
-            })
-        });
-        race_all(events)
+    async fn radio_changed(&self) -> RadioEvent<V> {
+        let events = self.options.iter().map(|option| option.changed());
+        mogwai::future::race_all(events).await
     }
 }
 
 impl<V: View> StepMut for RadioGroup<V> {
     type Output = RadioEvent<V>;
     async fn step_mut(&mut self) -> RadioEvent<V> {
-        let event = self.radio_change_events().await;
+        let event = self.radio_changed().or(self.label_clicked()).await;
         self.selected_index = Some(event.index);
         event
-    }
-}
-
-#[cfg(feature = "library")]
-pub mod library {
-    use super::*;
-
-    #[derive(ViewChild)]
-    pub struct RadioLibraryItem<V: View> {
-        #[child]
-        container: V::Element,
-        group1: RadioGroup<V>,
-        group2: RadioGroup<V>,
-        log: V::Element,
-    }
-
-    impl<V: View> Default for RadioLibraryItem<V> {
-        fn default() -> Self {
-            let mut group1 = RadioGroup::new("size");
-            group1.push("Small", "sm");
-            group1.push("Medium", "md");
-            group1.push("Large", "lg");
-
-            let mut group2 = RadioGroup::new("color");
-            group2.push("Red", "red");
-            group2.push("Green", "green");
-            group2.push("Blue", "blue");
-            group2.push("Yellow", "yellow");
-            group2.set_inline(true);
-
-            let log_text = V::Text::new("");
-
-            rsx! {
-                let container = div() {
-                    h2() { "Radio Group" }
-                    p() { "Mutually-exclusive radio button groups with Platinum styling." }
-
-                    h4(class = "mt-4") { "Vertical Layout (Default)" }
-                    div(class = "mb-3") {
-                        label(class = "form-label") { "Select Size" }
-                        {&group1}
-                    }
-
-                    h4(class = "mt-4") { "Inline Layout" }
-                    div(class = "mb-3") {
-                        label(class = "form-label") { "Select Color" }
-                        {&group2}
-                    }
-
-                    div(class = "alert alert-light mt-4") {
-                        strong() { "Event Log:" }
-                        let log = pre(class = "mb-0 mt-2") {
-                            {log_text}
-                        }
-                    }
-                }
-            }
-
-            Self {
-                container,
-                group1,
-                group2,
-                log,
-            }
-        }
-    }
-
-    impl<V: View> StepMut for RadioLibraryItem<V> {
-        type Output = ();
-        async fn step_mut(&mut self) {
-            use futures_lite::FutureExt;
-            use mogwai::future::MogwaiFutureExt;
-
-            let future1 = self.group1.step_mut().map(|e| ("size", e));
-            let future2 = self.group2.step_mut().map(|e| ("color", e));
-
-            let (group_name, event) = future1.or(future2).await;
-
-            let msg = format!(
-                "{}: Selected '{}' (index {})",
-                group_name, event.value, event.index
-            );
-
-            let current_text = self
-                .log
-                .dyn_el(|el: &web_sys::Element| el.text_content())
-                .flatten()
-                .unwrap_or_default();
-
-            let new_text = if current_text.is_empty() {
-                msg
-            } else {
-                format!("{}\n{}", current_text, msg)
-            };
-
-            self.log
-                .dyn_el(|el: &web_sys::Element| el.set_text_content(Some(&new_text)));
-        }
     }
 }

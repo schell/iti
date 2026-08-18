@@ -21,13 +21,14 @@ use crate::components::icon_classic::{
     IconClassicGlyph, MenuBarIcon, SystemIcon,
 };
 use crate::components::progress::Progress;
-use crate::components::radio::RadioGroup;
 use crate::components::select::Select;
 use crate::components::slider::SliderWithTicks;
 use crate::components::tab::{TabAlignment, TabList, TabListEvent, TabPanel};
 use crate::components::table::library::TableLibraryItem;
 use crate::components::title_bar::TitleBar;
 use crate::components::Flavor;
+
+pub mod checkboxes_and_radios;
 
 #[derive(ViewChild)]
 pub struct ProgressBars<V: View> {
@@ -123,6 +124,7 @@ impl<V: View> StepMut for IconClassicLibraryItem<V> {
 
 pub enum SectionContent<V: View> {
     Any(V::Element),
+    RadioButtons(checkboxes_and_radios::PlatinumKitCheckboxesAndRadios<V>),
     ProgressBars(ProgressBars<V>),
     TableLibrary(Box<TableLibraryItem<V>>),
     IconClassicLibrary(IconClassicLibraryItem<V>),
@@ -139,6 +141,7 @@ impl<V: View> ViewChild<V> for SectionContent<V> {
     ) -> AppendArg<V, impl Iterator<Item = std::borrow::Cow<'_, <V as View>::Node>>> {
         match self {
             SectionContent::Any(el) => el.as_boxed_append_arg(),
+            Self::RadioButtons(v) => v.as_boxed_append_arg(),
             SectionContent::ProgressBars(progress_bars) => progress_bars.as_boxed_append_arg(),
             SectionContent::TableLibrary(table_library) => table_library.as_boxed_append_arg(),
             SectionContent::IconClassicLibrary(icon_library) => icon_library.as_boxed_append_arg(),
@@ -158,6 +161,7 @@ impl<V: View> StepMut for SectionContent<V> {
             SectionContent::ProgressBars(progress_bars) => {
                 progress_bars.step_mut().await;
             }
+            SectionContent::RadioButtons(r) => r.step_mut().await,
             SectionContent::TableLibrary(table_library) => {
                 table_library.step_mut().await;
             }
@@ -595,57 +599,10 @@ fn build_buttons<V: View>() -> Section<V> {
 
 /// Build the "Checkboxes & Radios" section.
 fn build_checkboxes_and_radios<V: View>() -> Section<V> {
-    let cb_default = Checkbox::new("Unchecked", false);
-    let cb_checked = Checkbox::new("Checked", true);
-
-    let cb_disabled = Checkbox::new("Disabled", false);
-    cb_disabled.disable();
-
-    let cb_disabled_checked = Checkbox::new("Disabled checked", true);
-    cb_disabled_checked.disable();
-
-    let mut cb_switch = Checkbox::new("Switch off", false);
-    cb_switch.set_switch_style(true);
-
-    let mut cb_switch_on = Checkbox::new("Switch on", true);
-    cb_switch_on.set_switch_style(true);
-
-    let mut radio_group = RadioGroup::new("platinum-demo");
-    radio_group.push("Option A", "a");
-    radio_group.push("Option B", "b");
-    radio_group.push("Option C", "c");
-
-    let mut radio_inline = RadioGroup::new("platinum-inline");
-    radio_inline.push("Small", "sm");
-    radio_inline.push("Medium", "md");
-    radio_inline.push("Large", "lg");
-    radio_inline.set_inline(true);
-
-    rsx! {
-        let content = div(class = "d-flex flex-wrap gap-4 panel") {
-            div() {
-                p() { strong() { "Checkboxes" } }
-                {&cb_default}
-                {&cb_checked}
-                {&cb_disabled}
-                {&cb_disabled_checked}
-            }
-            div() {
-                p() { strong() { "Switches" } }
-                {&cb_switch}
-                {&cb_switch_on}
-            }
-            div() {
-                p() { strong() { "Radio Group" } }
-                {&radio_group}
-            }
-            div() {
-                p() { strong() { "Radio Inline" } }
-                {&radio_inline}
-            }
-        }
-    }
-    Section::new("Checkboxes & Radios", SectionContent::Any(content))
+    Section::new(
+        "Checkboxes & Radios",
+        SectionContent::RadioButtons(Default::default()),
+    )
 }
 
 /// Build the "Progress Bars" section.
