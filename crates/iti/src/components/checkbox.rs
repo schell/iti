@@ -3,6 +3,7 @@
 //! Wraps a native HTML `<input type="checkbox">` with Platinum styling and a
 //! pull-based async event model. Supports standard checkbox and switch styles.
 
+use futures_lite::FutureExt;
 use mogwai::prelude::*;
 use mogwai::web::WebElement;
 use web_sys::HtmlInputElement;
@@ -25,6 +26,7 @@ pub struct Checkbox<V: View> {
     #[allow(dead_code)]
     label: V::Element,
     on_change: V::EventListener,
+    on_click: V::EventListener,
     checked: bool,
     is_switch: Proxy<bool>,
 }
@@ -45,7 +47,10 @@ impl<V: View> Checkbox<V> {
                     on:change = on_change,
                 ) {}
 
-                let label = label(class = "form-check-label") {
+                let label = label(
+                    class = "form-check-label",
+                    on:click = on_click,
+                ) {
                     {label_text}
                 }
             }
@@ -56,6 +61,7 @@ impl<V: View> Checkbox<V> {
             input,
             label,
             on_change,
+            on_click,
             checked,
             is_switch,
         };
@@ -100,21 +106,43 @@ impl<V: View> Checkbox<V> {
     pub fn enable(&self) {
         self.input.remove_property("disabled");
     }
+
+    async fn label_clicked(&self) -> CheckboxEvent<V> {
+        let event = self.on_click.next().await;
+        let new_checked = self
+            .input
+            .dyn_el(|input: &HtmlInputElement| {
+                if input.disabled() {
+                    self.checked
+                } else {
+                    let next = !self.checked;
+                    input.set_checked(next);
+                    next
+                }
+            })
+            .unwrap_or(self.checked);
+        CheckboxEvent {
+            checked: new_checked,
+            event,
+        }
+    }
+
+    async fn changed(&self) -> CheckboxEvent<V> {
+        let event = self.on_change.next().await;
+        let checked = self
+            .input
+            .dyn_el(|el: &HtmlInputElement| el.checked())
+            .unwrap_or(false);
+        CheckboxEvent { checked, event }
+    }
 }
 
 impl<V: View> StepMut for Checkbox<V> {
     type Output = CheckboxEvent<V>;
     async fn step_mut(&mut self) -> CheckboxEvent<V> {
-        let event = self.on_change.next().await;
-
-        let checked = self
-            .input
-            .dyn_el(|el: &HtmlInputElement| el.checked())
-            .unwrap_or(false);
-
-        self.checked = checked;
-
-        CheckboxEvent { checked, event }
+        let event = self.changed().or(self.label_clicked()).await;
+        self.checked = event.checked;
+        event
     }
 }
 
