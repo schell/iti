@@ -839,23 +839,48 @@ pre {
 
 .alert {
 	background-color: var(--gray200);
-	box-shadow:
-		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
-		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
-		2px 2px 0 rgba(0, 0, 0, 0.85);
-	outline: 1px solid var(--black900);
-	outline-offset: -1px;
 	display: flex;
+	width: 100%;
+	min-width: 0;
 }
 
-.alert-primary   { padding: 1em; width: 100%; background-color: var(--iti-primary-bg);   border-left: 5px solid var(--iti-primary); }
-.alert-secondary { padding: 1em; width: 100%; background-color: var(--iti-secondary-bg); border-left: 5px solid var(--iti-secondary); }
-.alert-success   { padding: 1em; width: 100%; background-color: var(--iti-success-bg);   border-left: 5px solid var(--iti-success); }
-.alert-danger    { padding: 1em; width: 100%; background-color: var(--iti-danger-bg);    border-left: 5px solid var(--iti-danger); }
-.alert-warning   { padding: 1em; width: 100%; background-color: var(--iti-warning-bg);   border-left: 5px solid var(--iti-warning); }
-.alert-info      { padding: 1em; width: 100%; background-color: var(--iti-info-bg);      border-left: 5px solid var(--iti-info); }
-.alert-light     { padding: 1em; width: 100%; background-color: var(--iti-bg-light);     border-left: 5px solid var(--iti-bg-dark); }
-.alert-dark      { padding: 1em; width: 100%; background-color: var(--iti-bg-dark); color: var(--iti-bg-light); border-left: 5px solid var(--iti-dark); }
+.alert-primary   { width:100%; padding: 1em; background-color: var(--iti-primary-bg);   border-left: 5px solid var(--iti-primary); }
+.alert-secondary { width:100%; padding: 1em; background-color: var(--iti-secondary-bg); border-left: 5px solid var(--iti-secondary); }
+.alert-success   { width:100%; padding: 1em; background-color: var(--iti-success-bg);   border-left: 5px solid var(--iti-success); }
+.alert-danger    { width:100%; padding: 1em; background-color: var(--iti-danger-bg);    border-left: 5px solid var(--iti-danger); }
+.alert-warning   { width:100%; padding: 1em; background-color: var(--iti-warning-bg);   border-left: 5px solid var(--iti-warning); }
+.alert-info      { width:100%; padding: 1em; background-color: var(--iti-info-bg);      border-left: 5px solid var(--iti-info); }
+.alert-light     { width:100%; padding: 1em; background-color: var(--iti-bg-light);     border-left: 5px solid var(--iti-bg-dark); }
+.alert-dark      { width:100%; padding: 1em; background-color: var(--iti-bg-dark); color: var(--iti-bg-light); border-left: 5px solid var(--iti-dark); }
+
+.alert-flush-x {
+	width: calc(100% + (2 * var(--iti-panel-pad)) - 3px);
+	margin-left: calc(var(--iti-panel-pad) * -1 + 1px);
+	margin-right: calc(var(--iti-panel-pad) * -1 + 2px);
+}
+
+.alert-flush-x > span {
+	position: relative;
+}
+
+.alert-flush-x > span::after {
+	content: "";
+	position: absolute;
+	left: -5px;
+	top: 0;
+	bottom: 0;
+	width: 1px;
+	background: rgba(255, 255, 255, 0.25);
+	pointer-events: none;
+}
+
+.alert-flush-top {
+	margin-top: calc(var(--iti-panel-pad) * -1 + 1px);
+}
+
+.alert-flush-bottom {
+	margin-bottom: calc(var(--iti-panel-pad) * -1 + 1px);
+}
 
 .alert-link {
 	color: inherit;
@@ -1850,6 +1875,7 @@ pre {
 /* -- Panel -- */
 /* This is a window-shadow + inner-stroke + others */
 .panel {
+	--iti-panel-pad: 1em;
 	background-color: var(--gray200);
 	box-shadow:
 		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
@@ -1857,7 +1883,7 @@ pre {
 		2px 2px 0 rgba(0, 0, 0, 0.85);
 	outline: 1px solid var(--black900);
 	outline-offset: -1px;
-	padding: 1em;
+	padding: var(--iti-panel-pad);
 }
 
 /* -- Window -- */

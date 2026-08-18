@@ -52,4 +52,19 @@ impl<V: View> Alert<V> {
             self.div.set_style("visibility", "hidden");
         }
     }
+
+    /// Stretch the alert horizontally into the panel's padding.
+    pub fn set_flush_x(&self) {
+        self.add_class("alert-flush-x");
+    }
+
+    /// Extend the alert up into the panel's top padding.
+    pub fn set_flush_top(&self) {
+        self.add_class("alert-flush-top");
+    }
+
+    /// Extend the alert down into the panel's bottom padding.
+    pub fn set_flush_bottom(&self) {
+        self.add_class("alert-flush-bottom");
+    }
 }

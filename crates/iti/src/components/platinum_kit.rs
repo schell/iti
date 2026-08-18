@@ -124,7 +124,7 @@ impl<V: View> StepMut for IconClassicLibraryItem<V> {
 
 pub enum SectionContent<V: View> {
     Any(V::Element),
-    RadioButtons(checkboxes_and_radios::PlatinumKitCheckboxesAndRadios<V>),
+    RadioButtons(Box<checkboxes_and_radios::PlatinumKitCheckboxesAndRadios<V>>),
     ProgressBars(ProgressBars<V>),
     TableLibrary(Box<TableLibraryItem<V>>),
     IconClassicLibrary(IconClassicLibraryItem<V>),
@@ -601,7 +601,7 @@ fn build_buttons<V: View>() -> Section<V> {
 fn build_checkboxes_and_radios<V: View>() -> Section<V> {
     Section::new(
         "Checkboxes & Radios",
-        SectionContent::RadioButtons(Default::default()),
+        SectionContent::RadioButtons(Box::default()),
     )
 }
 
@@ -917,24 +917,53 @@ fn build_alerts<V: View>() -> Section<V> {
         Flavor::Dark,
     ];
 
-    let alert_items: Vec<V::Element> = FLAVORS
+    let alert_items: Vec<_> = FLAVORS
         .iter()
-        .map(|&f| {
-            let alert = Alert::new(format!("This is a {f} alert!"), f);
-            rsx! {
-                let item = div(class = "mb-2") {
-                    {&alert}
-                }
-            }
-            item
-        })
+        .map(|&f| Alert::new(format!("This is a {f} alert!"), f))
         .collect();
     rsx! {
-        let content = slot() {
+        let content = div(class = "panel") {
             {alert_items}
         }
     }
     Section::new("Alerts", SectionContent::Any(content))
+}
+
+/// Build the "Flush Alerts" section showing all flavor variants flush with the
+/// panel's edges.
+fn build_flush_alerts<V: View>() -> Section<V> {
+    const FLAVORS: [Flavor; 8] = [
+        Flavor::Primary,
+        Flavor::Secondary,
+        Flavor::Success,
+        Flavor::Danger,
+        Flavor::Warning,
+        Flavor::Info,
+        Flavor::Light,
+        Flavor::Dark,
+    ];
+
+    let flush_items: Vec<_> = FLAVORS
+        .iter()
+        .enumerate()
+        .map(|(i, &f)| {
+            let alert = Alert::new(format!("This is a {f} alert!"), f);
+            alert.set_flush_x();
+            if i == 0 {
+                alert.set_flush_top();
+            }
+            if i == FLAVORS.len() - 1 {
+                alert.set_flush_bottom();
+            }
+            alert
+        })
+        .collect();
+    rsx! {
+        let content = div(class = "panel") {
+            {flush_items}
+        }
+    }
+    Section::new("Flush Alerts", SectionContent::Any(content))
 }
 
 /// Build the "Badges" section showing all flavor variants plus pill style.
@@ -1299,6 +1328,7 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         let dropdowns = add_section(build_dropdowns::<V>());
         let text_inputs = add_section(build_text_inputs::<V>());
         let alerts = add_section(build_alerts::<V>());
+        let flush_alerts = add_section(build_flush_alerts::<V>());
         let badges = add_section(build_badges::<V>());
         let tabs = add_section(build_tabs::<V>());
         let icons = add_section(build_icons::<V>());
@@ -1316,7 +1346,7 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     div(class = "col-auto") {
                         {&buttons}
                     }
-                    div(class = "col-auto") {
+                    div(class = "col") {
                         {&checkboxes}
                     }
                     div(class = "col-auto") {
@@ -1336,6 +1366,9 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     }
                     div(class = "col-auto") {
                         {&alerts}
+                    }
+                    div(class = "col-auto") {
+                        {&flush_alerts}
                     }
                     div(class = "col-auto") {
                         {&badges}

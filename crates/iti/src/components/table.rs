@@ -1628,12 +1628,14 @@ pub mod library {
                     .to_string(),
             );
 
+            let alert = Alert::new("Awaiting user events...", crate::components::Flavor::Info);
+            alert.set_flush_x();
+            alert.set_flush_bottom();
+
             rsx! {
                 let container = div(class = "panel") {
                     {&table}
-                    div(class = "mt-3 p-2") {
-                        let alert = {Alert::new("Awaiting user events...", crate::components::Flavor::Info)}
-                    }
+                    {&alert}
                 }
             }
             log_text.on_update(move |text| {
