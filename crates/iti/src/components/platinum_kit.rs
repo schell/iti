@@ -21,6 +21,7 @@ use crate::components::icon_classic::{
     IconClassicGlyph, MenuBarIcon, SystemIcon,
 };
 use crate::components::progress::Progress;
+use crate::components::section::{Section, SectionEntry, SectionStyle, StaticContent};
 use crate::components::select::Select;
 use crate::components::slider::SliderWithTicks;
 use crate::components::tab::{TabAlignment, TabList, TabListEvent, TabPanel};
@@ -127,90 +128,6 @@ impl<V: View> StepMut for IconClassicLibraryItem<V> {
     }
 }
 
-pub enum SectionContent<V: View> {
-    Any(V::Element),
-    RadioButtons(Box<checkboxes_and_radios::PlatinumKitCheckboxesAndRadios<V>>),
-    ProgressBars(ProgressBars<V>),
-    TableLibrary(Box<TableLibraryItem<V>>),
-    IconClassicLibrary(IconClassicLibraryItem<V>),
-    TabPanel {
-        wrapper: V::Element,
-        tab_list: TabList<V, V::Element>,
-        tab_panels: Vec<TabPanel<V, V::Element, V::Element>>,
-    },
-    ButtonGroups(button_groups::PlatinumKitButtonGroups<V>),
-    Lists(lists::PlatinumKitLists<V>),
-    Modals(modals::PlatinumKitModals<V>),
-    Panes(Box<panes::PlatinumKitPanes<V>>),
-    Toasts(toasts::PlatinumKitToasts<V>),
-}
-
-impl<V: View> ViewChild<V> for SectionContent<V> {
-    fn as_append_arg(
-        &self,
-    ) -> AppendArg<V, impl Iterator<Item = std::borrow::Cow<'_, <V as View>::Node>>> {
-        match self {
-            SectionContent::Any(el) => el.as_boxed_append_arg(),
-            Self::RadioButtons(v) => v.as_boxed_append_arg(),
-            SectionContent::ProgressBars(progress_bars) => progress_bars.as_boxed_append_arg(),
-            SectionContent::TableLibrary(table_library) => table_library.as_boxed_append_arg(),
-            SectionContent::IconClassicLibrary(icon_library) => icon_library.as_boxed_append_arg(),
-            SectionContent::TabPanel { wrapper, .. } => wrapper.as_boxed_append_arg(),
-            SectionContent::ButtonGroups(bg) => bg.as_boxed_append_arg(),
-            SectionContent::Lists(l) => l.as_boxed_append_arg(),
-            SectionContent::Modals(m) => m.as_boxed_append_arg(),
-            SectionContent::Panes(p) => p.as_boxed_append_arg(),
-            SectionContent::Toasts(t) => t.as_boxed_append_arg(),
-        }
-    }
-}
-
-impl<V: View> StepMut for SectionContent<V> {
-    type Output = ();
-    async fn step_mut(&mut self) {
-        enum StepEv<V: View> {
-            TabList(TabListEvent<V, V::Element>),
-            TabPanel(TabListEvent<V, V::Element>),
-        }
-        match self {
-            SectionContent::ProgressBars(progress_bars) => {
-                progress_bars.step_mut().await;
-            }
-            SectionContent::RadioButtons(r) => r.step_mut().await,
-            SectionContent::TableLibrary(table_library) => {
-                table_library.step_mut().await;
-            }
-            SectionContent::IconClassicLibrary(icon_library) => {
-                icon_library.step_mut().await;
-            }
-            SectionContent::TabPanel {
-                wrapper: _,
-                tab_list,
-                tab_panels,
-            } => {
-                let mut futs = vec![];
-                futs.push(tab_list.step().map(StepEv::TabList).boxed_local());
-
-                for panel in tab_panels.iter_mut() {
-                    futs.push(panel.step_mut().map(StepEv::TabPanel).boxed_local());
-                }
-                match mogwai::future::race_all(futs).await {
-                    StepEv::TabList(TabListEvent::ItemClicked { id, .. }) => {
-                        tab_list.select_by_id(&id);
-                    }
-                    StepEv::TabPanel(_tab_list_event) => {}
-                }
-            }
-            SectionContent::ButtonGroups(bg) => bg.step_mut().await,
-            SectionContent::Lists(l) => l.step_mut().await,
-            SectionContent::Modals(m) => m.step_mut().await,
-            SectionContent::Panes(p) => p.step_mut().await,
-            SectionContent::Toasts(t) => t.step_mut().await,
-            _ => futures_lite::future::pending().await,
-        }
-    }
-}
-
 #[derive(ViewChild)]
 struct SectionTop<V: View> {
     #[child]
@@ -249,11 +166,7 @@ impl<V: View> SectionTop<V> {
 
         rsx! {
             let wrapper = span(
-                class = "editorial row",
-                style:font_size = "2em",
-                style:font_weight = "lighter",
-                style:color = crate::color::PURPLE,
-                style:cursor = "pointer",
+                class = "section-top-title",
                 on:click = on_click
             ) {
                 let toggle = {{
@@ -286,74 +199,10 @@ impl<V: View> StepMut for SectionTop<V> {
             self.toggle.set_checked(self.enabled);
         }
 
+        log::info!("section {} toggled: {}", self.title, self.enabled);
+        let _ = self.write_enabled();
+
         self.enabled
-    }
-}
-/// A dashed purple section in the Platinum Kit sandbox.
-///
-/// Provides a titled container with a purple dashed border and an
-/// editorial section heading.
-#[derive(ViewChild)]
-struct Section<V: View> {
-    #[child]
-    wrapper: V::Element,
-    top: SectionTop<V>,
-    content: SectionContent<V>,
-    enabled: Proxy<bool>,
-}
-
-impl<V: View> Section<V> {
-    /// Create a new section with the given title.
-    fn new(title: &str, section_content: SectionContent<V>) -> Self {
-        let top = SectionTop::new(title);
-        let mut enabled = Proxy::new(top.enabled);
-
-        rsx! {
-            let wrapper = div(class = "container", style:margin_top = "2em") {
-                {&top}
-                div(
-                    class = "row",
-                    style:border = "2px dashed #7B61FF",
-                    style:border_radius = "4px",
-                    style:padding = "1em",
-                    style:display = enabled(is_enabled => if *is_enabled {
-                        "block"
-                    } else {
-                        "none"
-                    })
-                ) {
-                    {&section_content}
-                }
-            }
-        }
-        Self {
-            wrapper,
-            content: section_content,
-            enabled,
-            top,
-        }
-    }
-}
-
-impl<V: View> StepMut for Section<V> {
-    type Output = ();
-    async fn step_mut(&mut self) {
-        enum StepEv {
-            Top(bool),
-            Content,
-        }
-
-        let top_toggled = self.top.step_mut().map(StepEv::Top);
-        let content = self.content.step_mut().map(|_| StepEv::Content);
-
-        match top_toggled.or(content).await {
-            StepEv::Content => {}
-            StepEv::Top(enabled) => {
-                log::info!("section {} toggled: {enabled}", self.top.title);
-                self.top.write_enabled().unwrap_throw();
-                self.enabled.set(enabled);
-            }
-        }
     }
 }
 
@@ -397,7 +246,7 @@ fn build_header<V: View>() -> V::Element {
 }
 
 /// Build the "Panels and Colors" section with shadow demos and palette swatches.
-fn build_panels_and_colors<V: View>() -> Section<V> {
+fn build_panels_and_colors<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     rsx! {
         let panels = div(class = "d-flex flex-wrap gap-4") {
             div(
@@ -470,11 +319,16 @@ fn build_panels_and_colors<V: View>() -> Section<V> {
             }
         }
     }
-    Section::new("Panels and colors", SectionContent::Any(panels))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Panels and colors"),
+        StaticContent::new(panels),
+    )
 }
 
 /// Build the "Buttons" section with all button variants.
-fn build_buttons<V: View>() -> Section<V> {
+fn build_buttons<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     let mut btn_normal = Button::new("Button", None);
     btn_normal.set_has_icon(false);
 
@@ -614,19 +468,27 @@ fn build_buttons<V: View>() -> Section<V> {
             }
         }
     }
-    Section::new("Buttons", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Buttons"),
+        StaticContent::new(content),
+    )
 }
 
 /// Build the "Checkboxes & Radios" section.
-fn build_checkboxes_and_radios<V: View>() -> Section<V> {
+fn build_checkboxes_and_radios<V: View>(
+) -> Section<V, SectionTop<V>, checkboxes_and_radios::PlatinumKitCheckboxesAndRadios<V>> {
     Section::new(
-        "Checkboxes & Radios",
-        SectionContent::RadioButtons(Box::default()),
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Checkboxes & Radios"),
+        Default::default(),
     )
 }
 
 /// Build the "Progress Bars" section.
-fn build_progress_bars<V: View>() -> Section<V> {
+fn build_progress_bars<V: View>() -> Section<V, SectionTop<V>, ProgressBars<V>> {
     rsx! {
         let wrapper = div(class = "panel", style:padding = "1em") {
             p() {
@@ -648,18 +510,20 @@ fn build_progress_bars<V: View>() -> Section<V> {
     }
 
     Section::new(
-        "Progress Bars",
-        SectionContent::ProgressBars(ProgressBars {
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Progress Bars"),
+        ProgressBars {
             wrapper,
             progress,
             zero_button,
             percent_text,
-        }),
+        },
     )
 }
 
 /// Build the "Sliders" section.
-fn build_sliders<V: View>() -> Section<V> {
+fn build_sliders<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     let ticked_slider = SliderWithTicks::new(
         0.0,
         6.0,
@@ -696,11 +560,16 @@ fn build_sliders<V: View>() -> Section<V> {
             {&unlabeled_ticks}
         }
     }
-    Section::new("Sliders", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Sliders"),
+        StaticContent::new(content),
+    )
 }
 
 /// Build the "Selects" section with native select dropdowns.
-fn build_selects<V: View>() -> Section<V> {
+fn build_selects<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     // Default select
     let mut select_default = Select::new(None);
     select_default.push("Apple", "apple");
@@ -734,11 +603,16 @@ fn build_selects<V: View>() -> Section<V> {
             }
         }
     }
-    Section::new("Selects", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Selects"),
+        StaticContent::new(content),
+    )
 }
 
 /// Build the "Dropdowns" section with button dropdown menus.
-fn build_dropdowns<V: View>() -> Section<V> {
+fn build_dropdowns<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     // Interactive dropdown
     let mut dropdown = Dropdown::new("Click me", Flavor::Primary);
     dropdown.push("Action");
@@ -785,11 +659,16 @@ fn build_dropdowns<V: View>() -> Section<V> {
         }
     });
 
-    Section::new("Dropdowns", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Dropdowns"),
+        StaticContent::new(content),
+    )
 }
 
 /// Build the "Text Inputs" section with input variants and textarea.
-fn build_text_inputs<V: View>() -> Section<V> {
+fn build_text_inputs<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     rsx! {
         let content = div(class = "d-flex flex-wrap gap-4 panel") {
             // Default and placeholder
@@ -921,11 +800,16 @@ fn build_text_inputs<V: View>() -> Section<V> {
             }
         }
     }
-    Section::new("Text Inputs", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Text Inputs"),
+        StaticContent::new(content),
+    )
 }
 
 /// Build the "Alerts" section showing all flavor variants.
-fn build_alerts<V: View>() -> Section<V> {
+fn build_alerts<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     const FLAVORS: [Flavor; 8] = [
         Flavor::Primary,
         Flavor::Secondary,
@@ -946,12 +830,17 @@ fn build_alerts<V: View>() -> Section<V> {
             {alert_items}
         }
     }
-    Section::new("Alerts", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Alerts"),
+        StaticContent::new(content),
+    )
 }
 
 /// Build the "Flush Alerts" section showing all flavor variants flush with the
 /// panel's edges.
-fn build_flush_alerts<V: View>() -> Section<V> {
+fn build_flush_alerts<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     const FLAVORS: [Flavor; 8] = [
         Flavor::Primary,
         Flavor::Secondary,
@@ -983,11 +872,16 @@ fn build_flush_alerts<V: View>() -> Section<V> {
             {flush_items}
         }
     }
-    Section::new("Flush Alerts", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Flush Alerts"),
+        StaticContent::new(content),
+    )
 }
 
 /// Build the "Badges" section showing all flavor variants plus pill style.
-fn build_badges<V: View>() -> Section<V> {
+fn build_badges<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     const FLAVORS: [Flavor; 8] = [
         Flavor::Primary,
         Flavor::Secondary,
@@ -1029,7 +923,12 @@ fn build_badges<V: View>() -> Section<V> {
             }
         }
     }
-    Section::new("Badges", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Badges"),
+        StaticContent::new(content),
+    )
 }
 
 /// Helper to build a simple [`TabPanel`] with the given tab/pane pairs.
@@ -1058,8 +957,38 @@ fn make_tab_panel<V: View>(items: &[(&str, &[&str])]) -> TabPanel<V, V::Element,
     panel
 }
 
+/// Tabs section content for the platinum kit.
+#[derive(ViewChild)]
+pub struct PlatinumKitTabs<V: View> {
+    #[child]
+    wrapper: V::Element,
+    tab_list: TabList<V, V::Element>,
+    tab_panels: Vec<TabPanel<V, V::Element, V::Element>>,
+}
+
+impl<V: View> StepMut for PlatinumKitTabs<V> {
+    type Output = ();
+    async fn step_mut(&mut self) {
+        enum StepEv<V: View> {
+            TabList(TabListEvent<V, V::Element>),
+            TabPanel(TabListEvent<V, V::Element>),
+        }
+        let mut futs = vec![];
+        futs.push(self.tab_list.step().map(StepEv::TabList).boxed_local());
+        for panel in self.tab_panels.iter_mut() {
+            futs.push(panel.step_mut().map(StepEv::TabPanel).boxed_local());
+        }
+        match mogwai::future::race_all(futs).await {
+            StepEv::TabList(TabListEvent::ItemClicked { id, .. }) => {
+                self.tab_list.select_by_id(&id);
+            }
+            StepEv::TabPanel(_) => {}
+        }
+    }
+}
+
 /// Build the "Tabs" section with multiple tab panel alignment demos.
-fn build_tabs<V: View>() -> Section<V> {
+fn build_tabs<V: View>() -> Section<V, SectionTop<V>, PlatinumKitTabs<V>> {
     let mut tab_panels: Vec<TabPanel<V, V::Element, V::Element>> = vec![];
 
     // ── Standalone TabList ──
@@ -1174,8 +1103,10 @@ fn build_tabs<V: View>() -> Section<V> {
     tab_panels.push(panel_split);
 
     Section::new(
-        "Tabs",
-        SectionContent::TabPanel {
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Tabs"),
+        PlatinumKitTabs {
             wrapper,
             tab_list: list,
             tab_panels,
@@ -1184,7 +1115,7 @@ fn build_tabs<V: View>() -> Section<V> {
 }
 
 /// Build the "Icons" section with a sampling from each category.
-fn build_icons<V: View>() -> Section<V> {
+fn build_icons<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     // Representative sampling: ~3 per category
     const SAMPLE_ICONS: &[(IconGlyph, &str)] = &[
         // Navigation
@@ -1244,11 +1175,16 @@ fn build_icons<V: View>() -> Section<V> {
             }
         }
     }
-    Section::new("FontAwesome Icons", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("FontAwesome Icons"),
+        StaticContent::new(content),
+    )
 }
 
 /// Build the "Title Bars" section showing various title bar configurations.
-fn build_title_bars<V: View>() -> Section<V> {
+fn build_title_bars<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     // Basic title bar (no close button, no icon)
     let title_bar_basic = TitleBar::new("My Window");
 
@@ -1293,101 +1229,166 @@ fn build_title_bars<V: View>() -> Section<V> {
             }
         }
     }
-    Section::new("Title Bars", SectionContent::Any(content))
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Title Bars"),
+        StaticContent::new(content),
+    )
 }
 
 /// Build the "Classic Icons" section showing the System classic Mac OS icons.
-fn build_icon_classic<V: View>() -> Section<V> {
+fn build_icon_classic<V: View>() -> Section<V, SectionTop<V>, IconClassicLibraryItem<V>> {
     let icon_library = IconClassicLibraryItem::default();
     Section::new(
-        "Classic Icons",
-        SectionContent::IconClassicLibrary(icon_library),
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Classic Icons"),
+        icon_library,
     )
 }
 
 /// Build the "Tables" section showing the Platinum folder list style table.
-fn build_tables<V: View>() -> Section<V> {
+fn build_tables<V: View>() -> Section<V, SectionTop<V>, TableLibraryItem<V>> {
     let table_library = TableLibraryItem::default();
     Section::new(
-        "Tables",
-        SectionContent::TableLibrary(Box::new(table_library)),
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Tables"),
+        table_library,
     )
 }
 
-fn build_button_groups<V: View>() -> Section<V> {
+fn build_button_groups<V: View>(
+) -> Section<V, SectionTop<V>, button_groups::PlatinumKitButtonGroups<V>> {
     Section::new(
-        "Button Groups",
-        SectionContent::ButtonGroups(Default::default()),
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Button Groups"),
+        Default::default(),
     )
 }
 
-fn build_lists<V: View>() -> Section<V> {
-    Section::new("Lists", SectionContent::Lists(Default::default()))
+fn build_lists<V: View>() -> Section<V, SectionTop<V>, lists::PlatinumKitLists<V>> {
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Lists"),
+        Default::default(),
+    )
 }
 
-fn build_modals<V: View>() -> Section<V> {
-    Section::new("Modals", SectionContent::Modals(Default::default()))
+fn build_modals<V: View>() -> Section<V, SectionTop<V>, modals::PlatinumKitModals<V>> {
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Modals"),
+        Default::default(),
+    )
 }
 
-fn build_panes<V: View>() -> Section<V> {
-    Section::new("Panes", SectionContent::Panes(Box::default()))
+fn build_panes<V: View>() -> Section<V, SectionTop<V>, panes::PlatinumKitPanes<V>> {
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Panes"),
+        Default::default(),
+    )
 }
 
-fn build_toasts<V: View>() -> Section<V> {
-    Section::new("Toasts", SectionContent::Toasts(Default::default()))
+fn build_toasts<V: View>() -> Section<V, SectionTop<V>, toasts::PlatinumKitToasts<V>> {
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Toasts"),
+        Default::default(),
+    )
 }
 
 // ── Main component ──────────────────────────────────────────────
 
 /// Sandbox library item for the Platinum design system overhaul.
 ///
-/// Purely presentational — no interactive events. Each section is
-/// built by a dedicated helper function and collected here.
+/// Each section is built by a dedicated helper function and collected here.
+/// Sections are type-erased via [`SectionEntry`] so heterogeneous section
+/// types can be stored in a single `Vec`.
 #[derive(ViewChild)]
 pub struct OverhaulLibraryItem<V: View> {
     #[child]
     pub wrapper: V::Element,
-    sections: Vec<Section<V>>,
+    sections: Vec<Box<dyn SectionEntry<V>>>,
+}
+
+/// Build an explainer panel for the section-style demos.
+fn explainer_panel<V: View>(text: &str) -> V::Element {
+    rsx! {
+        let el = div(class = "panel") {
+            p() { {V::Text::new(text)} }
+        }
+    }
+    el
 }
 
 impl<V: View> Default for OverhaulLibraryItem<V> {
     fn default() -> Self {
-        // Add the section, but don't append it to the DOM.
-        // Instead, returns the root element to be appended manually.
-        let mut sections = vec![];
-        let mut add_section = |section: Section<V>| -> V::Element {
-            let root = section.wrapper.clone();
+        let mut sections: Vec<Box<dyn SectionEntry<V>>> = vec![];
+        let mut add_section = |section: Box<dyn SectionEntry<V>>| -> V::Element {
+            let root = section.element().clone();
             sections.push(section);
             root
         };
 
+        // ── Section style demos ──
+        let titled_demo = add_section(Box::new(Section::new(
+            SectionStyle::Titled,
+            crate::color::PURPLE,
+            SectionTop::new("Titled Section"),
+            StaticContent::new(explainer_panel::<V>(
+                "This is a titled section. The legend sits above the dashed border.",
+            )),
+        )));
+        let fieldset_demo = add_section(Box::new(Section::new(
+            SectionStyle::Fieldset,
+            crate::color::PURPLE,
+            SectionTop::new("Fieldset Section"),
+            StaticContent::new(explainer_panel::<V>(
+                "This is a fieldset section. The legend sits embedded in the top border.",
+            )),
+        )));
+
         let header = build_header::<V>();
-        let panels = add_section(build_panels_and_colors::<V>());
-        let buttons = add_section(build_buttons::<V>());
-        let checkboxes = add_section(build_checkboxes_and_radios::<V>());
-        let progress = add_section(build_progress_bars::<V>());
-        let sliders = add_section(build_sliders::<V>());
-        let selects = add_section(build_selects::<V>());
-        let dropdowns = add_section(build_dropdowns::<V>());
-        let text_inputs = add_section(build_text_inputs::<V>());
-        let alerts = add_section(build_alerts::<V>());
-        let flush_alerts = add_section(build_flush_alerts::<V>());
-        let badges = add_section(build_badges::<V>());
-        let tabs = add_section(build_tabs::<V>());
-        let icons = add_section(build_icons::<V>());
-        let icon_classics = add_section(build_icon_classic::<V>());
-        let title_bars = add_section(build_title_bars::<V>());
-        let tables = add_section(build_tables::<V>());
-        let button_groups = add_section(build_button_groups::<V>());
-        let lists = add_section(build_lists::<V>());
-        let modals = add_section(build_modals::<V>());
-        let panes = add_section(build_panes::<V>());
-        let toasts = add_section(build_toasts::<V>());
+        let panels = add_section(Box::new(build_panels_and_colors::<V>()));
+        let buttons = add_section(Box::new(build_buttons::<V>()));
+        let checkboxes = add_section(Box::new(build_checkboxes_and_radios::<V>()));
+        let progress = add_section(Box::new(build_progress_bars::<V>()));
+        let sliders = add_section(Box::new(build_sliders::<V>()));
+        let selects = add_section(Box::new(build_selects::<V>()));
+        let dropdowns = add_section(Box::new(build_dropdowns::<V>()));
+        let text_inputs = add_section(Box::new(build_text_inputs::<V>()));
+        let alerts = add_section(Box::new(build_alerts::<V>()));
+        let flush_alerts = add_section(Box::new(build_flush_alerts::<V>()));
+        let badges = add_section(Box::new(build_badges::<V>()));
+        let tabs = add_section(Box::new(build_tabs::<V>()));
+        let icons = add_section(Box::new(build_icons::<V>()));
+        let icon_classics = add_section(Box::new(build_icon_classic::<V>()));
+        let title_bars = add_section(Box::new(build_title_bars::<V>()));
+        let tables = add_section(Box::new(build_tables::<V>()));
+        let button_groups = add_section(Box::new(build_button_groups::<V>()));
+        let lists = add_section(Box::new(build_lists::<V>()));
+        let modals = add_section(Box::new(build_modals::<V>()));
+        let panes = add_section(Box::new(build_panes::<V>()));
+        let toasts = add_section(Box::new(build_toasts::<V>()));
 
         rsx! {
             let wrapper = div(class = "container") {
                 {header}
                 div(class = "row") {
+                    div(class = "col-auto") {
+                        {&titled_demo}
+                    }
+                    div(class = "col-auto") {
+                        {&fieldset_demo}
+                    }
                     div(class = "col-auto") {
                         {&panels}
                     }
@@ -1465,7 +1466,7 @@ impl<V: View> StepMut for OverhaulLibraryItem<V> {
         let sections = self
             .sections
             .iter_mut()
-            .map(|section| section.step_mut())
+            .map(|section| section.step())
             .collect::<Vec<_>>();
         mogwai::future::race_all(sections).await
     }

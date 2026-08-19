@@ -16,6 +16,7 @@ pub mod pane;
 pub mod platinum_kit;
 pub mod progress;
 pub mod radio;
+pub mod section;
 pub mod select;
 pub mod shadow;
 pub mod slider;

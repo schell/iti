@@ -346,6 +346,56 @@ pre {
 	font-weight: 700;
 }
 
+/* ── Section component ── */
+
+.section-titled,
+.section-fieldset {
+	margin-top: 2em;
+	min-inline-size: 0;
+}
+
+/* Titled: fieldset has no border; legend sits above; inner div has the border */
+.section-titled {
+	border: none;
+	padding: 0;
+}
+
+.section-titled > .section-legend {
+	font-family: var(--iti-font-editorial);
+	font-size: 2em;
+	font-weight: lighter;
+	color: var(--section-color, var(--purple));
+	cursor: pointer;
+	padding: 0;
+	margin-bottom: 0.5em;
+}
+
+.section-titled > .section-body {
+	border: 2px dashed var(--section-color, var(--purple));
+	border-radius: 4px;
+	padding: 1em;
+}
+
+/* Fieldset: fieldset has the dashed border; legend sits on the border natively */
+.section-fieldset {
+	border: 2px dashed var(--section-color, var(--purple));
+	border-radius: 4px;
+	padding: 1em;
+}
+
+.section-fieldset > .section-legend {
+	font-family: var(--iti-font-editorial);
+	font-size: 2em;
+	font-weight: lighter;
+	color: var(--section-color, var(--purple));
+	cursor: pointer;
+	padding: 0 0.25em;
+}
+
+.section-fieldset > .section-body {
+	/* No border — the fieldset provides it */
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    §9  Miscellaneous Utilities
    ═══════════════════════════════════════════════════════════════════ */
