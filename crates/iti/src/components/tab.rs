@@ -542,6 +542,13 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
             })
     }
 
+    /// Return the `Id<T>` of the tab at the given index, if it's not a spacer.
+    pub fn id_of_tab(&self, index: usize) -> Option<Id<T>> {
+        let entry = self.tabs.entries.get(index)?;
+        let item = entry.as_item()?;
+        Some(item.id.clone())
+    }
+
     /// Returns a reference to the active pane, if any.
     pub fn get_active_pane(&self) -> Option<&P> {
         self.tabs.iter().find_map(|tab| {
