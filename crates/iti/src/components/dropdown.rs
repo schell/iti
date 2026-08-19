@@ -62,6 +62,7 @@ pub struct Dropdown<V: View> {
     open: Proxy<bool>,
     is_open: bool,
     flavor: Proxy<Flavor>,
+    label_text: V::Text,
 }
 
 impl<V: View> Dropdown<V> {
@@ -82,7 +83,7 @@ impl<V: View> Dropdown<V> {
                     type = "button",
                     on:click = toggle_click,
                 ) {
-                    {label_text}
+                    {&label_text}
                 }
                 div(
                     style:position = "fixed",
@@ -116,6 +117,7 @@ impl<V: View> Dropdown<V> {
             open,
             is_open: false,
             flavor: flavor_proxy,
+            label_text,
         }
     }
 
@@ -139,6 +141,10 @@ impl<V: View> Dropdown<V> {
 
     pub fn set_flavor(&mut self, flavor: Flavor) {
         self.flavor.set(flavor);
+    }
+
+    pub fn set_label(&self, label: impl AsRef<str>) {
+        self.label_text.set_text(label);
     }
 
     /// Show the dropdown menu.

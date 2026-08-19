@@ -521,6 +521,27 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
         self.panes.select(pane_id).then_some(())
     }
 
+    /// Return the index of a tab identifier.
+    pub fn index_of_tab(&self, tab_id: &Id<T>) -> Option<usize> {
+        // TODO: Spacers should also have Ids.
+        // Pushing a spacer should return an Id, and you should be able to
+        // remove a spacer by Id.
+        self.tabs
+            .entries
+            .iter()
+            .enumerate()
+            .find_map(|(index, entry)| match entry {
+                TabEntry::Item(tab_list_item) => {
+                    if &tab_list_item.id == tab_id {
+                        Some(index)
+                    } else {
+                        None
+                    }
+                }
+                TabEntry::Spacer(_) => None,
+            })
+    }
+
     /// Returns a reference to the active pane, if any.
     pub fn get_active_pane(&self) -> Option<&P> {
         self.tabs.iter().find_map(|tab| {
