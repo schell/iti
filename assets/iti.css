@@ -759,6 +759,8 @@ pre {
 	display: none;
 	align-items: center;
 	justify-content: center;
+	/* Let clicks on empty space pass through to the backdrop below. */
+	pointer-events: none;
 }
 
 .modal.show {
@@ -770,7 +772,6 @@ pre {
 	position: relative;
 	max-width: 500px;
 	width: 100%;
-	margin: 1.75rem auto;
 	pointer-events: none;
 }
 
@@ -790,9 +791,15 @@ pre {
 
 /* -- Anchored modal -- */
 /* When the modal is anchored to a parent element, the backdrop and dialog
-   use absolute positioning to cover only the nearest positioned ancestor. */
+   use absolute positioning to cover only the nearest positioned ancestor.
+   The dialog is inset by 1em on all sides so it doesn't fill the parent
+   edge-to-edge. */
 .modal-root-anchored .modal {
 	position: absolute;
+	inset: 0;
+	width: auto;
+	height: auto;
+	padding: 1em;
 }
 
 .modal-root-anchored .modal-backdrop {
