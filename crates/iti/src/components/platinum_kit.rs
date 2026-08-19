@@ -291,6 +291,64 @@ fn build_panels_and_colors<V: View>() -> Section<V, SectionTop<V>, StaticContent
             }
             div() {
                 div(style:margin_top = "1em") {
+                    p() { strong() { "Bevels" } }
+                    p() {
+                        "Border-color and box-shadow bevels driven by the \
+                         --iti-bevel-* tokens. Outer bevels raise (light \
+                         top-left); inner bevels press (light bottom-right)."
+                    }
+                    div(class = "d-flex flex-wrap gap-2") {
+                        div(
+                            class = "bevel-outer bg-gray200",
+                            style:width = "120px",
+                            style:height = "48px",
+                            style:display = "flex",
+                            style:align_items = "center",
+                            style:justify_content = "center",
+                        ) { small() { ".bevel-outer" } }
+                        div(
+                            class = "bevel-inner bg-gray200",
+                            style:width = "120px",
+                            style:height = "48px",
+                            style:display = "flex",
+                            style:align_items = "center",
+                            style:justify_content = "center",
+                        ) { small() { ".bevel-inner" } }
+                        div(
+                            class = "bevel-outer-shadow bg-gray200",
+                            style:width = "120px",
+                            style:height = "48px",
+                            style:display = "flex",
+                            style:align_items = "center",
+                            style:justify_content = "center",
+                        ) { small() { ".bevel-outer-shadow" } }
+                        div(
+                            class = "bevel-inner-shadow bg-gray200",
+                            style:width = "120px",
+                            style:height = "48px",
+                            style:display = "flex",
+                            style:align_items = "center",
+                            style:justify_content = "center",
+                        ) { small() { ".bevel-inner-shadow" } }
+                        div(
+                            class = "bevel-outer-shadow-sm bg-gray200",
+                            style:width = "120px",
+                            style:height = "48px",
+                            style:display = "flex",
+                            style:align_items = "center",
+                            style:justify_content = "center",
+                        ) { small() { ".bevel-outer-shadow-sm" } }
+                        div(
+                            class = "bevel-inner-shadow-sm bg-gray200",
+                            style:width = "120px",
+                            style:height = "48px",
+                            style:display = "flex",
+                            style:align_items = "center",
+                            style:justify_content = "center",
+                        ) { small() { ".bevel-inner-shadow-sm" } }
+                    }
+                }
+                div(style:margin_top = "1em") {
                     p() { strong() { "Color Palette" } }
                     div(class = "d-flex flex-wrap gap-2") {
                         {swatch::<V>("bg-black900", "black900")}
