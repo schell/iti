@@ -4,12 +4,9 @@ use js_sys::wasm_bindgen::UnwrapThrowExt;
 use mogwai::{prelude::*, web::body};
 
 use crate::components::{
-    button_group::library::ButtonGroupLibraryItem,
-    list::{library::ListLibraryItem, List, ListEvent},
-    modal::library::ModalLibraryItem,
-    pane::{library::PaneRetainLibraryItem, RestartPanes},
+    list::{List, ListEvent},
+    pane::RestartPanes,
     platinum_kit::OverhaulLibraryItem,
-    toast::library::ToastLibraryItem,
 };
 
 #[derive(ViewChild)]
@@ -35,12 +32,7 @@ impl<V: View> LibraryListItem<V> {
 
 pub enum LibraryListPane<V: View> {
     Default(V::Element),
-    ButtonGroup(ButtonGroupLibraryItem<V>),
-    List(ListLibraryItem<V>),
-    Modal(ModalLibraryItem<V>),
     Overhaul(OverhaulLibraryItem<V>),
-    PaneRetain(Box<PaneRetainLibraryItem<V>>),
-    Toast(ToastLibraryItem<V>),
 }
 
 impl<V: View> Default for LibraryListPane<V> {
@@ -58,12 +50,7 @@ impl<V: View> ViewChild<V> for LibraryListPane<V> {
     ) -> AppendArg<V, impl Iterator<Item = std::borrow::Cow<'_, <V as View>::Node>>> {
         match self {
             LibraryListPane::Default(el) => el.as_boxed_append_arg(),
-            LibraryListPane::ButtonGroup(item) => item.as_boxed_append_arg(),
-            LibraryListPane::List(item) => item.as_boxed_append_arg(),
-            LibraryListPane::Modal(item) => item.as_boxed_append_arg(),
             LibraryListPane::Overhaul(item) => item.as_boxed_append_arg(),
-            LibraryListPane::PaneRetain(item) => item.as_boxed_append_arg(),
-            LibraryListPane::Toast(item) => item.as_boxed_append_arg(),
         }
     }
 }
@@ -74,11 +61,6 @@ impl<V: View> StepMut for LibraryListPane<V> {
         let body = body();
         body.set_style("background-color", crate::color::LAVENDER);
         match self {
-            LibraryListPane::ButtonGroup(item) => item.step_mut().await,
-            LibraryListPane::List(item) => item.step_mut().await,
-            LibraryListPane::Modal(item) => item.step_mut().await,
-            LibraryListPane::PaneRetain(item) => item.step_mut().await,
-            LibraryListPane::Toast(item) => item.step_mut().await,
             LibraryListPane::Overhaul(item) => {
                 item.step_mut().await;
             }
@@ -126,26 +108,6 @@ impl<V: View> Default for Library<V> {
             right_column,
             right_column_pane_ids: vec![],
         };
-
-        lib.add_item("components::ButtonGroup<T>", || {
-            LibraryListPane::ButtonGroup(Default::default())
-        });
-
-        lib.add_item("components::List<T>", || {
-            LibraryListPane::List(Default::default())
-        });
-
-        lib.add_item("components::Modal", || {
-            LibraryListPane::Modal(Default::default())
-        });
-
-        lib.add_item("components::Panes<T> (Retain)", || {
-            LibraryListPane::PaneRetain(Default::default())
-        });
-
-        lib.add_item("components::Toast", || {
-            LibraryListPane::Toast(Default::default())
-        });
 
         lib.add_item("Platinum Kit", || {
             LibraryListPane::Overhaul(Default::default())

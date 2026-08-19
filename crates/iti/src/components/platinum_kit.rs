@@ -28,7 +28,12 @@ use crate::components::table::library::TableLibraryItem;
 use crate::components::title_bar::TitleBar;
 use crate::components::Flavor;
 
+pub mod button_groups;
 pub mod checkboxes_and_radios;
+pub mod lists;
+pub mod modals;
+pub mod panes;
+pub mod toasts;
 
 #[derive(ViewChild)]
 pub struct ProgressBars<V: View> {
@@ -133,6 +138,11 @@ pub enum SectionContent<V: View> {
         tab_list: TabList<V, V::Element>,
         tab_panels: Vec<TabPanel<V, V::Element, V::Element>>,
     },
+    ButtonGroups(button_groups::PlatinumKitButtonGroups<V>),
+    Lists(lists::PlatinumKitLists<V>),
+    Modals(modals::PlatinumKitModals<V>),
+    Panes(Box<panes::PlatinumKitPanes<V>>),
+    Toasts(toasts::PlatinumKitToasts<V>),
 }
 
 impl<V: View> ViewChild<V> for SectionContent<V> {
@@ -146,6 +156,11 @@ impl<V: View> ViewChild<V> for SectionContent<V> {
             SectionContent::TableLibrary(table_library) => table_library.as_boxed_append_arg(),
             SectionContent::IconClassicLibrary(icon_library) => icon_library.as_boxed_append_arg(),
             SectionContent::TabPanel { wrapper, .. } => wrapper.as_boxed_append_arg(),
+            SectionContent::ButtonGroups(bg) => bg.as_boxed_append_arg(),
+            SectionContent::Lists(l) => l.as_boxed_append_arg(),
+            SectionContent::Modals(m) => m.as_boxed_append_arg(),
+            SectionContent::Panes(p) => p.as_boxed_append_arg(),
+            SectionContent::Toasts(t) => t.as_boxed_append_arg(),
         }
     }
 }
@@ -186,6 +201,11 @@ impl<V: View> StepMut for SectionContent<V> {
                     StepEv::TabPanel(_tab_list_event) => {}
                 }
             }
+            SectionContent::ButtonGroups(bg) => bg.step_mut().await,
+            SectionContent::Lists(l) => l.step_mut().await,
+            SectionContent::Modals(m) => m.step_mut().await,
+            SectionContent::Panes(p) => p.step_mut().await,
+            SectionContent::Toasts(t) => t.step_mut().await,
             _ => futures_lite::future::pending().await,
         }
     }
@@ -1294,6 +1314,29 @@ fn build_tables<V: View>() -> Section<V> {
     )
 }
 
+fn build_button_groups<V: View>() -> Section<V> {
+    Section::new(
+        "Button Groups",
+        SectionContent::ButtonGroups(Default::default()),
+    )
+}
+
+fn build_lists<V: View>() -> Section<V> {
+    Section::new("Lists", SectionContent::Lists(Default::default()))
+}
+
+fn build_modals<V: View>() -> Section<V> {
+    Section::new("Modals", SectionContent::Modals(Default::default()))
+}
+
+fn build_panes<V: View>() -> Section<V> {
+    Section::new("Panes", SectionContent::Panes(Box::default()))
+}
+
+fn build_toasts<V: View>() -> Section<V> {
+    Section::new("Toasts", SectionContent::Toasts(Default::default()))
+}
+
 // ── Main component ──────────────────────────────────────────────
 
 /// Sandbox library item for the Platinum design system overhaul.
@@ -1335,6 +1378,11 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         let icon_classics = add_section(build_icon_classic::<V>());
         let title_bars = add_section(build_title_bars::<V>());
         let tables = add_section(build_tables::<V>());
+        let button_groups = add_section(build_button_groups::<V>());
+        let lists = add_section(build_lists::<V>());
+        let modals = add_section(build_modals::<V>());
+        let panes = add_section(build_panes::<V>());
+        let toasts = add_section(build_toasts::<V>());
 
         rsx! {
             let wrapper = div(class = "container") {
@@ -1387,6 +1435,21 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     }
                     div(class = "col-auto") {
                         {&tables}
+                    }
+                    div(class = "col-auto") {
+                        {&button_groups}
+                    }
+                    div(class = "col-auto") {
+                        {&lists}
+                    }
+                    div(class = "col-auto") {
+                        {&modals}
+                    }
+                    div(class = "col-auto") {
+                        {&panes}
+                    }
+                    div(class = "col-auto") {
+                        {&toasts}
                     }
                 }
             }
