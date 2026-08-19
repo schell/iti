@@ -85,7 +85,6 @@ impl<V: View> Modal<V> {
                     } else {
                         "modal-backdrop fade"
                     }),
-                    style:display = visible(v => if *v { "block" } else { "none" }),
                     on:click = backdrop_click,
                 ) {}
                 div(
@@ -95,7 +94,6 @@ impl<V: View> Modal<V> {
                         "modal fade"
                     }),
                     tabindex = "-1",
-                    style:display = visible(v => if *v { "block" } else { "none" }),
                 ) {
                     div(class = "window") {
                         {&title_bar}
