@@ -23,7 +23,6 @@ pub mod slider;
 pub mod tab;
 pub mod table;
 pub mod title_bar;
-pub mod toast;
 pub mod widget;
 
 /// Contextual color variant.

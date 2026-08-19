@@ -123,7 +123,7 @@ the built-in component gallery uses.
 | ----------- | ------------------------------------------------------------------------------------- |
 | Forms       | `Button`, `ButtonGroup`, `Checkbox`, `Dropdown`, `Radio`, `Select`, `Slider`          |
 | Containers  | `Card`, `List`, `Modal`, `Pane`, `Tab` (`TabList` / `TabPanel`), `Table`, `TitleBar`  |
-| Display     | `Alert`, `Badge`, `Icon`, `Progress`, `Toast`                                         |
+| Display     | `Alert`, `Badge`, `Icon`, `Progress`                                                |
 | Composition | `Shadow`, `Widget`                                                                    |
 
 Each lives in `crates/iti/src/components/` and includes a `library`

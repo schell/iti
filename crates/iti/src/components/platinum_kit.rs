@@ -34,7 +34,6 @@ pub mod checkboxes_and_radios;
 pub mod lists;
 pub mod modals;
 pub mod panes;
-pub mod toasts;
 
 #[derive(ViewChild)]
 pub struct ProgressBars<V: View> {
@@ -1296,15 +1295,6 @@ fn build_panes<V: View>() -> Section<V, SectionTop<V>, panes::PlatinumKitPanes<V
     )
 }
 
-fn build_toasts<V: View>() -> Section<V, SectionTop<V>, toasts::PlatinumKitToasts<V>> {
-    Section::new(
-        SectionStyle::Titled,
-        crate::color::PURPLE,
-        SectionTop::new("Toasts"),
-        Default::default(),
-    )
-}
-
 // ── Main component ──────────────────────────────────────────────
 
 /// Sandbox library item for the Platinum design system overhaul.
@@ -1378,7 +1368,6 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         let lists = add_section(Box::new(build_lists::<V>()));
         let modals = add_section(Box::new(build_modals::<V>()));
         let panes = add_section(Box::new(build_panes::<V>()));
-        let toasts = add_section(Box::new(build_toasts::<V>()));
 
         rsx! {
             let wrapper = div(class = "container") {
@@ -1449,9 +1438,6 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     }
                     div(class = "col-auto") {
                         {&panes}
-                    }
-                    div(class = "col-auto") {
-                        {&toasts}
                     }
                 }
             }
