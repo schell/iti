@@ -2065,6 +2065,7 @@ pre {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	padding-top: 3px;
 }
 
 /* When close button is visible, add matching space on the right to keep title centered */
