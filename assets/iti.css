@@ -71,6 +71,38 @@
 	--iti-text:          var(--black900);
 	--iti-text-muted:    var(--gray800);
 
+	/* ── Semantic: Bevels ───────────────────────────────────────── */
+
+	/* Edge colors (solids) */
+	--iti-bevel-highlight:          var(--white100);
+	--iti-bevel-shadow:              var(--gray700);
+	--iti-bevel-gray:                #808080; /* classic Platinum mid-bevel gray */
+	--iti-bevel-gray-dark:           #404040;
+	--iti-bevel-gray-light:          #C0C0C0;
+
+	/* Box-shadow bevel alpha variants (highlight edge) */
+	--iti-bevel-highlight-alpha:           rgba(255, 255, 255, 0.6);
+	--iti-bevel-highlight-alpha-soft:      rgba(255, 255, 255, 0.3);
+	--iti-bevel-highlight-alpha-pressed:   rgba(255, 255, 255, 0.2);
+	--iti-bevel-highlight-alpha-muted:     rgba(255, 255, 255, 0.4);
+
+	/* Box-shadow bevel alpha variants (shadow edge) */
+	--iti-bevel-shadow-alpha:              rgba(38, 38, 38, 0.4);
+	--iti-bevel-shadow-alpha-060:          rgba(38, 38, 38, 0.6);
+	--iti-bevel-shadow-alpha-strong:       rgba(38, 38, 38, 0.8);
+	--iti-bevel-shadow-alpha-soft:         rgba(128, 128, 128, 0.5);
+	--iti-bevel-shadow-alpha-soft-pressed: rgba(0, 0, 0, 0.2);
+	--iti-bevel-shadow-alpha-muted:       rgba(128, 128, 128, 0.3);
+	--iti-bevel-shadow-solid:              rgba(38, 38, 38, 1);
+
+	/* Black edge alphas (for bevels that use pure black instead of gray700) */
+	--iti-bevel-black-alpha:               rgba(0, 0, 0, 0.4);
+	--iti-bevel-black-solid:               rgba(0, 0, 0, 1);
+
+	/* Composite border-color bevels (4-value shorthand) */
+	--iti-bevel-outer: var(--iti-bevel-highlight) var(--iti-bevel-shadow) var(--iti-bevel-shadow) var(--iti-bevel-highlight);
+	--iti-bevel-inner: var(--iti-bevel-shadow) var(--iti-bevel-highlight) var(--iti-bevel-highlight) var(--iti-bevel-shadow);
+
 	/* ── Semantic: Accent ───────────────────────────────────────── */
 
 	--iti-primary:        var(--azul);
@@ -455,8 +487,8 @@ pre {
 	border: 1px solid var(--charcoal);
 	border-radius: 3px;
 	box-shadow:
-		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
-		inset -1px -1px 0 rgba(128, 128, 128, 0.5);
+		inset 1px 1px 0 var(--iti-bevel-highlight-alpha),
+		inset -1px -1px 0 var(--iti-bevel-shadow-alpha-soft);
 	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	padding: 2px 12px;
@@ -482,8 +514,8 @@ pre {
 	background-color: var(--gray800);
 	color: var(--white100);
 	box-shadow:
-		inset 1px 1px 0 rgba(38, 38, 38, 0.8),
-		inset -1px -1px 0 rgba(255, 255, 255, 0.2);
+		inset 1px 1px 0 var(--iti-bevel-shadow-alpha-strong),
+		inset -1px -1px 0 var(--iti-bevel-highlight-alpha-pressed);
 }
 
 .btn:focus-visible {
@@ -583,8 +615,8 @@ pre {
 		var(--gray800)
 	);
 	box-shadow:
-		inset 0 1px 0 rgba(38, 38, 38, 0.4),
-		inset 1px 0 0 rgba(38, 38, 38, 0.4);
+		inset 0 1px 0 var(--iti-bevel-shadow-alpha),
+		inset 1px 0 0 var(--iti-bevel-shadow-alpha);
 }
 
 /* ── Button sizes ── */
@@ -667,7 +699,7 @@ pre {
 .card {
 	background-color: var(--iti-bg-light);
 	border: 2px solid;
-	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-border-dark) var(--iti-border-light);
+	border-color: var(--iti-bevel-outer);
 	display: flex;
 	flex-direction: column;
 	word-wrap: break-word;
@@ -821,7 +853,7 @@ pre {
 	background: var(--iti-bg-medium);
 	background-image: none;
 	border: 2px solid;
-	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-border-dark) var(--iti-border-light);
+	border-color: var(--iti-bevel-outer);
 	width: 16px;
 	height: 16px;
 	padding: 0;
@@ -851,7 +883,7 @@ pre {
 .btn-close:active {
 	background-color: var(--iti-bg-dark);
 	background-image: none;
-	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
+	border-color: var(--iti-bevel-inner);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -967,8 +999,8 @@ pre {
 	/* Panel styling */
 	background-color: var(--gray200);
 	box-shadow:
-		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
-		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		inset -2px -2px 0 var(--iti-bevel-shadow-alpha),
+		inset 2px 2px 0 var(--iti-bevel-highlight-alpha),
 		2px 2px 0 rgba(0, 0, 0, 0.85);
 	outline: 1px solid var(--black900);
 	outline-offset: -1px;
@@ -1038,7 +1070,7 @@ pre {
 	position: relative;
 	z-index: 1;
 	box-shadow:
-	  0 1px 0 rgba(255, 255, 255, 0.6),
+	  0 1px 0 var(--iti-bevel-highlight-alpha),
 	  2px 0 0 rgb(0, 0, 0);
 	margin-right: 2px;
 }
@@ -1057,7 +1089,7 @@ pre {
 	z-index: 1;
 	box-shadow:
 	  /* highlight on the top of the underlying panel */
-	  0 1px 0 rgba(255, 255, 255, 0.6),
+	  0 1px 0 var(--iti-bevel-highlight-alpha),
 	  /* */
 	  1px 0 0 rgb(0, 0, 0),
 	  -1px 0 0 rgb(0, 0, 0);
@@ -1073,8 +1105,8 @@ pre {
 	margin-bottom: -1px;
 	box-shadow:
 		2px 2px #262626,
-		inset 1px 0px rgba(38, 38, 38, 0.4),
-		inset -2px -2px rgba(0, 0, 0, 1.0);
+		inset 1px 0px var(--iti-bevel-shadow-alpha),
+		inset -2px -2px var(--iti-bevel-black-solid);
 }
 
 .nav-tabs .nav-item .nav-link {
@@ -1091,8 +1123,8 @@ pre {
 	text-decoration: none;
 	cursor: pointer;
 	box-shadow:
-		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
-		inset -1px 0px 0 rgba(0, 0, 0, 0.4);
+		inset 1px 1px 0 var(--iti-bevel-highlight-alpha),
+		inset -1px 0px 0 var(--iti-bevel-black-alpha);
 }
 
 .nav-tabs .nav-item .nav-link:hover {
@@ -1111,8 +1143,8 @@ pre {
 	color: var(--iti-text);
 	font-weight: normal;
 	box-shadow:
-		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
-		inset -1px 0px 0 rgba(0, 0, 0, 0.4);
+		inset 1px 1px 0 var(--iti-bevel-highlight-alpha),
+		inset -1px 0px 0 var(--iti-bevel-black-alpha);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1125,8 +1157,8 @@ pre {
 	list-style: none;
 	background-color: var(--gray200);
 	box-shadow:
-		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
-		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		inset -2px -2px 0 var(--iti-bevel-shadow-alpha),
+		inset 2px 2px 0 var(--iti-bevel-highlight-alpha),
 		2px 2px 0 rgba(0, 0, 0, 0.85);
 	outline: 1px solid var(--black900);
 	outline-offset: -1px;
@@ -1184,8 +1216,8 @@ pre {
 	border: 1px solid var(--charcoal);
 	border-radius: 0;
 	box-shadow:
-		inset 1px 1px 0 var(--gray700),
-		inset -1px -1px 0 var(--white100);
+		inset 1px 1px 0 var(--iti-bevel-shadow),
+		inset -1px -1px 0 var(--iti-bevel-highlight);
 	height: 12px;
 }
 
@@ -1267,7 +1299,7 @@ pre {
 	font-family: inherit;
 	font-size: 13px;
 	border: 2px solid;
-	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
+	border-color: var(--iti-bevel-inner);
 	padding: 3px 8px;
 	transition: none;
 	line-height: 1.4;
@@ -1339,8 +1371,8 @@ pre {
 
 	/* Inner bevel effect (Platinum style) */
 	box-shadow:
-		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
-		inset -1px -1px 0 rgba(128, 128, 128, 0.5);
+		inset 1px 1px 0 var(--iti-bevel-highlight-alpha),
+		inset -1px -1px 0 var(--iti-bevel-shadow-alpha-soft);
 
 	/* Platinum arrow button indicator with separator bars */
 	background-image: url("svg/select-arrows-platinum.svg");
@@ -1359,8 +1391,8 @@ pre {
 	border-color: var(--charcoal);
 	outline: none;
 	box-shadow:
-		inset 1px 1px 0 rgba(255, 255, 255, 0.3),
-		inset -1px -1px 0 rgba(0, 0, 0, 0.2);
+		inset 1px 1px 0 var(--iti-bevel-highlight-alpha-soft),
+		inset -1px -1px 0 var(--iti-bevel-shadow-alpha-soft-pressed);
 	/* Keep arrow visible against dark background */
 	background-image: url("svg/select-arrows-platinum.svg");
 	background-repeat: no-repeat;
@@ -1380,8 +1412,8 @@ pre {
 	text-shadow: 1px 1px 0 var(--white100);
 	cursor: default;
 	box-shadow:
-		inset 1px 1px 0 rgba(255, 255, 255, 0.4),
-		inset -1px -1px 0 rgba(128, 128, 128, 0.3);
+		inset 1px 1px 0 var(--iti-bevel-highlight-alpha-muted),
+		inset -1px -1px 0 var(--iti-bevel-shadow-alpha-muted);
 }
 
 .form-select option {
@@ -1433,8 +1465,8 @@ pre {
 	border: 1px solid var(--charcoal);
 	border-radius: 0;
 	box-shadow:
-		inset 1px 1px 0 #FFFFFF,
-		inset -1px -1px 0 #808080,
+		inset 1px 1px 0 var(--iti-bevel-highlight),
+		inset -1px -1px 0 var(--iti-bevel-gray),
 		0.5px 0.5px 0 rgba(38, 38, 38, 0.3);
 	cursor: pointer;
 	margin: 0;
@@ -1480,8 +1512,8 @@ pre {
 .form-check-input[type="checkbox"]:active {
 	background-color: var(--gray700);
 	box-shadow:
-		inset 1px 1px 0 #404040,
-		inset -1px -1px 0 #C0C0C0,
+		inset 1px 1px 0 var(--iti-bevel-gray-dark),
+		inset -1px -1px 0 var(--iti-bevel-gray-light),
 		0.5px 0.5px 0 rgba(38, 38, 38, 0.3);
 }
 
@@ -1540,7 +1572,7 @@ pre {
 	background-size: 2px 2px;
 	position: relative;
 	box-shadow:
-		inset 1px 1px 0 rgba(0, 0, 0, 0.2),
+		inset 1px 1px 0 var(--iti-bevel-shadow-alpha-soft-pressed),
 		0.5px 0.5px 0 rgba(38, 38, 38, 0.3);
 }
 
@@ -1790,8 +1822,8 @@ pre {
 
 .window-shadow {
 	box-shadow:
-		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
-		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		inset -2px -2px 0 var(--iti-bevel-shadow-alpha),
+		inset 2px 2px 0 var(--iti-bevel-highlight-alpha),
 		2px 2px 0 rgba(0, 0, 0, 0.85);
 }
 
@@ -1802,6 +1834,45 @@ pre {
 
 .stroke {
 	outline: 1px solid var(--black900);
+}
+
+/* ── Bevel utility classes ── */
+
+/* Border-color bevels (require border: 2px solid on the element). */
+.bevel-outer {
+	border: 2px solid;
+	border-color: var(--iti-bevel-outer);
+}
+
+.bevel-inner {
+	border: 2px solid;
+	border-color: var(--iti-bevel-inner);
+}
+
+/* Box-shadow bevels (2px). */
+.bevel-outer-shadow {
+	box-shadow:
+		inset 2px 2px 0 var(--iti-bevel-highlight-alpha),
+		inset -2px -2px 0 var(--iti-bevel-shadow-alpha);
+}
+
+.bevel-inner-shadow {
+	box-shadow:
+		inset 2px 2px 0 var(--iti-bevel-shadow-alpha-strong),
+		inset -2px -2px 0 var(--iti-bevel-highlight-alpha-pressed);
+}
+
+/* Box-shadow bevels (1px). */
+.bevel-outer-shadow-sm {
+	box-shadow:
+		inset 1px 1px 0 var(--iti-bevel-highlight-alpha),
+		inset -1px -1px 0 var(--iti-bevel-shadow-alpha-soft);
+}
+
+.bevel-inner-shadow-sm {
+	box-shadow:
+		inset 1px 1px 0 var(--iti-bevel-shadow-alpha-strong),
+		inset -1px -1px 0 var(--iti-bevel-highlight-alpha-pressed);
 }
 
 /* ── Validation feedback helper ── */
@@ -1824,8 +1895,8 @@ pre {
 	--iti-panel-pad: 1em;
 	background-color: var(--gray200);
 	box-shadow:
-		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
-		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		inset -2px -2px 0 var(--iti-bevel-shadow-alpha),
+		inset 2px 2px 0 var(--iti-bevel-highlight-alpha),
 		2px 2px 0 rgba(0, 0, 0, 0.85);
 	outline: 1px solid var(--black900);
 	outline-offset: -1px;
@@ -1838,8 +1909,8 @@ pre {
 .window {
 	background-color: var(--gray200);
 	box-shadow:
-		inset -2px -2px 0 rgba(38, 38, 38, 0.4),
-		inset 2px 2px 0 rgba(255, 255, 255, 0.6),
+		inset -2px -2px 0 var(--iti-bevel-shadow-alpha),
+		inset 2px 2px 0 var(--iti-bevel-highlight-alpha),
 		2px 2px 0 rgba(0, 0, 0, 0.85);
 	outline: 1px solid var(--black900);
 	outline-offset: -1px;
@@ -1859,9 +1930,9 @@ pre {
 .tab-panel .nav-tabs .nav-item .nav-link:not(.active) {
 	position: relative;
 	box-shadow:
-		inset 1px 1px 0 rgba(255, 255, 255, 0.6),
-		inset -1px 0px 0 rgba(0, 0, 0, 0.4),
-		inset 0px -1px 0 rgba(38, 38, 38, 1.0);
+		inset 1px 1px 0 var(--iti-bevel-highlight-alpha),
+		inset -1px 0px 0 var(--iti-bevel-black-alpha),
+		inset 0px -1px 0 var(--iti-bevel-shadow-solid);
 }
 
 /* White highlight below inactive tabs inside a tab-panel,
@@ -1873,7 +1944,7 @@ pre {
 	left: 0px;
 	right: 0px;
 	height: 1px;
-	background: rgba(255, 255, 255, 0.6);
+	background: var(--iti-bevel-highlight-alpha);
 	z-index: 1;
 }
 
@@ -1884,8 +1955,8 @@ pre {
 	border: 1px solid var(--black900);
 	border-top: none;
 	box-shadow:
-		inset -1px -1px 0 rgba(38, 38, 38, 0.4),
-		inset 1px 0 0 rgba(255, 255, 255, 0.6),
+		inset -1px -1px 0 var(--iti-bevel-shadow-alpha),
+		inset 1px 0 0 var(--iti-bevel-highlight-alpha),
 		2px 2px 0 rgba(0, 0, 0, 0.85);
 	padding: 1em;
 }
@@ -1906,8 +1977,8 @@ pre {
 	box-sizing: border-box;
 
 	box-shadow:
-		inset 1px 1px 0 rgba(255, 255, 255, 0.60),
-		inset -1px -1px 0 rgba(38, 38, 38, 0.40)
+		inset 1px 1px 0 var(--iti-bevel-highlight-alpha),
+		inset -1px -1px 0 var(--iti-bevel-shadow-alpha)
 		;
 }
 
@@ -2029,10 +2100,10 @@ pre {
 	
 	/* Raised bevel effect */
 	box-shadow:
-		inset 0 2px 0 rgba(255, 255, 255, 1),
-		inset 2px 0 0 rgba(255, 255, 255, 1),
-		inset 0 -2px 0 rgba(128, 128, 128, 1),
-		inset -2px 0 0 rgba(128, 128, 128, 1);
+		inset 0 2px 0 var(--iti-bevel-highlight),
+		inset 2px 0 0 var(--iti-bevel-highlight),
+		inset 0 -2px 0 var(--iti-bevel-gray),
+		inset -2px 0 0 var(--iti-bevel-gray);
 }
 
 .table thead th:first-child {
@@ -2045,10 +2116,10 @@ pre {
 	
 	/* Pressed bevel effect (inverted) */
 	box-shadow:
-		inset 0 2px 0 rgba(38, 38, 38, 0.6),
-		inset 2px 0 0 rgba(38, 38, 38, 0.6),
-		inset 0 -2px 0 rgba(255, 255, 255, 0.2),
-		inset -2px 0 0 rgba(255, 255, 255, 0.2);
+		inset 0 2px 0 var(--iti-bevel-shadow-alpha-060),
+		inset 2px 0 0 var(--iti-bevel-shadow-alpha-060),
+		inset 0 -2px 0 var(--iti-bevel-highlight-alpha-pressed),
+		inset -2px 0 0 var(--iti-bevel-highlight-alpha-pressed);
 }
 
 /* Sort arrow column (rightmost) */
