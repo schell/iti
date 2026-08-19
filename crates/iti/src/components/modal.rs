@@ -1,10 +1,19 @@
 //! Modal dialog component.
 //!
-//! A Bootstrap modal with title, body slot, and close handling.  The backdrop
-//! and visibility are managed in pure Rust — no Bootstrap JS required.
-//! Pressing Escape while the modal is visible will also close it.
+//! A Platinum-styled modal dialog built from a `.window` container and a
+//! [`TitleBar`].  The backdrop and visibility are managed in pure Rust — no
+//! Bootstrap JS required.  Pressing Escape while the modal is visible will
+//! also close it.
+//!
+//! By default the modal is anchored to the viewport (covering the entire
+//! screen).  Use [`Modal::set_anchored`] to anchor it to a parent element
+//! instead — the parent must have `position: relative` (or any non-`static`
+//! positioning) so the modal's absolute positioning resolves against it.
 use mogwai::prelude::*;
 use wasm_bindgen::JsCast;
+
+use crate::components::icon::IconGlyph;
+use crate::components::title_bar::TitleBar;
 
 /// Event emitted by a [`Modal`].
 pub enum ModalEvent {
@@ -12,31 +21,62 @@ pub enum ModalEvent {
     Closed,
 }
 
-/// A Bootstrap modal dialog.
+/// A Platinum-styled modal dialog.
 ///
-/// The modal consists of a semi-transparent backdrop and the dialog itself.
-/// Call [`Modal::show`] and [`Modal::hide`] to toggle visibility, and
+/// The modal consists of a semi-transparent backdrop and a `.window` dialog
+/// containing a [`TitleBar`] (with a close button) and a body slot.  Call
+/// [`Modal::show`] and [`Modal::hide`] to toggle visibility, and
 /// [`Modal::step`] to await close events.
+///
+/// # Anchoring
+///
+/// By default the modal covers the entire viewport.  When anchored (see
+/// [`Modal::set_anchored`]) it covers only its nearest positioned ancestor,
+/// allowing it to be scoped to a sub-region of the page.
+///
+/// # Example
+///
+/// ```ignore
+/// let mut modal = Modal::new("My Dialog");
+/// modal.set_body(&content);
+///
+/// loop {
+///     match modal.step().await {
+///         ModalEvent::Closed => {
+///             modal.hide();
+///         }
+///     }
+/// }
+/// ```
 #[derive(ViewChild, ViewProperties)]
 pub struct Modal<V: View> {
     #[child]
     #[properties]
     wrapper: V::Element,
-    title: V::Text,
+    title_bar: TitleBar<V>,
     body: V::Element,
     body_child: ProxyChild<V>,
-    close_click: V::EventListener,
     backdrop_click: V::EventListener,
     keydown: V::EventListener,
     visible: Proxy<bool>,
+    anchored: Proxy<bool>,
 }
 
 impl<V: View> Modal<V> {
     pub fn new(title: impl AsRef<str>) -> Self {
         let mut visible = Proxy::new(false);
+        let mut anchored = Proxy::new(false);
+
+        let mut title_bar = TitleBar::new(title);
+        title_bar.set_show_close_button(true);
 
         rsx! {
             let wrapper = div(
+                class = anchored(a => if *a {
+                    "modal-root modal-root-anchored"
+                } else {
+                    "modal-root"
+                }),
                 document:keydown = keydown,
             ) {
                 div(
@@ -57,27 +97,13 @@ impl<V: View> Modal<V> {
                     tabindex = "-1",
                     style:display = visible(v => if *v { "block" } else { "none" }),
                 ) {
-                    div(class = "modal-dialog") {
-                        div(class = "modal-content") {
-                            div(class = "modal-header") {
-                                h5(class = "modal-title") {
-                                    let title_text = ""
-                                }
-                                button(
-                                    type = "button",
-                                    class = "btn-close",
-                                    aria_label = "Close",
-                                    on:click = close_click,
-                                ) {}
-                            }
-                            let body = div(class = "modal-body") {}
-                        }
+                    div(class = "window") {
+                        {&title_bar}
+                        let body = div(class = "container") {}
                     }
                 }
             }
         }
-
-        title_text.set_text(title);
 
         let body_child = ProxyChild::new(&{
             rsx! {
@@ -89,18 +115,25 @@ impl<V: View> Modal<V> {
 
         Self {
             wrapper,
-            title: title_text,
+            title_bar,
             body,
             body_child,
-            close_click,
             backdrop_click,
             keydown,
             visible,
+            anchored,
         }
     }
 
     pub fn set_title(&self, title: impl AsRef<str>) {
-        self.title.set_text(title);
+        self.title_bar.set_title(title);
+    }
+
+    /// Set the icon displayed next to the title.
+    ///
+    /// Pass `Some(glyph)` to show an icon, or `None` to hide it.
+    pub fn set_icon(&mut self, glyph: Option<IconGlyph>) {
+        self.title_bar.set_icon(glyph);
     }
 
     /// Replace the modal body content.
@@ -122,14 +155,35 @@ impl<V: View> Modal<V> {
     pub fn is_visible(&self) -> bool {
         *self.visible
     }
+
+    /// Anchor the modal to its nearest positioned ancestor instead of the
+    /// viewport.
+    ///
+    /// When anchored, the modal's backdrop and dialog use `position: absolute`
+    /// so they cover only the parent element (which must have a non-`static`
+    /// `position`, e.g. `relative`).  This is useful for modals that should
+    /// only block interaction within a sub-region of the page.
+    pub fn set_anchored(&mut self, anchored: bool) {
+        self.anchored.set(anchored);
+    }
+
+    /// Returns `true` if the modal is anchored to its parent element.
+    pub fn is_anchored(&self) -> bool {
+        *self.anchored
+    }
 }
 
 impl<V: View> Step for Modal<V> {
     type Output = ModalEvent;
     async fn step(&self) -> ModalEvent {
         use futures_lite::FutureExt;
+        use mogwai::future::MogwaiFutureExt;
 
-        let close_or_backdrop = self.close_click.next().or(self.backdrop_click.next());
+        let close_or_backdrop = self
+            .title_bar
+            .step()
+            .map(|_| ())
+            .or(self.backdrop_click.next().map(|_| ()));
         let escape = async {
             loop {
                 let ev = self.keydown.next().await;
@@ -138,7 +192,7 @@ impl<V: View> Step for Modal<V> {
                         .is_some_and(|ke| ke.key() == "Escape")
                 });
                 if is_escape == Some(true) {
-                    return ev;
+                    return;
                 }
             }
         };

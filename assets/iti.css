@@ -739,6 +739,14 @@ pre {
    §13  Modals
    ═══════════════════════════════════════════════════════════════════ */
 
+/* -- Modal root wrapper -- */
+/* Transparent container with no layout impact. When .modal-root-anchored
+   is present, the backdrop and dialog switch to absolute positioning so
+   they cover the nearest positioned ancestor instead of the viewport. */
+.modal-root {
+	display: contents;
+}
+
 .modal {
 	position: fixed;
 	top: 0;
@@ -757,75 +765,17 @@ pre {
 	display: flex;
 }
 
-.modal-dialog {
+/* The .window inside a modal is the dialog itself. */
+.modal .window {
 	position: relative;
-	width: auto;
 	max-width: 500px;
+	width: 100%;
 	margin: 1.75rem auto;
 	pointer-events: none;
 }
 
-.modal.show .modal-dialog {
+.modal.show .window {
 	pointer-events: auto;
-}
-
-.modal-content {
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	width: 100%;
-	background-color: var(--iti-bg);
-	border: 2px solid;
-	border-color: var(--iti-border-light) var(--iti-border-dark) var(--iti-border-dark) var(--iti-border-light);
-	outline: 1px solid var(--iti-text);
-	pointer-events: auto;
-}
-
-.modal-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	background-color: var(--iti-bg-medium);
-	border-bottom: 2px solid var(--iti-border-dark);
-	padding: 4px 8px;
-	/* Six shadowed ridges (pinstripe title bar) */
-	background-image: linear-gradient(
-		to bottom,
-		transparent 0px, transparent 2px,
-		rgba(255, 255, 255, 0.8) 2px, rgba(255, 255, 255, 0.8) 3px,
-		rgba(0, 0, 0, 0.25) 3px, rgba(0, 0, 0, 0.25) 4px,
-		rgba(255, 255, 255, 0.8) 4px, rgba(255, 255, 255, 0.8) 5px,
-		rgba(0, 0, 0, 0.25) 5px, rgba(0, 0, 0, 0.25) 6px,
-		rgba(255, 255, 255, 0.8) 6px, rgba(255, 255, 255, 0.8) 7px,
-		rgba(0, 0, 0, 0.25) 7px, rgba(0, 0, 0, 0.25) 8px,
-		rgba(255, 255, 255, 0.8) 8px, rgba(255, 255, 255, 0.8) 9px,
-		rgba(0, 0, 0, 0.25) 9px, rgba(0, 0, 0, 0.25) 10px,
-		rgba(255, 255, 255, 0.8) 10px, rgba(255, 255, 255, 0.8) 11px,
-		rgba(0, 0, 0, 0.25) 11px, rgba(0, 0, 0, 0.25) 12px,
-		rgba(255, 255, 255, 0.8) 12px, rgba(255, 255, 255, 0.8) 13px,
-		rgba(0, 0, 0, 0.25) 13px, rgba(0, 0, 0, 0.25) 14px,
-		transparent 14px, transparent 16px
-	);
-	background-size: calc(100% - var(--iti-title-bar-inset)) 16px;
-	background-position: center;
-	background-repeat: no-repeat;
-}
-
-.modal-title {
-	font-family: var(--iti-font-editorial);
-	font-size: 15px;
-	font-weight: 300;
-	text-align: center;
-	background-color: var(--iti-bg-medium);
-	padding: 0 8px;
-	margin-bottom: 0;
-}
-
-.modal-body {
-	background-color: var(--iti-bg-light);
-	padding: 12px;
-	position: relative;
-	flex: 1 1 auto;
 }
 
 .modal-backdrop {
@@ -836,6 +786,19 @@ pre {
 	width: 100vw;
 	height: 100vh;
 	background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* -- Anchored modal -- */
+/* When the modal is anchored to a parent element, the backdrop and dialog
+   use absolute positioning to cover only the nearest positioned ancestor. */
+.modal-root-anchored .modal {
+	position: absolute;
+}
+
+.modal-root-anchored .modal-backdrop {
+	position: absolute;
+	width: 100%;
+	height: 100%;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -877,10 +840,6 @@ pre {
 	background-color: var(--iti-bg-dark);
 	background-image: none;
 	border-color: var(--iti-border-dark) var(--iti-border-light) var(--iti-border-light) var(--iti-border-dark);
-}
-
-.modal-header .btn-close {
-	margin: -2px -4px -2px auto;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
