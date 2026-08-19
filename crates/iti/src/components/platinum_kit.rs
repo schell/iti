@@ -1333,6 +1333,7 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
     fn default() -> Self {
         let mut sections: Vec<Box<dyn SectionEntry<V>>> = vec![];
         let mut add_section = |section: Box<dyn SectionEntry<V>>| -> V::Element {
+            section.element().set_style("max-width", "1140px");
             let root = section.element().clone();
             sections.push(section);
             root

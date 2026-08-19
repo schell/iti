@@ -173,6 +173,7 @@ impl<V: View> Dropdown<V> {
 
 impl<V: View> Step for Dropdown<V> {
     type Output = Option<DropdownEvent<V>>;
+
     async fn step(&self) -> Option<DropdownEvent<V>> {
         use futures_lite::FutureExt;
         use mogwai::future::MogwaiFutureExt;
