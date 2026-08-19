@@ -58,6 +58,11 @@ impl<V: View, T: ViewChild<V>> TabListItem<V, T> {
     pub fn id(&self) -> &Id<T> {
         &self.id
     }
+
+    /// Whether this tab is currently the active (selected) tab.
+    pub fn is_active(&self) -> bool {
+        *self.is_active
+    }
 }
 
 /// Event emitted by a [`TabList`].
@@ -86,7 +91,7 @@ pub struct TabItemRemoval<T> {
 /// Spacers are `flex-grow: 1` elements that absorb available space in the tab
 /// bar. Insert them before, after, or between tabs to control alignment.
 #[derive(ViewChild)]
-struct TabSpacer<V: View> {
+pub struct TabSpacer<V: View> {
     #[child]
     li: V::Element,
 }
@@ -101,7 +106,7 @@ impl<V: View> TabSpacer<V> {
 }
 
 /// An entry in the [`TabList`] — either a tab item or a spacer.
-enum TabEntry<V: View, T> {
+pub enum TabEntry<V: View, T> {
     Item(TabListItem<V, T>),
     Spacer(TabSpacer<V>),
 }
@@ -591,6 +596,15 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
             let pane = self.panes.get_pane(p_id)?;
             Some((t_id, tab, pane))
         })
+    }
+
+    /// Iterate over the raw [`TabEntry`]s in this panel's tab list.
+    ///
+    /// Spacers are included as [`TabEntry::Spacer`]; tab items as
+    /// [`TabEntry::Item`] (from which [`TabListItem::is_active`] and
+    /// [`TabListItem::id`] are reachable).
+    pub fn entries(&self) -> impl Iterator<Item = &TabEntry<V, T>> {
+        self.tabs.entries.iter()
     }
 }
 
