@@ -4,8 +4,6 @@
 //! striped/animated styles.
 use mogwai::prelude::*;
 
-use super::Flavor;
-
 struct ProgressState {
     value: u8,
     striped: bool,
@@ -76,117 +74,5 @@ impl<V: View> Progress<V> {
                 s.striped = true;
             }
         });
-    }
-}
-
-#[cfg(feature = "library")]
-pub mod library {
-    use std::pin::Pin;
-
-    use futures_lite::{FutureExt, Stream, StreamExt};
-
-    use crate::components::{
-        button::Button,
-        button_group::{ButtonGroup, ButtonGroupEvent},
-    };
-
-    use super::*;
-
-    #[derive(ViewChild)]
-    pub struct ProgressLibraryItem<V: View> {
-        #[child]
-        pub wrapper: V::Element,
-        progress: Progress<V>,
-        control_group: ButtonGroup<V>,
-        value: u8,
-        is_striped: bool,
-        is_animated: bool,
-        timer: Pin<Box<dyn Stream<Item = ()>>>,
-    }
-
-    impl<V: View> Default for ProgressLibraryItem<V> {
-        fn default() -> Self {
-            let progress = Progress::new(25);
-            let mut control_group = ButtonGroup::<V>::default();
-            control_group.extend([
-                Button::new("+10", Some(Flavor::Primary)),
-                Button::new("-10", Some(Flavor::Primary)),
-                Button::new("Toggle striped", Some(Flavor::Secondary)),
-                Button::new("Toggle animated", Some(Flavor::Secondary)),
-            ]);
-            for button in control_group.iter_mut() {
-                button.set_has_icon(false);
-            }
-
-            rsx! {
-                let wrapper = div() {
-                    div(class = "mb-3") {
-                        {&progress}
-                    }
-                    {&control_group}
-                }
-            }
-
-            let timer = Box::pin(futures_lite::stream::unfold((), |()| async {
-                mogwai::time::wait_millis(500).await;
-                Some(((), ()))
-            }));
-
-            Self {
-                wrapper,
-                progress,
-                control_group,
-                value: 25,
-                is_striped: false,
-                is_animated: false,
-                timer,
-            }
-        }
-    }
-
-    impl<V: View> StepMut for ProgressLibraryItem<V> {
-        type Output = ();
-        async fn step_mut(&mut self) {
-            #[derive(Debug)]
-            enum Action {
-                Control(usize),
-                Tick,
-            }
-            let control = async {
-                let ButtonGroupEvent { index, event: _ } = self.control_group.step().await;
-                Action::Control(index)
-            };
-            let tick = async {
-                self.timer.next().await;
-                Action::Tick
-            };
-            let event = control.or(tick).await;
-            log::info!("event: {event:#?}");
-
-            match event {
-                Action::Control(0) => {
-                    self.value = self.value.saturating_add(10).min(100);
-                    self.progress.set_value(self.value);
-                }
-                Action::Control(1) => {
-                    self.value = self.value.saturating_sub(10);
-                    self.progress.set_value(self.value);
-                }
-                Action::Control(2) => {
-                    self.is_striped = !self.is_striped;
-                    self.progress.set_striped(self.is_striped);
-                }
-                Action::Control(3) => {
-                    self.is_animated = !self.is_animated;
-                    self.progress.set_animated(self.is_animated);
-                }
-                Action::Control(_) => unreachable!(),
-                Action::Tick => {
-                    // Auto-increment wrapping around
-                    self.value = if self.value >= 100 { 0 } else { self.value + 1 };
-                    self.progress.set_value(self.value);
-                }
-            }
-        }
     }
 }
