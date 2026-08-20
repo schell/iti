@@ -23,7 +23,7 @@
 //! - `impl Form for LoginForm` — associates the data struct with its component.
 //! - `impl<V: View> FormComponent<V> for LoginFormComponent<V>` — provides
 //!   [`FormComponent::try_value`] for collecting the data and
-//!   [`StepMut`](mogwai::step::StepMut) for the pull-based event loop.
+//!   [`StepMut`] for the pull-based event loop.
 //!
 //! ## Driving a form
 //!

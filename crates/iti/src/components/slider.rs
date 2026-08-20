@@ -16,7 +16,7 @@ pub struct SliderEvent<V: View> {
 /// A range slider (`<input type="range">`).
 ///
 /// Provides a configurable numeric slider with `f64` values and an async
-/// [`step`](Slider::step) method that yields [`SliderEvent`]s on user input.
+/// [`step_mut`](Slider::step_mut) method that yields [`SliderEvent`]s on user input.
 #[derive(ViewChild, ViewProperties)]
 pub struct Slider<V: View> {
     #[child]

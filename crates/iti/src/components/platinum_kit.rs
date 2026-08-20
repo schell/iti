@@ -25,7 +25,7 @@ use crate::components::progress::Progress;
 use crate::components::section::{Section, SectionEntry, SectionStyle, StaticContent};
 use crate::components::select::Select;
 use crate::components::slider::SliderWithTicks;
-use crate::components::tab::{TabAlignment, TabList, TabListEvent, TabPanel};
+use crate::components::tab::{TabAlignment, TabListEvent, TabPanel};
 use crate::components::table::library::TableLibraryItem;
 use crate::components::text_input::{TextInput, TextInputType};
 use crate::components::textarea::Textarea;
@@ -1247,55 +1247,66 @@ fn make_tab_panel<V: View>(items: &[(&str, &[&str])]) -> TabPanel<V, V::Element,
     panel
 }
 
+/// A tab panel whose panes are themselves tab panels.
+type NestedTabPanel<V> =
+    TabPanel<V, <V as View>::Element, TabPanel<V, <V as View>::Element, <V as View>::Element>>;
+
 /// Tabs section content for the platinum kit.
 #[derive(ViewChild)]
 pub struct PlatinumKitTabs<V: View> {
     #[child]
     wrapper: V::Element,
-    tab_list: TabList<V, V::Element>,
-    tab_panels: Vec<TabPanel<V, V::Element, V::Element>>,
+    /// Outer panel whose tabs select which inner panel is visible.
+    /// Each pane is an inner `TabPanel` demo.
+    outer_panel: NestedTabPanel<V>,
 }
 
 impl<V: View> StepMut for PlatinumKitTabs<V> {
     type Output = ();
     async fn step_mut(&mut self) {
-        enum StepEv<V: View> {
-            TabList(TabListEvent<V, V::Element>),
-            TabPanel(TabListEvent<V, V::Element>),
-        }
-        let mut futs = vec![];
-        futs.push(self.tab_list.step().map(StepEv::TabList).boxed_local());
-        for panel in self.tab_panels.iter_mut() {
-            futs.push(panel.step_mut().map(StepEv::TabPanel).boxed_local());
-        }
-        match mogwai::future::race_all(futs).await {
-            StepEv::TabList(TabListEvent::ItemClicked { id, .. }) => {
-                self.tab_list.select_by_id(&id);
+        // Race the outer panel's tab clicks against all inner panels' tab clicks.
+        // The closure steps each inner panel and races that against its own
+        // tab's click event.
+        let ev = self
+            .outer_panel
+            .step_with_mut(|entry| {
+                let on_click = entry.tab.on_click();
+                let id = entry.tab.id().clone();
+                let inner = &mut entry.pane;
+                async {
+                    let outer_click = async {
+                        let event = on_click.next().await;
+                        OuterEv::OuterClick(TabListEvent::ItemClicked {
+                            id,
+                            index: 0,
+                            event,
+                        })
+                    };
+                    let inner_click = async {
+                        let ev = inner.step_mut().await;
+                        OuterEv::InnerClick(ev)
+                    };
+                    outer_click.or(inner_click).await
+                }
+                .boxed_local()
+            })
+            .await;
+        match ev {
+            OuterEv::OuterClick(TabListEvent::ItemClicked { id, .. }) => {
+                self.outer_panel.select(&id);
             }
-            StepEv::TabPanel(_) => {}
+            OuterEv::InnerClick(_) => {}
         }
     }
 }
 
+enum OuterEv<V: View, T> {
+    OuterClick(TabListEvent<V, T>),
+    InnerClick(TabListEvent<V, T>),
+}
+
 /// Build the "Tabs" section with multiple tab panel alignment demos.
 fn build_tabs<V: View>() -> Section<V, SectionTop<V>, PlatinumKitTabs<V>> {
-    let mut tab_panels: Vec<TabPanel<V, V::Element, V::Element>> = vec![];
-
-    // ── Standalone TabList ──
-    let mut list = TabList::default();
-    list.push({
-        rsx! { let item = span() { "Mammals" } }
-        item
-    });
-    list.push({
-        rsx! { let item = span() { "Birds" } }
-        item
-    });
-    list.push({
-        rsx! { let item = span() { "Rocks" } }
-        item
-    });
-
     // ── TabPanel: no alignment (tabs fill naturally) ──
     let panel_default = make_tab_panel::<V>(&[
         (
@@ -1357,40 +1368,31 @@ fn build_tabs<V: View>() -> Section<V, SectionTop<V>, PlatinumKitTabs<V>> {
         panel_split.insert_spacer_after(&edit_id);
     }
 
+    // ── Outer TabPanel: each pane is an inner TabPanel demo ──
+    rsx! { let outer_default_pane = p() { "Select a tab." } }
+    let outer_default = TabPanel::<V, V::Element, V::Element>::new(outer_default_pane);
+    let mut outer_panel: NestedTabPanel<V> = TabPanel::new(outer_default);
+
+    rsx! { let tab = span() { "No alignment" } }
+    outer_panel.push(tab, panel_default);
+
+    rsx! { let tab = span() { "Start alignment" } }
+    outer_panel.push(tab, panel_start);
+
+    rsx! { let tab = span() { "Center alignment" } }
+    outer_panel.push(tab, panel_center);
+
+    rsx! { let tab = span() { "End alignment" } }
+    outer_panel.push(tab, panel_end);
+
+    rsx! { let tab = span() { "Split groups" } }
+    outer_panel.push(tab, panel_split);
+
     rsx! {
         let wrapper = div(class = "container-fluid") {
-            div(class = "row mb-4") {
-                p() { "Standalone TabList:" }
-                {&list}
-            }
-            div(class = "row mb-4") {
-                p() { "No alignment (tabs fill naturally):" }
-                {&panel_default}
-            }
-            div(class = "row mb-4") {
-                p() { "Start alignment:" }
-                {&panel_start}
-            }
-            div(class = "row mb-4") {
-                p() { "Center alignment:" }
-                {&panel_center}
-            }
-            div(class = "row mb-4") {
-                p() { "End alignment:" }
-                {&panel_end}
-            }
-            div(class = "row mb-4") {
-                p() { "Split groups (spacer between Edit and View):" }
-                {&panel_split}
-            }
+            {&outer_panel}
         }
     }
-
-    tab_panels.push(panel_default);
-    tab_panels.push(panel_start);
-    tab_panels.push(panel_center);
-    tab_panels.push(panel_end);
-    tab_panels.push(panel_split);
 
     Section::new(
         SectionStyle::Titled,
@@ -1398,8 +1400,7 @@ fn build_tabs<V: View>() -> Section<V, SectionTop<V>, PlatinumKitTabs<V>> {
         SectionTop::new("Tabs"),
         PlatinumKitTabs {
             wrapper,
-            tab_list: list,
-            tab_panels,
+            outer_panel,
         },
     )
 }

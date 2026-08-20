@@ -1,6 +1,4 @@
-//! Platinum kit sandbox for [`Panes`] in retain mode.
-use std::collections::HashMap;
-
+//! Platinum kit sandbox for retained panes with closable tabs.
 use futures_lite::FutureExt;
 use mogwai::{prelude::*, web::WebElement};
 
@@ -8,8 +6,7 @@ use crate::{
     components::{
         button::Button,
         icon::{Icon, IconGlyph, IconSize, IconStyle},
-        pane::Panes,
-        tab::{TabItemRemoval, TabList, TabListEvent},
+        tab::{TabItemRemoval, TabListEvent, TabPanel},
     },
     id::Id,
 };
@@ -22,9 +19,7 @@ use crate::{
 pub struct PlatinumKitPanes<V: View> {
     #[child]
     div: V::Element,
-    tabs: TabList<V, V::Element>,
-    panes: Panes<V, V::Element>,
-    tab_ids_to_pane_ids: HashMap<Id<V::Element>, Id<V::Element>>,
+    tab_panel: TabPanel<V, V::Element, V::Element>,
     new_item_input: V::Element,
     new_item_button: Button<V>,
     close_icons: Vec<(Id<V::Element>, Icon<V>)>,
@@ -43,7 +38,6 @@ impl<V: View> Default for PlatinumKitPanes<V> {
         };
         rsx! {
             let div = div() {
-                let list = {TabList::default()}
                 let pane_wrapper = div() {}
 
                 // TODO: use forms here when they are ready
@@ -135,69 +129,41 @@ impl<V: View> Default for PlatinumKitPanes<V> {
             }
         }
 
-        let panes = Panes::new_retained(pane_wrapper, default_pane);
+        let tab_panel = TabPanel::new(default_pane);
+        // Move the tab_panel's window into our div by appending it to
+        // pane_wrapper. The TabPanel was constructed with its own window div,
+        // so we need to append it as a child.
+        pane_wrapper.append_child(&tab_panel);
 
         let mut item = Self {
             div,
-            tabs: list,
-            panes,
+            tab_panel,
             timer_text,
             seconds: 0,
             new_item_input,
             new_item_button,
             close_icons: vec![],
-            tab_ids_to_pane_ids: Default::default(),
         };
 
-        let (tab_a_id, _) = item.add(
-            {
-                rsx! { let s = span() { "Scrollable A" } }
-                s
-            },
-            pane_a,
-        );
+        rsx! { let tab_a = span() { "Scrollable A" } }
+        let tab_a_id = item.tab_panel.push(tab_a, pane_a);
 
-        let _ = item.add(
-            {
-                rsx! { let s = span() { "Scrollable B" } }
-                s
-            },
-            pane_b,
-        );
+        rsx! { let tab_b = span() { "Scrollable B" } }
+        let _ = item.tab_panel.push(tab_b, pane_b);
 
-        let _ = item.add(
-            {
-                rsx! { let s = span() { "Timer" } }
-                s
-            },
-            pane_timer,
-        );
+        rsx! { let tab_timer = span() { "Timer" } }
+        let _ = item.tab_panel.push(tab_timer, pane_timer);
 
         // Show the first pane by default.
-        item.select(&tab_a_id);
+        item.tab_panel.select(&tab_a_id);
 
         item
     }
 }
 
 impl<V: View> PlatinumKitPanes<V> {
-    fn add(
-        &mut self,
-        tab_item: V::Element,
-        pane_item: V::Element,
-    ) -> (Id<V::Element>, Id<V::Element>) {
-        let tab_id = self.tabs.push(tab_item);
-        let pane_id = self.panes.add_pane(pane_item);
-        self.tab_ids_to_pane_ids
-            .insert(tab_id.clone(), pane_id.clone());
-        (tab_id, pane_id)
-    }
-
     fn select(&mut self, id: &Id<V::Element>) {
-        self.tabs.select_by_id(id);
-        if let Some(id) = self.tab_ids_to_pane_ids.get(id) {
-            let _ = self.panes.select(id);
-        }
+        self.tab_panel.select(id);
     }
 }
 
@@ -215,7 +181,7 @@ impl<V: View> StepMut for PlatinumKitPanes<V> {
             Ev::Timer
         };
         let list_fut = async {
-            let event = self.tabs.step().await;
+            let event = self.tab_panel.step_mut().await;
             Ev::Tab(event)
         };
         let new_tab_fut = async {
@@ -269,27 +235,30 @@ impl<V: View> StepMut for PlatinumKitPanes<V> {
                         }
                     }
                 }
-                let (tab_id, pane_id) = self.add(item, pane);
+                let tab_id = self.tab_panel.push(item, pane);
                 self.close_icons.push((tab_id.clone(), close_icon));
 
-                self.tabs.select_by_id(&tab_id);
-                let _ = self.panes.select(&pane_id);
+                self.tab_panel.select(&tab_id);
             }
             Ev::Remove(id) => {
-                if let Some(TabItemRemoval {
-                    id: _,
-                    index,
-                    item: _,
-                    was_selected: true,
-                }) = self.tabs.remove_by_id(&id)
+                if let Some((
+                    TabItemRemoval {
+                        id: _,
+                        index,
+                        item: _,
+                        was_selected: true,
+                    },
+                    _pane,
+                )) = self.tab_panel.remove_by_id(&id)
                 {
-                    if let Some(pane_id) = self.tab_ids_to_pane_ids.remove(&id) {
-                        let _ = self.panes.remove_by_id(&pane_id);
+                    // Select the nearest remaining tab.
+                    let count = self.tab_panel.len();
+                    if count > 0 {
+                        let selected_index = index.min(count - 1);
+                        if let Some(tab_id) = self.tab_panel.id_of_tab(selected_index) {
+                            self.select(&tab_id);
+                        }
                     }
-
-                    let selected_index = index.min(self.tab_ids_to_pane_ids.len() - 1);
-                    let id = self.tabs.get(selected_index).unwrap().id().clone();
-                    self.select(&id);
                 }
             }
         }

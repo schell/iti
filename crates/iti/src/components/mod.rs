@@ -78,8 +78,8 @@ impl Flavor {
 
 /// Trait for components that support HTML5 constraint validation.
 ///
-/// Implemented by form input components ([`TextInput`](text_input::TextInput),
-/// [`Textarea`](textarea::Textarea)) so that [`FormGroup`](form_group::FormGroup)
+/// Implemented by form input components ([`TextInput`],
+/// [`Textarea`]) so that [`FormGroup`]
 /// can query validation state and associate labels, help text, and error
 /// messages via ARIA attributes.
 pub trait Validatable<V: View> {
@@ -102,13 +102,13 @@ pub trait Validatable<V: View> {
 
     /// Set the input element's `id` attribute.
     ///
-    /// Used by [`FormGroup`](form_group::FormGroup) to associate labels with inputs
+    /// Used by [`FormGroup`] to associate labels with inputs
     /// via the `for` attribute.
     fn set_id(&self, id: impl AsRef<str>);
 
     /// Set the input's `aria-describedby` attribute.
     ///
-    /// Used by [`FormGroup`](form_group::FormGroup) to associate error messages
+    /// Used by [`FormGroup`] to associate error messages
     /// and help text with the input for screen readers.
     fn set_aria_describedby(&self, ids: impl AsRef<str>);
 }
