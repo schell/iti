@@ -1,5 +1,7 @@
 //! Reusable UI components with a Mac OS 9 Platinum aesthetic.
 
+use mogwai::prelude::View;
+
 pub mod alert;
 pub mod badge;
 pub mod button;
@@ -7,6 +9,7 @@ pub mod button_group;
 pub mod card;
 pub mod checkbox;
 pub mod dropdown;
+pub mod form_group;
 pub mod icon;
 pub mod icon_classic;
 pub mod list;
@@ -22,8 +25,16 @@ pub mod shadow;
 pub mod slider;
 pub mod tab;
 pub mod table;
+pub mod text_input;
+pub mod textarea;
 pub mod title_bar;
 pub mod widget;
+
+// Re-export form-related components for use by the Form derive macro.
+pub use checkbox::Checkbox;
+pub use form_group::{FormGroup, LabelPlacement};
+pub use text_input::{TextInput, TextInputType};
+pub use textarea::Textarea;
 
 /// Contextual color variant.
 ///
@@ -63,4 +74,41 @@ impl Flavor {
             Flavor::Link => "link",
         }
     }
+}
+
+/// Trait for components that support HTML5 constraint validation.
+///
+/// Implemented by form input components ([`TextInput`](text_input::TextInput),
+/// [`Textarea`](textarea::Textarea)) so that [`FormGroup`](form_group::FormGroup)
+/// can query validation state and associate labels, help text, and error
+/// messages via ARIA attributes.
+pub trait Validatable<V: View> {
+    /// Check if the input's current value is valid.
+    ///
+    /// Uses the browser's native HTML5 constraint validation API.
+    fn is_valid(&self) -> bool;
+
+    /// Get the current validation error message, if any.
+    ///
+    /// Returns `None` if the input is valid, or `Some(message)` containing the
+    /// browser's native validation message.
+    fn validation_message(&self) -> Option<String>;
+
+    /// Check if validation has been triggered (i.e., user has interacted with the field).
+    ///
+    /// Typically set to `true` after the first blur event. Used to determine whether
+    /// validation feedback should be displayed.
+    fn validation_attempted(&self) -> bool;
+
+    /// Set the input element's `id` attribute.
+    ///
+    /// Used by [`FormGroup`](form_group::FormGroup) to associate labels with inputs
+    /// via the `for` attribute.
+    fn set_id(&self, id: impl AsRef<str>);
+
+    /// Set the input's `aria-describedby` attribute.
+    ///
+    /// Used by [`FormGroup`](form_group::FormGroup) to associate error messages
+    /// and help text with the input for screen readers.
+    fn set_aria_describedby(&self, ids: impl AsRef<str>);
 }

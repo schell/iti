@@ -54,9 +54,7 @@ impl<V: View> Button<V> {
                 style:cursor = "pointer",
                 on:click = on_click,
             ) {
-                let icon_wrapper = span() {
-                    {&icon}
-                }
+                let icon_wrapper = span() { }
                 span() {
                     {text(t => t)}
                 }
@@ -80,7 +78,7 @@ impl<V: View> Button<V> {
             spinner_attached: false,
             icon,
             icon_wrapper,
-            has_icon: true,
+            has_icon: false,
         }
     }
 

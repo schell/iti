@@ -15,6 +15,7 @@ use crate::components::badge::Badge;
 use crate::components::button::{Button, PrimaryButton};
 use crate::components::checkbox::Checkbox;
 use crate::components::dropdown::{Dropdown, DropdownEvent};
+use crate::components::form_group::FormGroup;
 use crate::components::icon::{Icon, IconGlyph, IconSize};
 use crate::components::icon_classic::{
     ApplicationsIcon, ControlPanelIcon, ControlStripIcon, FolderIcon, IconClassic,
@@ -26,8 +27,12 @@ use crate::components::select::Select;
 use crate::components::slider::SliderWithTicks;
 use crate::components::tab::{TabAlignment, TabList, TabListEvent, TabPanel};
 use crate::components::table::library::TableLibraryItem;
+use crate::components::text_input::{TextInput, TextInputType};
+use crate::components::textarea::Textarea;
 use crate::components::title_bar::TitleBar;
 use crate::components::Flavor;
+use crate::form_traits::FormComponent;
+use crate::Form;
 
 pub mod button_groups;
 pub mod checkboxes_and_radios;
@@ -386,57 +391,54 @@ fn build_panels_and_colors<V: View>() -> Section<V, SectionTop<V>, StaticContent
 
 /// Build the "Buttons" section with all button variants.
 fn build_buttons<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
-    let mut btn_normal = Button::new("Button", None);
-    btn_normal.set_has_icon(false);
+    let btn_normal = Button::new("Button", None);
 
-    let mut btn_disabled = Button::new("Disabled", None);
-    btn_disabled.set_has_icon(false);
+    let btn_disabled = Button::new("Disabled", None);
     btn_disabled.disable();
 
-    let mut primary_normal = PrimaryButton::new("OK", None);
-    primary_normal.set_has_icon(false);
+    let primary_normal = PrimaryButton::new("OK", None);
 
-    let mut primary_disabled = PrimaryButton::new("Disabled", None);
-    primary_disabled.set_has_icon(false);
+    let primary_disabled = PrimaryButton::new("Disabled", None);
     primary_disabled.disable();
 
-    let mut btn_success = Button::new("Success", Some(Flavor::Success));
-    btn_success.set_has_icon(false);
+    let btn_success = Button::new("Success", Some(Flavor::Success));
+    let btn_danger = Button::new("Danger", Some(Flavor::Danger));
+    let btn_warning = Button::new("Warning", Some(Flavor::Warning));
+    let btn_info = Button::new("Info", Some(Flavor::Info));
 
-    let mut btn_danger = Button::new("Danger", Some(Flavor::Danger));
-    btn_danger.set_has_icon(false);
-
-    let mut btn_warning = Button::new("Warning", Some(Flavor::Warning));
-    btn_warning.set_has_icon(false);
-
-    let mut btn_info = Button::new("Info", Some(Flavor::Info));
-    btn_info.set_has_icon(false);
-
-    let btn_add = Button::new("Add", None);
+    let mut btn_add = Button::new("Add", None);
+    btn_add.set_has_icon(true);
 
     let mut btn_delete = Button::new("Delete", None);
+    btn_delete.set_has_icon(true);
     btn_delete.get_icon_mut().set_glyph(IconGlyph::Trash);
 
     let mut btn_edit = Button::new("Edit", None);
+    btn_edit.set_has_icon(true);
     btn_edit.get_icon_mut().set_glyph(IconGlyph::Pen);
 
     let mut btn_search = Button::new("Search", None);
+    btn_search.set_has_icon(true);
     btn_search
         .get_icon_mut()
         .set_glyph(IconGlyph::MagnifyingGlass);
 
     let mut icon_plus = Button::new("", None);
+    icon_plus.set_has_icon(true);
     icon_plus.get_icon_mut().remove_class("me-1");
 
     let mut icon_trash = Button::new("", None);
+    icon_trash.set_has_icon(true);
     icon_trash.get_icon_mut().set_glyph(IconGlyph::Trash);
     icon_trash.get_icon_mut().remove_class("me-1");
 
     let mut icon_edit = Button::new("", None);
+    icon_edit.set_has_icon(true);
     icon_edit.get_icon_mut().set_glyph(IconGlyph::Pen);
     icon_edit.get_icon_mut().remove_class("me-1");
 
     let mut icon_search = Button::new("", None);
+    icon_search.set_has_icon(true);
     icon_search
         .get_icon_mut()
         .set_glyph(IconGlyph::MagnifyingGlass);
@@ -446,6 +448,7 @@ fn build_buttons<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
         .into_iter()
         .map(|g| {
             let mut icon = Button::new("", None);
+            icon.set_has_icon(true);
             icon.get_icon_mut().set_glyph(g);
             icon.add_class("btn-square");
             icon
@@ -558,11 +561,7 @@ fn build_progress_bars<V: View>() -> Section<V, SectionTop<V>, ProgressBars<V>> 
                 let progress = {Progress::new(0)}
             }
 
-            let zero_button = {{
-                let mut b = Button::new("Set to 0%", None);
-                b.set_has_icon(false);
-                b
-            }}
+            let zero_button = {{ Button::new("Set to 0%", None) }}
         }
     }
 
@@ -724,143 +723,377 @@ fn build_dropdowns<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
     )
 }
 
-/// Build the "Text Inputs" section with input variants and textarea.
+/// Build the "Text Inputs" section using TextInput and Textarea components.
 fn build_text_inputs<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
+    // Default text input
+    let default_input = TextInput::<V>::new(TextInputType::Text, "");
+    default_input.set_placeholder("Enter text");
+
+    // With placeholder
+    let placeholder_input = TextInput::<V>::new(TextInputType::Text, "");
+    placeholder_input.set_placeholder("Enter your name...");
+
+    // Email (required, with validation)
+    let email_input = TextInput::<V>::new(TextInputType::Email, "");
+    email_input.set_placeholder("user@example.com");
+    email_input.set_required(true);
+
+    // With help text — wrap in a FormGroup
+    let username_input = TextInput::<V>::new(TextInputType::Text, "");
+    let mut username_group = FormGroup::new("Username", username_input);
+    username_group.set_help_text("Choose a unique username.");
+
+    // Disabled
+    let disabled_input = TextInput::<V>::new(TextInputType::Text, "Can't edit this");
+    disabled_input.disable();
+
+    // Read-only
+    let readonly_input = TextInput::<V>::new(TextInputType::Text, "Read-only value");
+    readonly_input.set_readonly(true);
+
+    // Sizes
+    let mut small_input = TextInput::<V>::new(TextInputType::Text, "");
+    small_input.set_placeholder("Small");
+    small_input.set_additional_classes("form-control-sm");
+
+    let default_size_input = TextInput::<V>::new(TextInputType::Text, "");
+    default_size_input.set_placeholder("Default");
+
+    let mut large_input = TextInput::<V>::new(TextInputType::Text, "");
+    large_input.set_placeholder("Large");
+    large_input.set_additional_classes("form-control-lg");
+
+    // Input types
+    let password_input = TextInput::<V>::new(TextInputType::Password, "secret123");
+    let search_input = TextInput::<V>::new(TextInputType::Search, "");
+    search_input.set_placeholder("Search...");
+
+    // Textarea
+    let comments = Textarea::<V>::new("");
+    comments.set_placeholder("Enter your comments here...");
+    comments.set_rows(4);
+    let comments_group = FormGroup::new("Comments", comments);
+
     rsx! {
         let content = div(class = "d-flex flex-wrap gap-4 panel") {
-            // Default and placeholder
             div() {
                 p() { strong() { "Default" } }
-                input(type = "text", class = "form-control", style:width = "200px") {}
+                {&default_input}
             }
             div() {
                 p() { strong() { "With Placeholder" } }
-                input(
-                    type = "text",
-                    class = "form-control",
-                    style:width = "200px",
-                    placeholder = "Enter your name...",
-                ) {}
+                {&placeholder_input}
             }
 
-            // Label and help text
             div() {
-                p() { strong() { "With Label" } }
-                label(class = "form-label") { "Email Address" }
-                input(
-                    type = "email",
-                    class = "form-control",
-                    style:width = "200px",
-                    placeholder = "user@example.com",
-                ) {}
+                p() { strong() { "Email (Required)" } }
+                {&email_input}
             }
             div() {
                 p() { strong() { "With Help Text" } }
-                label(class = "form-label") { "Username" }
-                input(type = "text", class = "form-control", style:width = "200px") {}
-                div(class = "form-text") { "Choose a unique username." }
+                {&username_group}
             }
 
-            // Disabled and read-only
             div() {
                 p() { strong() { "Disabled" } }
-                input(
-                    type = "text",
-                    class = "form-control",
-                    style:width = "200px",
-                    value = "Can't edit this",
-                    disabled = "",
-                ) {}
+                {&disabled_input}
             }
             div() {
                 p() { strong() { "Read-only" } }
-                input(
-                    type = "text",
-                    class = "form-control",
-                    style:width = "200px",
-                    value = "Read-only value",
-                    readonly = "",
-                ) {}
+                {&readonly_input}
             }
 
-            // Sizes
             div() {
                 p() { strong() { "Sizes" } }
                 div(class = "d-flex gap-2 align-items-center flex-wrap") {
-                    input(
-                        type = "text",
-                        class = "form-control form-control-sm",
-                        style:width = "120px",
-                        placeholder = "Small",
-                    ) {}
-                    input(
-                        type = "text",
-                        class = "form-control",
-                        style:width = "150px",
-                        placeholder = "Default",
-                    ) {}
-                    input(
-                        type = "text",
-                        class = "form-control form-control-lg",
-                        style:width = "180px",
-                        placeholder = "Large",
-                    ) {}
+                    {&small_input}
+                    {&default_size_input}
+                    {&large_input}
                 }
             }
 
-            // Input types
             div() {
                 p() { strong() { "Input Types" } }
                 div(class = "d-flex flex-column gap-2") {
                     div() {
                         label(class = "form-label") { "Password" }
-                        input(
-                            type = "password",
-                            class = "form-control",
-                            style:width = "200px",
-                            value = "secret123",
-                        ) {}
-                    }
-                    div() {
-                        label(class = "form-label") { "Number" }
-                        input(
-                            type = "number",
-                            class = "form-control",
-                            style:width = "200px",
-                            value = "42",
-                            min = "0",
-                            max = "100",
-                        ) {}
+                        {&password_input}
                     }
                     div() {
                         label(class = "form-label") { "Search" }
-                        input(
-                            type = "search",
-                            class = "form-control",
-                            style:width = "200px",
-                            placeholder = "Search...",
-                        ) {}
+                        {&search_input}
                     }
                 }
             }
 
-            // Textarea
             div() {
                 p() { strong() { "Textarea" } }
-                label(class = "form-label") { "Comments" }
-                textarea(
-                    class = "form-control",
-                    style:width = "300px",
-                    rows = "4",
-                    placeholder = "Enter your comments here...",
-                ) {}
+                {&comments_group}
             }
         }
     }
+
+    // Drive interactive inputs so validation feedback works on blur.
+    wasm_bindgen_futures::spawn_local(async move {
+        use futures_lite::FutureExt;
+        use mogwai::future::MogwaiFutureExt;
+
+        let mut email_input = email_input;
+        let mut username_group = username_group;
+        let mut comments_group = comments_group;
+
+        loop {
+            let email_fut = email_input.step_mut().map(|_| 0u8);
+            let username_fut = username_group.child_mut().step_mut().map(|_| 1u8);
+            let comments_fut = comments_group.child_mut().step_mut().map(|_| 2u8);
+
+            email_fut.or(username_fut.or(comments_fut)).await;
+
+            username_group.update_validation();
+            comments_group.update_validation();
+        }
+    });
+
     Section::new(
         SectionStyle::Titled,
         crate::color::PURPLE,
         SectionTop::new("Text Inputs"),
+        StaticContent::new(content),
+    )
+}
+
+/// Login form struct — the derive macro generates `LoginFormComponent<V>`.
+#[allow(dead_code)]
+#[derive(Debug, Form)]
+pub struct LoginForm {
+    #[form(input_type = "email")]
+    #[form(required)]
+    #[form(placeholder = "user@example.com")]
+    #[form(help = "We never share your email.")]
+    email: String,
+
+    #[form(input_type = "password")]
+    #[form(required)]
+    #[form(placeholder = "At least 8 characters")]
+    #[form(min_length = 8)]
+    password: String,
+
+    #[form(label = "Remember me")]
+    remember_me: bool,
+}
+
+/// Contact form struct — the derive macro generates `ContactFormComponent<V>`.
+#[allow(dead_code)]
+#[derive(Debug, Form)]
+pub struct ContactForm {
+    #[form(required)]
+    #[form(placeholder = "Jane Doe")]
+    #[form(label_placement = "inline")]
+    full_name: String,
+
+    #[form(input_type = "url")]
+    #[form(placeholder = "https://example.com")]
+    #[form(label_placement = "inline")]
+    website: String,
+
+    #[form(input_type = "textarea")]
+    #[form(placeholder = "Tell us what you think...")]
+    comments: String,
+}
+
+/// Build the "Forms" section demonstrating the Form derive macro.
+fn build_forms<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
+    let login_form = LoginFormComponent::<V>::default();
+    let contact_form = ContactFormComponent::<V>::default();
+    let login_submit = Button::<V>::new("Sign In", None);
+    let contact_submit = Button::<V>::new("Send", None);
+
+    rsx! {
+        let content = div(class = "d-flex flex-wrap gap-4") {
+            // Explainer (bare on the lavender background, no panel)
+            div(class = "mb-2") {
+                p() {
+                    strong() { "Your form is a Rust struct." }
+                }
+                p() {
+                    "With iti, you define a plain struct, annotate it with "
+                    code() { "#[derive(Form)]" }
+                    ", and get a fully-functional form component at compile time, "
+                    "no hand-written HTML required. Each field becomes a labeled "
+                    "input with validation, help text, and ARIA wiring for free."
+                }
+                p() {
+                    strong() { "Type-safe by construction." }
+                    " Field types drive input kinds: "
+                    code() { "String" }
+                    " becomes a text input, "
+                    code() { "bool" }
+                    " becomes a checkbox, and "
+                    code() { "#[form(input_type = \"email\")]" }
+                    " opts into browser-native validation. The compiler catches "
+                    "mismatches before they reach the browser."
+                }
+                p() {
+                    strong() { "Validation is real." }
+                    " FormGroup wraps every field with HTML5 constraint validation "
+                    "(required, min length, pattern, email format) and surfaces "
+                    "browser-native error messages on blur, all driven by a "
+                    "pull-based async event loop. No callbacks, no channels, "
+                    "no hidden state."
+                }
+                p() {
+                    strong() { "Accessible out of the box." }
+                    " Labels, help text, and error messages are linked to their "
+                    "inputs via "
+                    code() { "for" }
+                    " and "
+                    code() { "aria-describedby" }
+                    " automatically. Screen readers get the full picture."
+                }
+            }
+
+            // Login form: struct definition + rendered form side by side
+            div(class = "d-flex flex-wrap gap-3") {
+                pre(
+                    class = "panel",
+                    style:max_width = "380px",
+                    style:overflow_x = "auto",
+                    style:font_size = "13px",
+                    style:margin = "0",
+                ) {
+                    r#"#[derive(Form)]
+struct LoginForm {
+    #[form(
+        input_type = "email",
+        required,
+        placeholder = "user@example.com",
+        help = "We'll never share your email."
+    )]
+    email: String,
+
+    #[form(
+        input_type = "password",
+        required,
+        placeholder = "At least 8 characters",
+        min_length = 8
+    )]
+    password: String,
+
+    #[form(label = "Remember me")]
+    remember_me: bool,
+}"#
+                }
+
+                div(class = "panel", style:max_width = "360px") {
+                    h4(class = "mb-3") { "Login Form" }
+                    {&login_form}
+                    {&login_submit}
+                }
+            }
+
+            // Contact form: struct definition + rendered form side by side
+            div(class = "d-flex flex-wrap gap-3") {
+                pre(
+                    class = "panel",
+                    style:max_width = "380px",
+                    style:overflow_x = "auto",
+                    style:font_size = "13px",
+                    style:margin = "0",
+                ) {
+                    r#"#[derive(Form)]
+struct ContactForm {
+    #[form(
+        required,
+        placeholder = "Jane Doe",
+        label_placement = "inline"
+    )]
+    full_name: String,
+
+    #[form(
+        input_type = "url",
+        placeholder = "https://example.com",
+        label_placement = "inline"
+    )]
+    website: String,
+
+    #[form(
+        input_type = "textarea",
+        placeholder = "Tell us what you think..."
+    )]
+    comments: String,
+}"#
+                }
+
+                div(class = "panel", style:max_width = "360px") {
+                    h4(class = "mb-3") { "Contact Form" }
+                    {&contact_form}
+                    {&contact_submit}
+                }
+            }
+        }
+    }
+
+    // Drive the form event loops. Each form races field events against its
+    // submit button click. On submit, call value() to get the constructed
+    // struct (or a FormError if validation fails).
+    wasm_bindgen_futures::spawn_local(async move {
+        use mogwai::step::{Step, StepMut};
+
+        let mut login_form = login_form;
+        let login_submit = login_submit;
+        let mut contact_form = contact_form;
+        let contact_submit = contact_submit;
+
+        loop {
+            use mogwai::future::MogwaiFutureExt;
+
+            enum FormsAction {
+                LoginField,
+                LoginSubmit,
+                ContactField,
+                ContactSubmit,
+            }
+
+            let login_field = login_form
+                .step_mut()
+                .map(|_| FormsAction::LoginField)
+                .boxed_local();
+            let login_btn = login_submit
+                .step()
+                .map(|_| FormsAction::LoginSubmit)
+                .boxed_local();
+            let contact_field = contact_form
+                .step_mut()
+                .map(|_| FormsAction::ContactField)
+                .boxed_local();
+            let contact_btn = contact_submit
+                .step()
+                .map(|_| FormsAction::ContactSubmit)
+                .boxed_local();
+
+            let event =
+                mogwai::future::race_all([login_field, login_btn, contact_field, contact_btn])
+                    .await;
+
+            match event {
+                FormsAction::LoginField => {}
+                FormsAction::LoginSubmit => match login_form.try_value() {
+                    Ok(data) => log::info!("Login form submitted: {data:?}"),
+                    Err(errors) => log::info!("Login form invalid: {errors:?}"),
+                },
+                FormsAction::ContactField => {}
+                FormsAction::ContactSubmit => match contact_form.try_value() {
+                    Ok(data) => log::info!("Contact form submitted: {data:?}"),
+                    Err(errors) => log::info!("Contact form invalid: {errors:?}"),
+                },
+            }
+        }
+    });
+
+    Section::new(
+        SectionStyle::Titled,
+        crate::color::PURPLE,
+        SectionTop::new("Forms"),
         StaticContent::new(content),
     )
 }
@@ -1414,6 +1647,7 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         let selects = add_section(Box::new(build_selects::<V>()));
         let dropdowns = add_section(Box::new(build_dropdowns::<V>()));
         let text_inputs = add_section(Box::new(build_text_inputs::<V>()));
+        let forms = add_section(Box::new(build_forms::<V>()));
         let alerts = add_section(Box::new(build_alerts::<V>()));
         let flush_alerts = add_section(Box::new(build_flush_alerts::<V>()));
         let badges = add_section(Box::new(build_badges::<V>()));
@@ -1460,6 +1694,9 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
                     }
                     div(class = "col-auto") {
                         {&text_inputs}
+                    }
+                    div(class = "col-auto") {
+                        {&forms}
                     }
                     div(class = "col-auto") {
                         {&alerts}

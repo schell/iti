@@ -17,6 +17,7 @@ console_error_panic_hook.workspace = true
 console_log.workspace = true
 fern.workspace = true
 futures-lite.workspace = true
+iti-derive = { path = "../iti-derive" }
 js-sys.workspace = true
 log.workspace = true
 mogwai.workspace = true
