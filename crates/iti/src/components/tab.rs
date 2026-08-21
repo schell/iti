@@ -9,6 +9,19 @@
 //! future-race, which is essential for closable detail-panel tabs and other
 //! interactive pane content.
 //!
+//! # Type containment
+//!
+//! ```text
+//! TabPanel<V, T, P>
+//! └── Vec<TabOrSpacer<V, T, P>>
+//!     ├── Item ── TabPanelEntry<V, T, P>
+//!     │            ├── TabListItem<V, T>  (the clickable tab header)
+//!     │            │             └── T    (tab label content)
+//!     │            └── TabbedPane<V, P>   (pane wrapper + slot div)
+//!     │                          └── P    (pane content)
+//!     └── Spacer ── TabSpacer<V, T>       (flex spacer, no tab/pane)
+//! ```
+//!
 //! Spacers ([`TabSpacer`]) can be interleaved with tabs to control alignment
 //! via [`TabPanel::set_alignment`] / [`TabAlignment`].
 //!
@@ -43,138 +56,10 @@ use mogwai::prelude::*;
 
 use crate::id::{Id, IdPool};
 
-/// A single tab within a [`TabPanel`].
-///
-/// Generic over the view type `V` and the tab's inner content type `T`. The
-/// `is_active` flag is a `Proxy<bool>` that reactively toggles the
-/// `nav-link active` CSS class on the underlying `<a>` element.
-///
-/// Each tab may optionally show a close button on the right side of the tab
-/// label. The close button uses the `title-bar-close` CSS class (the same
-/// Platinum close-box used by [`crate::components::title_bar::TitleBar`]).
-/// When clicked, it emits [`TabListEvent::CloseClicked`] from the owning
-/// [`TabPanel`].
-///
-/// Constructed internally by [`TabPanel::push`] / [`TabPanel::insert`]; users
-/// rarely call [`TabListItem::new`] directly.
-#[derive(ViewChild, ViewProperties)]
-pub struct TabListItem<V: View, T> {
-    #[child]
-    #[properties]
-    li: V::Element,
-    #[allow(dead_code)]
-    a: V::Element,
-    on_click: V::EventListener,
-    close_click: V::EventListener,
-    close_visible: Proxy<bool>,
-    closable: bool,
-    inner: T,
-    is_active: Proxy<bool>,
-    id: Id<T>,
-}
+mod item;
+mod tab;
 
-impl<V: View, T: ViewChild<V>> TabListItem<V, T> {
-    /// Create a new tab item with the given [`Id`] and inner content.
-    ///
-    /// The close button is hidden by default. Use
-    /// [`TabListItem::set_closable`] to show it.
-    ///
-    /// This is called by [`TabPanel::push`] / [`TabPanel::insert`]; you
-    /// usually don't construct `TabListItem` values yourself.
-    pub fn new(id: Id<T>, inner: T) -> Self {
-        let mut is_active = Proxy::new(false);
-        let mut close_visible = Proxy::new(false);
-        rsx! {
-            let li = li(class = "nav-item", style:cursor = "pointer") {
-                let a = a(
-                    class = is_active(active => if *active {
-                        "nav-link active"
-                    } else {
-                        "nav-link"
-                    }),
-                    on:click = on_click,
-                ) {
-                    button(
-                        type = "button",
-                        class = "title-bar-close nav-tab-close",
-                        style:display = close_visible(v => if *v {
-                            "inline-block"
-                        } else {
-                            "none"
-                        }),
-                        on:click = close_click,
-                    ) {}
-                    {&inner}
-                }
-            }
-        }
-
-        Self {
-            li,
-            a,
-            on_click,
-            close_click,
-            close_visible,
-            closable: false,
-            inner,
-            is_active,
-            id,
-        }
-    }
-
-    /// Returns a reference to the tab's inner content.
-    pub fn inner(&self) -> &T {
-        &self.inner
-    }
-
-    /// Returns a mutable reference to the tab's inner content.
-    pub fn inner_mut(&mut self) -> &mut T {
-        &mut self.inner
-    }
-
-    /// Get a reference to this item's [`Id`].
-    pub fn id(&self) -> &Id<T> {
-        &self.id
-    }
-
-    /// Whether this tab is currently the active (selected) tab.
-    pub fn is_active(&self) -> bool {
-        *self.is_active
-    }
-
-    /// Get a reference to this tab's click event listener.
-    pub fn on_click(&self) -> &V::EventListener {
-        &self.on_click
-    }
-
-    /// Get a reference to this tab's close-button click event listener.
-    pub fn close_listener(&self) -> &V::EventListener {
-        &self.close_click
-    }
-
-    /// Show or hide this tab's close button.
-    pub fn set_closable(&mut self, closable: bool) {
-        self.closable = closable;
-        self.close_visible.set(closable);
-    }
-
-    /// Whether this tab's close button is visible.
-    pub fn is_closable(&self) -> bool {
-        self.closable
-    }
-
-    /// Borrow the click listener, close listener, and inner content
-    /// simultaneously.
-    ///
-    /// Returns shared references to the tab's `on_click` and `close_click`
-    /// listeners and a mutable reference to the inner content `T`, allowing
-    /// all three to be used in the same scope (e.g. racing a tab-click future
-    /// and a close-click future against a pane-step future in a
-    /// `step_with_mut` closure).
-    pub fn split_borrows(&mut self) -> (&V::EventListener, &V::EventListener, &mut T) {
-        (&self.on_click, &self.close_click, &mut self.inner)
-    }
-}
+pub use item::TabListItem;
 
 /// Event emitted by a [`TabPanel`].
 ///

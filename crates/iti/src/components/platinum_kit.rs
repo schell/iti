@@ -1632,6 +1632,23 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         };
 
         // ── Section style demos ──
+        rsx! {
+            let fieldset = fieldset(
+                class = "section-fieldset",
+            ) {
+                legend(class = "section-legend") {
+                    "Fieldset"
+                }
+                div(
+                    class = "section-body"
+                ) {
+                    "This is a fieldset. It has a soothing dashed border and an inset title."
+                    "Create this with the rsx! macro."
+                }
+            }
+        }
+        fieldset.set_style("--section-color", crate::color::AZUL);
+
         let titled_demo = add_section(Box::new(Section::new(
             SectionStyle::Titled,
             crate::color::PURPLE,
@@ -1675,6 +1692,7 @@ impl<V: View> Default for OverhaulLibraryItem<V> {
         rsx! {
             let wrapper = div(class = "container") {
                 {header}
+                {fieldset}
                 div(class = "row") {
                     div(class = "col-auto") {
                         {&titled_demo}
