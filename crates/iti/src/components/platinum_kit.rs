@@ -355,6 +355,7 @@ fn build_panels_and_colors<V: View>() -> Section<V, SectionTop<V>, StaticContent
                 }
                 div(style:margin_top = "1em") {
                     p() { strong() { "Color Palette" } }
+                    div() { "Panels and framing:" }
                     div(class = "d-flex flex-wrap gap-2") {
                         {swatch::<V>("bg-black900", "black900")}
                         {swatch::<V>("bg-gray800", "gray800")}
@@ -366,16 +367,20 @@ fn build_panels_and_colors<V: View>() -> Section<V, SectionTop<V>, StaticContent
                         {swatch::<V>("bg-gray200", "gray200")}
                         {swatch::<V>("bg-white100", "white100")}
                     }
-                    div(class = "d-flex flex-wrap gap-2", style:margin_top = "0.5em") {
+                    div(){"Soothing flavors:"}
+                    div(class = "d-flex flex-wrap gap-2") {
                         {swatch::<V>("bg-azul", "azul")}
                         {swatch::<V>("bg-lavender", "lavender")}
                         {swatch::<V>("bg-thistle", "thistle")}
                         {swatch::<V>("bg-ice", "ice")}
                         {swatch::<V>("bg-cream", "cream")}
+                        {swatch::<V>("bg-charcoal", "charcoal")}
+                    }
+                    div(){ "Attention getting:" }
+                    div(class = "d-flex flex-wrap gap-2", style:margin_top = "0.5em") {
                         {swatch::<V>("bg-success", "success")}
                         {swatch::<V>("bg-danger", "danger")}
                         {swatch::<V>("bg-warning", "warning")}
-                        {swatch::<V>("bg-charcoal", "charcoal")}
                     }
                 }
             }
@@ -1270,9 +1275,9 @@ impl<V: View> StepMut for PlatinumKitTabs<V> {
         let ev = self
             .outer_panel
             .step_with_mut(|entry| {
-                let on_click = entry.tab.on_click();
-                let id = entry.tab.id().clone();
-                let inner = &mut entry.pane;
+                let (tab, inner) = entry.split_tab_pane();
+                let on_click = tab.on_click();
+                let id = tab.id().clone();
                 async {
                     let outer_click = async {
                         let event = on_click.next().await;
@@ -1295,14 +1300,19 @@ impl<V: View> StepMut for PlatinumKitTabs<V> {
             OuterEv::OuterClick(TabListEvent::ItemClicked { id, .. }) => {
                 self.outer_panel.select(&id);
             }
+            OuterEv::OuterClick(TabListEvent::CloseClicked { .. }) => {
+                // Close handled by StepMut internally.
+            }
             OuterEv::InnerClick(_) => {}
         }
     }
 }
 
-enum OuterEv<V: View, T> {
-    OuterClick(TabListEvent<V, T>),
-    InnerClick(TabListEvent<V, T>),
+type InnerPanel<V> = TabPanel<V, <V as View>::Element, <V as View>::Element>;
+
+enum OuterEv<V: View> {
+    OuterClick(TabListEvent<V, <V as View>::Element, InnerPanel<V>>),
+    InnerClick(TabListEvent<V, <V as View>::Element, <V as View>::Element>),
 }
 
 /// Build the "Tabs" section with multiple tab panel alignment demos.

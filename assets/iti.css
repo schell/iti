@@ -1109,7 +1109,9 @@ pre {
 }
 
 .nav-tabs .nav-item .nav-link {
-	display: block;
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
 	font-family: var(--iti-font-ui);
 	font-size: 12px;
 	color: var(--iti-text);
@@ -1848,6 +1850,16 @@ pre {
 	border-color: var(--iti-bevel-inner);
 }
 
+.bevel-outer-sm {
+	border: 1px solid;
+	border-color: var(--iti-bevel-outer);
+}
+
+.bevel-inner-sm {
+	border: 1px solid;
+	border-color: var(--iti-bevel-inner);
+}
+
 /* Box-shadow bevels (2px). */
 .bevel-outer-shadow {
 	box-shadow:
@@ -1997,6 +2009,12 @@ pre {
 	background-image: url("svg/title-bar-close-active.svg");
 }
 
+/* Close button inside closable nav-tab items */
+.nav-tab-close {
+	margin-right: 2px;
+	flex-shrink: 0;
+}
+
 /* Aluminum pinstripe strips on either side of the title */
 .title-bar-aluminum {
 	flex: 1 1 auto;
@@ -2103,10 +2121,6 @@ pre {
 		inset 2px 0 0 var(--iti-bevel-highlight),
 		inset 0 -2px 0 var(--iti-bevel-gray),
 		inset -2px 0 0 var(--iti-bevel-gray);
-}
-
-.table thead th:first-child {
-	border-left: 1px solid #484848;
 }
 
 /* Active/pressed column header */
