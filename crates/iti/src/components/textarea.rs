@@ -28,9 +28,10 @@ pub enum TextareaEvent<V: View> {
 }
 
 /// A multi-line text input component with validation support.
-#[derive(ViewChild)]
+#[derive(ViewChild, ViewProperties)]
 pub struct Textarea<V: View> {
     #[child]
+    #[properties]
     textarea: V::Element,
     on_input: V::EventListener,
     on_blur: V::EventListener,

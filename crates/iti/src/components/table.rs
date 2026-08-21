@@ -1634,7 +1634,9 @@ pub mod library {
 
             rsx! {
                 let container = div(class = "panel") {
-                    {&table}
+                    div(class = "bevel-inner-sm") {
+                        {&table}
+                    }
                     {&alert}
                 }
             }

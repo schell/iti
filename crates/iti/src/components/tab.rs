@@ -94,7 +94,6 @@ impl<V: View, T: ViewChild<V>> TabListItem<V, T> {
                     }),
                     on:click = on_click,
                 ) {
-                    {&inner}
                     button(
                         type = "button",
                         class = "title-bar-close nav-tab-close",
@@ -105,6 +104,7 @@ impl<V: View, T: ViewChild<V>> TabListItem<V, T> {
                         }),
                         on:click = close_click,
                     ) {}
+                    {&inner}
                 }
             }
         }

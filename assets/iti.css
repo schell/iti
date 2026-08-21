@@ -2011,8 +2011,13 @@ pre {
 
 /* Close button inside closable nav-tab items */
 .nav-tab-close {
-	margin-right: 2px;
+	margin-left: -7px;
 	flex-shrink: 0;
+}
+
+/* Only show the close button on the active (selected) tab */
+.nav-tabs .nav-item .nav-link:not(.active) .nav-tab-close {
+	display: none !important;
 }
 
 /* Aluminum pinstripe strips on either side of the title */
