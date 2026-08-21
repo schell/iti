@@ -3,7 +3,8 @@ use futures_lite::FutureExt;
 use mogwai::{prelude::*, web::WebElement};
 
 use crate::{
-    components::{button::Button, tab::TabListEvent, tab::TabPanel},
+    components::tab::EmptySpacer,
+    components::{button::Button, tab::TabPanel, tab::TabPanelEvent},
     id::Id,
 };
 
@@ -159,7 +160,7 @@ impl<V: View> Default for PlatinumKitPanes<V> {
 }
 
 impl<V: View> PlatinumKitPanes<V> {
-    fn select(&mut self, id: &Id<V::Element>) {
+    fn select(&mut self, id: &Id<(V::Element, EmptySpacer)>) {
         self.tab_panel.select(id);
     }
 }
@@ -167,15 +168,15 @@ impl<V: View> PlatinumKitPanes<V> {
 impl<V: View> StepMut for PlatinumKitPanes<V> {
     type Output = ();
     async fn step_mut(&mut self) {
-        enum Ev<V: View, T, P> {
+        enum Ev<V: View, P, T, S> {
             Timer,
-            Tab(TabListEvent<V, T, P>),
+            Tab(TabPanelEvent<V, P, T, S>),
             NewItem(String),
         }
 
         let timer_fut = async {
             mogwai::time::wait_millis(1000).await;
-            Ev::Timer::<V, V::Element, V::Element>
+            Ev::Timer::<V, V::Element, V::Element, EmptySpacer>
         };
         let list_fut = async {
             let event = self.tab_panel.step_mut().await;
@@ -187,26 +188,19 @@ impl<V: View> StepMut for PlatinumKitPanes<V> {
                 .new_item_input
                 .dyn_el(|el: &web_sys::HtmlInputElement| el.value())
                 .unwrap();
-            Ev::NewItem::<V, V::Element, V::Element>(s)
+            Ev::NewItem::<V, V::Element, V::Element, EmptySpacer>(s)
         };
 
         let result = timer_fut.or(list_fut).or(new_tab_fut).await;
         match result {
-            Ev::Tab(TabListEvent::ItemClicked {
-                id,
-                index: _,
-                event: _,
-            }) => {
+            Ev::Tab(TabPanelEvent::ItemClicked { id, .. }) => {
                 self.select(&id);
             }
-            Ev::Tab(TabListEvent::CloseClicked {
-                id: _,
-                index: _,
-                item: _,
-                pane: _,
-            }) => {
+            Ev::Tab(TabPanelEvent::ItemClosed { .. }) => {
                 // Tab already removed by StepMut; nothing else to do.
             }
+            Ev::Tab(TabPanelEvent::ItemCloseClicked { .. }) => {}
+            Ev::Tab(TabPanelEvent::User(())) => {}
             Ev::Timer => {
                 self.seconds += 1;
                 self.timer_text

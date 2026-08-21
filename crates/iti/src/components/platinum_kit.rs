@@ -25,7 +25,9 @@ use crate::components::progress::Progress;
 use crate::components::section::{Section, SectionEntry, SectionStyle, StaticContent};
 use crate::components::select::Select;
 use crate::components::slider::SliderWithTicks;
-use crate::components::tab::{TabAlignment, TabListEvent, TabPanel};
+use crate::components::tab::{
+    EmptySpacer, TabAlignment, TabListItemEvent, TabPanel, TabPanelEntryEvent, TabPanelEvent,
+};
 use crate::components::table::library::TableLibraryItem;
 use crate::components::text_input::{TextInput, TextInputType};
 use crate::components::textarea::Textarea;
@@ -1227,11 +1229,11 @@ fn build_badges<V: View>() -> Section<V, SectionTop<V>, StaticContent<V>> {
 }
 
 /// Helper to build a simple [`TabPanel`] with the given tab/pane pairs.
-fn make_tab_panel<V: View>(items: &[(&str, &[&str])]) -> TabPanel<V, V::Element, V::Element> {
+fn make_tab_panel<V: View>(items: &[(&str, &[&str])]) -> TabPanel<V> {
     rsx! {
         let default_pane = p() { "Empty." }
     }
-    let mut panel: TabPanel<V, V::Element, V::Element> = TabPanel::new(default_pane);
+    let mut panel: TabPanel<V> = TabPanel::new(default_pane);
     for (tab_label, pane_items) in items {
         rsx! {
             let tab = span() { {(*tab_label).into_text::<V>()} }
@@ -1253,8 +1255,7 @@ fn make_tab_panel<V: View>(items: &[(&str, &[&str])]) -> TabPanel<V, V::Element,
 }
 
 /// A tab panel whose panes are themselves tab panels.
-type NestedTabPanel<V> =
-    TabPanel<V, <V as View>::Element, TabPanel<V, <V as View>::Element, <V as View>::Element>>;
+type NestedTabPanel<V> = TabPanel<V, TabPanel<V>>;
 
 /// Tabs section content for the platinum kit.
 #[derive(ViewChild)]
@@ -1269,50 +1270,28 @@ pub struct PlatinumKitTabs<V: View> {
 impl<V: View> StepMut for PlatinumKitTabs<V> {
     type Output = ();
     async fn step_mut(&mut self) {
-        // Race the outer panel's tab clicks against all inner panels' tab clicks.
-        // The closure steps each inner panel and races that against its own
-        // tab's click event.
         let ev = self
             .outer_panel
-            .step_with_mut(|entry| {
-                let (tab, inner) = entry.split_tab_pane();
-                let on_click = tab.on_click();
-                let id = tab.id().clone();
-                async {
-                    let outer_click = async {
-                        let event = on_click.next().await;
-                        OuterEv::OuterClick(TabListEvent::ItemClicked {
-                            id,
-                            index: 0,
-                            event,
-                        })
-                    };
-                    let inner_click = async {
-                        let ev = inner.step_mut().await;
-                        OuterEv::InnerClick(ev)
-                    };
-                    outer_click.or(inner_click).await
+            .step_with_mut(|entry| match entry {
+                crate::components::tab::TabOrSpacer::Item(item) => item
+                    .step_with_mut(|inner| inner.step_mut().boxed_local())
+                    .map(OuterEv::OuterClick)
+                    .boxed_local(),
+                crate::components::tab::TabOrSpacer::Spacer(_) => {
+                    std::future::pending().boxed_local()
                 }
-                .boxed_local()
             })
             .await;
-        match ev {
-            OuterEv::OuterClick(TabListEvent::ItemClicked { id, .. }) => {
-                self.outer_panel.select(&id);
-            }
-            OuterEv::OuterClick(TabListEvent::CloseClicked { .. }) => {
-                // Close handled by StepMut internally.
-            }
-            OuterEv::InnerClick(_) => {}
+        if let OuterEv::OuterClick(TabPanelEntryEvent::Tab(TabListItemEvent::Click(data))) = ev {
+            self.outer_panel.select(&data.id);
         }
     }
 }
 
-type InnerPanel<V> = TabPanel<V, <V as View>::Element, <V as View>::Element>;
+type InnerPanelEvent<V> = TabPanelEvent<V, <V as View>::Element, <V as View>::Element, EmptySpacer>;
 
 enum OuterEv<V: View> {
-    OuterClick(TabListEvent<V, <V as View>::Element, InnerPanel<V>>),
-    InnerClick(TabListEvent<V, <V as View>::Element, <V as View>::Element>),
+    OuterClick(TabPanelEntryEvent<V, <V as View>::Element, EmptySpacer, InnerPanelEvent<V>>),
 }
 
 /// Build the "Tabs" section with multiple tab panel alignment demos.
@@ -1355,7 +1334,7 @@ fn build_tabs<V: View>() -> Section<V, SectionTop<V>, PlatinumKitTabs<V>> {
 
     // ── TabPanel: Split groups (two left, spacer, two right) ──
     rsx! { let split_default = p() { "Select a tab." } }
-    let mut panel_split: TabPanel<V, V::Element, V::Element> = TabPanel::new(split_default);
+    let mut panel_split: TabPanel<V> = TabPanel::new(split_default);
     panel_split.set_style("min-width", "500px");
     {
         rsx! { let tab = span() { "File" } }
@@ -1375,12 +1354,12 @@ fn build_tabs<V: View>() -> Section<V, SectionTop<V>, PlatinumKitTabs<V>> {
         let _ = panel_split.push(tab, pane);
 
         // Insert a spacer between "Edit" and "View".
-        panel_split.insert_spacer_after(&edit_id);
+        panel_split.insert_spacer_after(&edit_id, crate::components::tab::EmptySpacer);
     }
 
     // ── Outer TabPanel: each pane is an inner TabPanel demo ──
     rsx! { let outer_default_pane = p() { "Select a tab." } }
-    let outer_default = TabPanel::<V, V::Element, V::Element>::new(outer_default_pane);
+    let outer_default = TabPanel::<V>::new(outer_default_pane);
     let mut outer_panel: NestedTabPanel<V> = TabPanel::new(outer_default);
 
     rsx! { let tab = span() { "No alignment" } }

@@ -3,8 +3,8 @@
 //! This module provides [`TabPanel`], a component that pairs a horizontal tab
 //! bar with a content area. Each tab `T` and its associated pane `P` are stored
 //! together in a single [`Vec`] of [`TabOrSpacer`] entries, so that
-//! [`StepWithMut`] can hand a closure `&mut `[`TabPanelEntry`] with direct
-//! [`TabPanelEntry::tab`] and [`TabPanelEntry::pane`] access. This lets callers
+//! [`StepWithMut`] can hand a closure `&mut `[`TabOrSpacer`] with direct
+//! access to the [`TabListItem`] and [`TabbedPane`]. This lets callers
 //! race tab-click events against pane-specific event loops in a single
 //! future-race, which is essential for closable detail-panel tabs and other
 //! interactive pane content.
@@ -12,14 +12,14 @@
 //! # Type containment
 //!
 //! ```text
-//! TabPanel<V, T, P>
-//! └── Vec<TabOrSpacer<V, T, P>>
-//!     ├── Item ── TabPanelEntry<V, T, P>
-//!     │            ├── TabListItem<V, T>  (the clickable tab header)
-//!     │            │             └── T    (tab label content)
-//!     │            └── TabbedPane<V, P>   (pane wrapper + slot div)
-//!     │                          └── P    (pane content)
-//!     └── Spacer ── TabSpacer<V, T>       (flex spacer, no tab/pane)
+//! TabPanel<V, P, T, S>
+//! └── Vec<TabOrSpacer<V, P, T, S>>
+//!     ├── Item ── TabPanelEntry<V, P, T>
+//!     │            ├── TabListItem<V, T, S>  (the clickable tab header)
+//!     │            │             └── T      (tab label content)
+//!     │            └── TabbedPane<V, P>      (pane wrapper + slot div)
+//!     │                          └── P      (pane content)
+//!     └── Spacer ── TabSpacer<V, T, S>      (flex spacer, optional inner S)
 //! ```
 //!
 //! Spacers ([`TabSpacer`]) can be interleaved with tabs to control alignment
@@ -28,72 +28,85 @@
 //! # Typical usage
 //!
 //! ```ignore
-//! let mut panel = TabPanel::<V, V::Element, MyPane>::new(default_pane);
+//! let mut panel = TabPanel::<V, MyPane>::new(default_pane);
 //! let id = panel.push(tab_label, my_pane);
 //! panel.select(&id);
 //! // In the event loop:
 //! let ev = panel
 //!     .step_with_mut(|entry| {
-//!         let on_click = entry.tab().on_click();
-//!         let pane = entry.pane_mut();
-//!         async {
-//!             // Race the tab click against the pane's step.
-//!             let click = async { on_click.next().await; TabPanelEvent::Tabs(...) };
-//!             let pane_ev = async { pane.step_mut().await; TabPanelEvent::Panes(...) };
-//!             click.or(pane_ev).await
+//!         match entry {
+//!             TabOrSpacer::Item(item) => {
+//!                 item.step_with_mut(|pane| pane.step_mut().boxed_local())
+//!                     .map(TabPanelEvent::Item)
+//!                     .boxed_local()
+//!             }
+//!             TabOrSpacer::Spacer(spacer) => {
+//!                 spacer.step_with(|s| /* user domain */)
+//!                     .map(TabPanelEvent::User)
+//!                     .boxed_local()
+//!             }
 //!         }
-//!         .boxed_local()
 //!     })
 //!     .await;
 //! ```
 //!
 //! When all you need is tab selection (no pane stepping), use [`StepMut`]
-//! instead, which auto-selects the clicked tab and returns a [`TabListEvent`].
+//! instead, which auto-selects the clicked tab and returns a [`TabPanelEvent`].
 use std::{future::Future, pin::Pin};
 
 use futures_lite::FutureExt;
-use mogwai::prelude::*;
+use mogwai::{prelude::*, step::StepWithMut};
 
 use crate::id::{Id, IdPool};
 
+mod entry;
 mod item;
-mod tab;
 
-pub use item::TabListItem;
+pub use entry::{TabOrSpacer, TabPanelEntry, TabPanelEntryEvent, TabSpacer, TabbedPane};
+pub use item::{EmptySpacer, TabListItem, TabListItemEvent, TabListItemEventData};
 
 /// Event emitted by a [`TabPanel`].
 ///
-/// Returned by [`TabPanel::step_mut`] (via [`StepMut`]) and surfaced inside
-/// the [`TabPanelEvent::Tabs`] variant when using [`StepWithMut`].
-pub enum TabListEvent<V: View, T, P> {
-    /// A tab was clicked.
+/// - [`ItemClicked`](Self::ItemClicked): a tab was clicked. `StepMut`
+///   auto-selects the tab; `Step` does not.
+/// - [`ItemCloseClicked`](Self::ItemCloseClicked): the close button was
+///   clicked. Raw report, no removal. Only `Step` produces this.
+/// - [`ItemClosed`](Self::ItemClosed): the tab was removed. `StepMut`
+///   auto-removes and moves out `T`/`P`. Only `StepMut` produces this.
+/// - [`User`](Self::User): a user-domain event from the closure passed to
+///   [`StepWith`] / [`StepWithMut`]. Unreachable when using [`Step`] /
+///   [`StepMut`].
+pub enum TabPanelEvent<V: View, P, T = <V as View>::Element, S = EmptySpacer, Ev = ()> {
+    /// A tab was clicked. `StepMut` auto-selects; `Step` does not.
     ItemClicked {
-        /// The [`Id`] of the clicked tab.
-        id: Id<T>,
-        /// The entry index (includes spacers).
+        id: Id<(T, S)>,
         index: usize,
-        /// The underlying DOM event.
         event: V::Event,
     },
-    /// A tab's close button was clicked. The tab has already been removed
-    /// from the panel; the inner content `T` and pane `P` are returned for
-    /// cleanup.
-    CloseClicked {
-        /// The [`Id`] of the closed tab.
-        id: Id<T>,
-        /// The entry index before removal.
+    /// The close button was clicked. Raw report, no removal.
+    /// Only `Step` produces this.
+    ItemCloseClicked {
+        id: Id<(T, S)>,
         index: usize,
-        /// The tab's inner content.
+        event: V::Event,
+    },
+    /// The tab was removed. `StepMut` auto-removes and moves out `T`/`P`.
+    /// Only `StepMut` produces this.
+    ItemClosed {
+        id: Id<(T, S)>,
+        index: usize,
         item: T,
-        /// The tab's associated pane.
         pane: P,
     },
+    /// A user-domain event from the closure passed to `StepWith` /
+    /// `StepWithMut`. Unreachable when using `Step` / `StepMut`.
+    User(Ev),
 }
 
 /// Result of removing an item from a [`TabPanel`].
-pub struct TabItemRemoval<T> {
+pub struct TabItemRemoval<T, S> {
     /// [`Id`] of the item removed.
-    pub id: Id<T>,
+    pub id: Id<(T, S)>,
     /// The index of the item before it was removed.
     pub index: usize,
     /// The item that was removed.
@@ -103,199 +116,11 @@ pub struct TabItemRemoval<T> {
 }
 
 /// Result of removing an entry (tab or spacer) from a [`TabPanel`].
-pub enum RemovedEntry<T, P> {
+pub enum RemovedEntry<T, P, S> {
     /// A tab was removed, returning the tab removal info and its pane.
-    Tab(TabItemRemoval<T>, P),
+    Tab(TabItemRemoval<T, S>, P),
     /// A spacer was removed.
     Spacer,
-}
-
-/// A flexible spacer element within a [`TabPanel`].
-///
-/// Spacers are `flex-grow: 1` elements that absorb available space in the tab
-/// bar. Insert them before, after, or between tabs to control alignment.
-///
-/// Each spacer has a unique [`Id<T>`] (allocated from the same pool as tabs)
-/// so it can be individually identified and removed via [`TabPanel::remove_by_id`].
-#[derive(ViewChild)]
-pub struct TabSpacer<V: View, T> {
-    #[child]
-    li: V::Element,
-    id: Id<T>,
-}
-
-impl<V: View, T> TabSpacer<V, T> {
-    fn new(id: Id<T>) -> Self {
-        rsx! {
-            let li = li(class = "nav-tab-spacer") {}
-        }
-        Self { li, id }
-    }
-
-    /// Get a reference to this spacer's [`Id`].
-    pub fn id(&self) -> &Id<T> {
-        &self.id
-    }
-}
-
-/// A pane content element and its wrapper slot `<div>`.
-///
-/// The slot is the DOM element appended to [`TabPanel`]'s content area.
-/// Show/hide is controlled by toggling `display: none` on the slot via
-/// [`TabbedPane::show`] / [`TabbedPane::hide`].
-pub struct TabbedPane<V: View, P> {
-    /// The pane content.
-    pane: P,
-    /// Wrapper `<div>` holding the pane in the DOM.
-    /// Toggled `display: none` to show/hide the pane.
-    slot: V::Element,
-}
-
-impl<V: View, P: ViewChild<V>> TabbedPane<V, P> {
-    /// Create a new `TabbedPane` wrapping the given pane content.
-    ///
-    /// The slot `<div>` is created with `display: none` (hidden), `flex: 1`,
-    /// and `min-height: 0` so it fills the content area when shown.
-    pub fn new(pane: P) -> Self {
-        let slot = V::Element::new("div");
-        slot.set_style("display", "none");
-        slot.set_style("flex", "1");
-        slot.set_style("min-height", "0");
-        slot.append_child(&pane);
-        Self { pane, slot }
-    }
-
-    /// Returns a reference to the pane content.
-    pub fn pane(&self) -> &P {
-        &self.pane
-    }
-
-    /// Returns a mutable reference to the pane content.
-    pub fn pane_mut(&mut self) -> &mut P {
-        &mut self.pane
-    }
-
-    /// Returns a reference to the wrapper slot element (for DOM operations
-    /// like `parent.remove_child(&slot)`).
-    pub fn slot(&self) -> &V::Element {
-        &self.slot
-    }
-
-    /// Show this pane (removes `display: none` from the slot).
-    pub fn show(&self) {
-        self.slot.remove_style("display");
-    }
-
-    /// Hide this pane (sets `display: none` on the slot).
-    pub fn hide(&self) {
-        self.slot.set_style("display", "none");
-    }
-
-    /// Consume this `TabbedPane`, returning the pane content and slot element.
-    pub fn into_parts(self) -> (P, V::Element) {
-        (self.pane, self.slot)
-    }
-}
-
-/// A tab + pane pair stored in a [`TabPanel`].
-///
-/// This is the type the [`StepWithMut`] closure receives a mutable reference
-/// to, allowing callers to step both the tab `T` and the pane `P` together in
-/// a single race. Use [`TabPanelEntry::tab`] / [`TabPanelEntry::tab_mut`] and
-/// [`TabPanelEntry::pane`] / [`TabPanelEntry::pane_mut`] to access the
-/// components.
-///
-/// ```ignore
-/// panel.step_with_mut(|entry| {
-///     let on_click = entry.tab().on_click();
-///     let pane = entry.pane_mut();
-///     async { /* race on_click.next() vs pane.step_mut() */ }.boxed_local()
-/// })
-/// ```
-pub struct TabPanelEntry<V: View, T, P> {
-    tab: TabListItem<V, T>,
-    pane: TabbedPane<V, P>,
-}
-
-impl<V: View, T, P: ViewChild<V>> TabPanelEntry<V, T, P> {
-    /// Returns a reference to the tab list item (the clickable tab header).
-    pub fn tab(&self) -> &TabListItem<V, T> {
-        &self.tab
-    }
-
-    /// Returns a mutable reference to the tab list item.
-    pub fn tab_mut(&mut self) -> &mut TabListItem<V, T> {
-        &mut self.tab
-    }
-
-    /// Returns a reference to the pane content.
-    pub fn pane(&self) -> &P {
-        self.pane.pane()
-    }
-
-    /// Returns a mutable reference to the pane content.
-    pub fn pane_mut(&mut self) -> &mut P {
-        self.pane.pane_mut()
-    }
-
-    /// Borrow the tab and pane simultaneously.
-    ///
-    /// Returns a shared reference to the tab and a mutable reference to the
-    /// pane, allowing both to be used in the same scope (e.g. racing a
-    /// tab-click future against a pane-step future in a `step_with_mut`
-    /// closure).
-    pub fn split_tab_pane(&mut self) -> (&TabListItem<V, T>, &mut P) {
-        (&self.tab, self.pane.pane_mut())
-    }
-}
-
-/// An entry in a [`TabPanel`] — either a tab+pane pair or a spacer.
-pub enum TabOrSpacer<V: View, T, P> {
-    /// A tab and its associated pane.
-    Item(TabPanelEntry<V, T, P>),
-    /// A flexible spacer element (no tab, no pane).
-    Spacer(TabSpacer<V, T>),
-}
-
-impl<V: View, T, P> TabOrSpacer<V, T, P> {
-    /// Get the underlying tab `li` element (for Item) or spacer `li` (for
-    /// Spacer), for DOM operations.
-    fn element(&self) -> &V::Element {
-        match self {
-            TabOrSpacer::Item(entry) => &entry.tab.li,
-            TabOrSpacer::Spacer(spacer) => &spacer.li,
-        }
-    }
-
-    /// Returns `true` if this entry is a spacer.
-    pub fn is_spacer(&self) -> bool {
-        matches!(self, TabOrSpacer::Spacer(_))
-    }
-
-    /// Try to get the entry as a tab+pane pair reference.
-    pub fn as_item(&self) -> Option<&TabPanelEntry<V, T, P>> {
-        match self {
-            TabOrSpacer::Item(entry) => Some(entry),
-            TabOrSpacer::Spacer(_) => None,
-        }
-    }
-
-    /// Try to get the entry as a mutable tab+pane pair reference.
-    pub fn as_item_mut(&mut self) -> Option<&mut TabPanelEntry<V, T, P>> {
-        match self {
-            TabOrSpacer::Item(entry) => Some(entry),
-            TabOrSpacer::Spacer(_) => None,
-        }
-    }
-}
-
-impl<V: View, T: ViewChild<V>, P: ViewChild<V>> ViewChild<V> for TabOrSpacer<V, T, P> {
-    fn as_append_arg(&self) -> AppendArg<V, impl Iterator<Item = std::borrow::Cow<'_, V::Node>>> {
-        match self {
-            TabOrSpacer::Item(entry) => entry.tab.as_boxed_append_arg(),
-            TabOrSpacer::Spacer(spacer) => spacer.as_boxed_append_arg(),
-        }
-    }
 }
 
 /// Alignment of tabs within a [`TabPanel`].
@@ -313,11 +138,18 @@ pub enum TabAlignment {
 /// A panel topped with a tab list.
 ///
 /// Stores tabs and panes together in a single [`Vec`] of
-/// [`TabOrSpacer<V, T, P>`], eliminating the cross-collection join that
+/// [`TabOrSpacer<V, P, T, S>`], eliminating the cross-collection join that
 /// separate `TabList` + `Panes` + `tabs_to_panes` collections would require.
-/// This allows [`StepWithMut`] to pass `&mut `[`TabPanelEntry<V, T, P>`] to a
+/// This allows [`StepWithMut`] to pass `&mut `[`TabOrSpacer<V, P, T, S>`] to a
 /// closure, giving simultaneous mutable access to both the tab `T` and the
 /// pane `P`.
+///
+/// # Type parameters
+///
+/// - `V`: the mogwai view abstraction.
+/// - `P`: the pane content type. Defaults to `V::Element`.
+/// - `T`: the tab's inner content type. Defaults to `V::Element`.
+/// - `S`: the spacer's inner content type. Defaults to `()`.
 ///
 /// # DOM structure
 ///
@@ -339,32 +171,32 @@ pub enum TabAlignment {
 ///
 /// # Stepping
 ///
-/// Two step implementations are provided:
+/// - [`Step`]: Races all tab click/close events (via [`TabListItem::step`]).
+///   Reports events without side effects. The `User` variant is unreachable.
+/// - [`StepMut`]: Same as [`Step`], but auto-selects on click and auto-removes
+///   on close (moving out `T`/`P`).
+/// - [`StepWithMut<TabOrSpacer<V, P, T, S>>`]: Calls the closure once per
+///   entry (including spacers), racing all returned futures. The closure
+///   receives `&mut TabOrSpacer` and delegates to each child's own step impls.
+///   The return type is `Ev` directly (wrapped in [`TabPanelEvent::User`]).
 ///
-/// - [`StepMut`]: Races all tab click events. On a click, auto-selects the
-///   clicked tab and returns a [`TabListEvent`]. Use this when you only need
-///   tab selection and don't need to drive per-pane event loops.
-/// - [`StepWithMut<TabPanelEntry<V, T, P>>`]: Calls the closure once per
-///   `TabPanelEntry` (spacers are skipped), racing all returned futures. The
-///   closure receives `&mut TabPanelEntry` and is responsible for racing the
-///   tab click against the pane's own event loop. Use this when pane content
-///   has its own `step` to drive.
-///
-/// [`StepWithMut<TabPanelEntry<V, T, P>>`]: StepWithMut
+/// [`StepWithMut<TabOrSpacer<V, P, T, S>>`]: StepWithMut
 #[derive(ViewChild, ViewProperties)]
-pub struct TabPanel<V: View, T, P> {
+pub struct TabPanel<V: View, P = <V as View>::Element, T = <V as View>::Element, S = EmptySpacer> {
     #[child]
     #[properties]
     window: V::Element,
     ul: V::Element,
     content: V::Element,
-    entries: Vec<TabOrSpacer<V, T, P>>,
-    id_pool: IdPool<T>,
+    entries: Vec<TabOrSpacer<V, P, T, S>>,
+    id_pool: IdPool<(T, S)>,
     default_slot: Option<V::Element>,
     default_closable: bool,
 }
 
-impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
+impl<V: View, P: ViewChild<V>, T: ViewChild<V> + 'static, S: ViewChild<V> + 'static>
+    TabPanel<V, P, T, S>
+{
     /// Create a new `TabPanel` with the default pane.
     ///
     /// The default pane is shown when no tabs are present or when all tabs have
@@ -407,11 +239,11 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// Return a reference to the [`TabListItem`] at the given entry index.
     ///
     /// Returns `None` if the index is out of bounds or points to a spacer.
-    pub fn get(&self, index: usize) -> Option<&TabListItem<V, T>> {
+    pub fn get(&self, index: usize) -> Option<&TabListItem<V, T, S>> {
         self.entries
             .get(index)
             .and_then(|e| e.as_item())
-            .map(|e| &e.tab)
+            .map(|e| e.tab())
     }
 
     /// Iterator over all entries, including spacers.
@@ -419,32 +251,30 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// Entries are yielded in display order. Match on
     /// [`TabOrSpacer::Item`] to access the tab + pane pair, or
     /// [`TabOrSpacer::Spacer`] for spacers.
-    pub fn iter(&self) -> impl Iterator<Item = &TabOrSpacer<V, T, P>> {
+    pub fn iter(&self) -> impl Iterator<Item = &TabOrSpacer<V, P, T, S>> {
         self.entries.iter()
     }
 
     /// Mutable iterator over all entries, including spacers.
     ///
     /// See [`iter`](Self::iter) for ordering and matching details.
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabOrSpacer<V, T, P>> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut TabOrSpacer<V, P, T, S>> {
         self.entries.iter_mut()
     }
 
     /// Push a new tab onto the end of the stack.
     ///
     /// Returns the [`Id`] allocated for the new tab.
-    pub fn push(&mut self, tab: T, pane: P) -> Id<T> {
+    pub fn push(&mut self, tab: T, pane: P) -> Id<(T, S)> {
         let id = self.id_pool.get_id();
-        let mut tab_item = TabListItem::new(id.clone(), tab);
+        let index = self.entries.len();
+        let mut tab_item = TabListItem::new(id.clone(), index, tab);
         tab_item.set_closable(self.default_closable);
 
         let pane = TabbedPane::new(pane);
         self.content.append_child(pane.slot());
 
-        let entry = TabPanelEntry {
-            tab: tab_item,
-            pane,
-        };
+        let entry = TabPanelEntry::new(tab_item, pane);
         let kind = TabOrSpacer::Item(entry);
         self.ul.append_child(&kind);
         self.entries.push(kind);
@@ -459,7 +289,8 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     ///
     /// Spacers at the end are skipped — this removes the last actual tab.
     /// Returns the tab's [`Id`], the tab inner `T`, and the pane `P`.
-    pub fn pop(&mut self) -> Option<(Id<T>, T, P)> {
+    #[allow(clippy::type_complexity)]
+    pub fn pop(&mut self) -> Option<(Id<(T, S)>, T, P)> {
         let pos = self
             .entries
             .iter()
@@ -469,10 +300,13 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
         let kind = self.entries.remove(pos);
         match kind {
             TabOrSpacer::Item(entry) => {
-                self.ul.remove_child(&entry.tab);
-                let (pane, slot) = entry.pane.into_parts();
+                let (tab, pane) = entry.into_parts();
+                self.ul.remove_child(&tab);
+                let (pane, slot) = pane.into_parts();
                 self.content.remove_child(&slot);
-                Some((entry.tab.id, entry.tab.inner, pane))
+                let (id, inner) = tab.into_parts();
+                self.reindex_entries();
+                Some((id, inner, pane))
             }
             TabOrSpacer::Spacer(_) => unreachable!(),
         }
@@ -482,18 +316,15 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     ///
     /// The index is a raw entry position (includes spacers). If the index is
     /// out of bounds the tab is appended to the end.
-    pub fn insert(&mut self, index: usize, tab: T, pane: P) -> Id<T> {
+    pub fn insert(&mut self, index: usize, tab: T, pane: P) -> Id<(T, S)> {
         let id = self.id_pool.get_id();
-        let mut tab_item = TabListItem::new(id.clone(), tab);
+        let mut tab_item = TabListItem::new(id.clone(), index, tab);
         tab_item.set_closable(self.default_closable);
 
         let pane = TabbedPane::new(pane);
         self.content.append_child(pane.slot());
 
-        let entry = TabPanelEntry {
-            tab: tab_item,
-            pane,
-        };
+        let entry = TabPanelEntry::new(tab_item, pane);
         let kind = TabOrSpacer::Item(entry);
 
         if index < self.entries.len() {
@@ -504,6 +335,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
             self.ul.append_child(&kind);
             self.entries.push(kind);
         }
+        self.reindex_entries();
         id
     }
 
@@ -516,7 +348,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// If the removed tab was the active tab, the nearest surviving neighbor is
     /// selected automatically (previous tab if available, otherwise the next
     /// tab). If no tabs remain, the default slot is shown.
-    pub fn remove_by_id(&mut self, id: &Id<T>) -> Option<RemovedEntry<T, P>> {
+    pub fn remove_by_id(&mut self, id: &Id<(T, S)>) -> Option<RemovedEntry<T, P, S>> {
         enum Found {
             Tab {
                 entry_index: usize,
@@ -530,14 +362,14 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
         let mut found = None;
         for (entry_i, entry) in self.entries.iter().enumerate() {
             match entry {
-                TabOrSpacer::Item(item) if &item.tab.id == id => {
+                TabOrSpacer::Item(item) if item.tab().id() == id => {
                     found = Some(Found::Tab {
                         entry_index: entry_i,
-                        was_selected: *item.tab.is_active,
+                        was_selected: item.tab().is_active(),
                     });
                     break;
                 }
-                TabOrSpacer::Spacer(s) if &s.id == id => {
+                TabOrSpacer::Spacer(s) if s.id() == id => {
                     found = Some(Found::Spacer {
                         entry_index: entry_i,
                     });
@@ -556,8 +388,9 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
                 let kind = self.entries.remove(entry_index);
                 match kind {
                     TabOrSpacer::Item(entry) => {
-                        self.ul.remove_child(&entry.tab);
-                        let (pane, slot) = entry.pane.into_parts();
+                        let (tab, pane) = entry.into_parts();
+                        self.ul.remove_child(&tab);
+                        let (pane, slot) = pane.into_parts();
                         self.content.remove_child(&slot);
 
                         if was_selected {
@@ -571,11 +404,13 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
                             }
                         }
 
+                        let (id, inner) = tab.into_parts();
+                        self.reindex_entries();
                         Some(RemovedEntry::Tab(
                             TabItemRemoval {
-                                id: entry.tab.id,
+                                id,
                                 index: entry_index,
-                                item: entry.tab.inner,
+                                item: inner,
                                 was_selected,
                             },
                             pane,
@@ -589,6 +424,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
                 match kind {
                     TabOrSpacer::Spacer(spacer) => {
                         self.ul.remove_child(&spacer);
+                        self.reindex_entries();
                         Some(RemovedEntry::Spacer)
                     }
                     TabOrSpacer::Item(_) => unreachable!(),
@@ -618,7 +454,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     pub fn deselect_all(&mut self) {
         for entry in self.entries.iter_mut() {
             if let Some(item) = entry.as_item_mut() {
-                item.tab.is_active.set(false);
+                item.tab_mut().set_is_active(false);
             }
         }
     }
@@ -629,7 +465,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     ///
     /// Returns `None` if the given `index` was out of bounds or points to a
     /// spacer. In that case no selection state is changed.
-    pub fn select_by_index(&mut self, index: usize) -> Option<Id<T>> {
+    pub fn select_by_index(&mut self, index: usize) -> Option<Id<(T, S)>> {
         let target_is_tab = self
             .entries
             .get(index)
@@ -640,15 +476,15 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
         let mut id = None;
         for (i, entry) in self.entries.iter_mut().enumerate() {
             if let Some(item) = entry.as_item_mut() {
-                item.tab.is_active.set(i == index);
+                item.tab_mut().set_is_active(i == index);
                 if i == index {
                     if let Some(ds) = &self.default_slot {
                         ds.set_style("display", "none");
                     }
-                    item.pane.show();
-                    id = Some(item.tab.id.clone());
+                    item.show_pane();
+                    id = Some(item.tab().id().clone());
                 } else {
-                    item.pane.hide();
+                    item.hide_pane();
                 }
             }
         }
@@ -658,20 +494,20 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// Select the active tab using an [`Id`].
     ///
     /// Returns `Some(())` when the tab exists and was selected, otherwise `None`.
-    pub fn select(&mut self, tab_id: &Id<T>) -> Option<()> {
+    pub fn select(&mut self, tab_id: &Id<(T, S)>) -> Option<()> {
         let mut found = false;
         for entry in self.entries.iter_mut() {
             if let Some(item) = entry.as_item_mut() {
-                let is_match = &item.tab.id == tab_id;
-                item.tab.is_active.set(is_match);
+                let is_match = item.tab().id() == tab_id;
+                item.tab_mut().set_is_active(is_match);
                 if is_match {
                     if let Some(ds) = &self.default_slot {
                         ds.set_style("display", "none");
                     }
-                    item.pane.show();
+                    item.show_pane();
                     found = true;
                 } else {
-                    item.pane.hide();
+                    item.hide_pane();
                 }
             }
         }
@@ -685,21 +521,21 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// Return the entry index of a tab identifier.
     ///
     /// This is the position in the entries `Vec`, which includes spacers.
-    pub fn index_of_tab(&self, tab_id: &Id<T>) -> Option<usize> {
+    pub fn index_of_tab(&self, tab_id: &Id<(T, S)>) -> Option<usize> {
         self.entries
             .iter()
             .enumerate()
             .find_map(|(index, entry)| match entry {
-                TabOrSpacer::Item(e) if &e.tab.id == tab_id => Some(index),
+                TabOrSpacer::Item(e) if e.tab().id() == tab_id => Some(index),
                 _ => None,
             })
     }
 
-    /// Return the `Id<T>` of the tab at the given entry index, if it's not a spacer.
-    pub fn id_of_tab(&self, index: usize) -> Option<Id<T>> {
+    /// Return the [`Id`] of the tab at the given entry index, if it's not a spacer.
+    pub fn id_of_tab(&self, index: usize) -> Option<Id<(T, S)>> {
         let entry = self.entries.get(index)?;
         let item = entry.as_item()?;
-        Some(item.tab.id.clone())
+        Some(item.tab().id().clone())
     }
 
     /// Returns a reference to the active pane, if any.
@@ -707,7 +543,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// "Active" means the tab whose `is_active` is `true`.
     pub fn get_active_pane(&self) -> Option<&P> {
         self.entries.iter().find_map(|entry| match entry {
-            TabOrSpacer::Item(e) if *e.tab.is_active => Some(e.pane.pane()),
+            TabOrSpacer::Item(e) if e.tab().is_active() => Some(e.pane()),
             _ => None,
         })
     }
@@ -717,7 +553,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// "Active" means the tab whose `is_active` is `true`.
     pub fn get_active_pane_mut(&mut self) -> Option<&mut P> {
         self.entries.iter_mut().find_map(|entry| match entry {
-            TabOrSpacer::Item(e) if *e.tab.is_active => Some(e.pane.pane_mut()),
+            TabOrSpacer::Item(e) if e.tab().is_active() => Some(e.pane_mut()),
             _ => None,
         })
     }
@@ -725,9 +561,10 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// Push a spacer onto the end of the tab bar.
     ///
     /// Returns the [`Id`] allocated for the new spacer.
-    pub fn push_spacer(&mut self) -> Id<T> {
+    pub fn push_spacer(&mut self, inner: S) -> Id<(T, S)> {
         let id = self.id_pool.get_id();
-        let spacer = TabSpacer::new(id.clone());
+        let index = self.entries.len();
+        let spacer = TabSpacer::new(id.clone(), index, inner);
         let kind = TabOrSpacer::Spacer(spacer);
         self.ul.append_child(&kind);
         self.entries.push(kind);
@@ -738,18 +575,19 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     ///
     /// Returns the [`Id`] of the inserted spacer, or `None` if the tab was not
     /// found.
-    pub fn insert_spacer_before(&mut self, tab_id: &Id<T>) -> Option<Id<T>> {
+    pub fn insert_spacer_before(&mut self, tab_id: &Id<(T, S)>, inner: S) -> Option<Id<(T, S)>> {
         let pos = self.entries.iter().enumerate().find_map(|(i, e)| {
             e.as_item()
-                .and_then(|item| (&item.tab.id == tab_id).then_some(i))
+                .and_then(|item| (item.tab().id() == tab_id).then_some(i))
         });
         let pos = pos?;
         let id = self.id_pool.get_id();
-        let spacer = TabSpacer::new(id.clone());
+        let spacer = TabSpacer::new(id.clone(), pos, inner);
         let kind = TabOrSpacer::Spacer(spacer);
         self.ul
             .insert_child_before(&kind, Some(self.entries[pos].element()));
         self.entries.insert(pos, kind);
+        self.reindex_entries();
         Some(id)
     }
 
@@ -757,16 +595,16 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     ///
     /// Returns the [`Id`] of the inserted spacer, or `None` if the tab was not
     /// found.
-    pub fn insert_spacer_after(&mut self, tab_id: &Id<T>) -> Option<Id<T>> {
+    pub fn insert_spacer_after(&mut self, tab_id: &Id<(T, S)>, inner: S) -> Option<Id<(T, S)>> {
         let pos = self.entries.iter().enumerate().find_map(|(i, e)| {
             e.as_item()
-                .and_then(|item| (&item.tab.id == tab_id).then_some(i))
+                .and_then(|item| (item.tab().id() == tab_id).then_some(i))
         });
         let pos = pos?;
         let id = self.id_pool.get_id();
-        let spacer = TabSpacer::new(id.clone());
-        let kind = TabOrSpacer::Spacer(spacer);
         let insert_pos = pos + 1;
+        let spacer = TabSpacer::new(id.clone(), insert_pos, inner);
+        let kind = TabOrSpacer::Spacer(spacer);
         if let Some(next_entry) = self.entries.get(insert_pos) {
             self.ul
                 .insert_child_before(&kind, Some(next_entry.element()));
@@ -775,6 +613,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
             self.ul.append_child(&kind);
             self.entries.push(kind);
         }
+        self.reindex_entries();
         Some(id)
     }
 
@@ -788,32 +627,38 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
                 true
             }
         });
+        self.reindex_entries();
     }
 
     /// Set the alignment of tabs within the panel.
     ///
     /// This inserts or removes spacers to achieve the desired alignment.
-    pub fn set_alignment(&mut self, alignment: TabAlignment) {
+    /// Only available when the spacer type `S` is [`EmptySpacer`] (the
+    /// default), since alignment spacers have no content.
+    pub fn set_alignment(&mut self, alignment: TabAlignment)
+    where
+        S: Default,
+    {
         self.remove_all_spacers();
         let first_id = self
             .entries
             .iter()
             .filter_map(|e| e.as_item())
             .next()
-            .map(|item| item.tab.id.clone());
+            .map(|item| item.tab().id().clone());
         match alignment {
             TabAlignment::Start => {
-                self.push_spacer();
+                self.push_spacer(S::default());
             }
             TabAlignment::Center => {
                 if let Some(id) = &first_id {
-                    self.insert_spacer_before(id);
+                    self.insert_spacer_before(id, S::default());
                 }
-                self.push_spacer();
+                self.push_spacer(S::default());
             }
             TabAlignment::End => {
                 if let Some(id) = &first_id {
-                    self.insert_spacer_before(id);
+                    self.insert_spacer_before(id, S::default());
                 }
             }
         }
@@ -826,7 +671,7 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
         self.default_closable = closable;
         for entry in self.entries.iter_mut() {
             if let Some(item) = entry.as_item_mut() {
-                item.tab.set_closable(closable);
+                item.tab_mut().set_closable(closable);
             }
         }
     }
@@ -834,149 +679,132 @@ impl<V: View, T: ViewChild<V>, P: ViewChild<V>> TabPanel<V, T, P> {
     /// Set whether a specific tab should show a close button.
     ///
     /// Does nothing if the tab is not found.
-    pub fn set_tab_closable(&mut self, id: &Id<T>, closable: bool) {
+    pub fn set_tab_closable(&mut self, id: &Id<(T, S)>, closable: bool) {
         for entry in self.entries.iter_mut() {
             if let Some(item) = entry.as_item_mut() {
-                if &item.tab.id == id {
-                    item.tab.set_closable(closable);
+                if item.tab().id() == id {
+                    item.tab_mut().set_closable(closable);
                     return;
                 }
             }
         }
     }
 
-    fn item_events(&self) -> impl Future<Output = ItemEvent<V, T>> + '_ {
+    /// Update the cached `index` field on all entries to match their `Vec`
+    /// position. Call after any mutation that shifts entry positions.
+    fn reindex_entries(&mut self) {
+        for (i, entry) in self.entries.iter_mut().enumerate() {
+            match entry {
+                TabOrSpacer::Item(item) => item.tab_mut().set_index(i),
+                TabOrSpacer::Spacer(s) => s.set_index(i),
+            }
+        }
+    }
+
+    /// Race all tab items' [`Step`] futures (click + close), returning the first
+    /// to resolve. Spacers produce perpetually-pending futures.
+    fn item_events(&self) -> impl Future<Output = TabListItemEvent<V, T, S>> + '_ {
         let mut race = std::future::pending().boxed_local();
-        for (index, entry) in self.entries.iter().enumerate() {
+        for entry in self.entries.iter() {
             if let TabOrSpacer::Item(item) = entry {
-                let click_id = item.tab.id.clone();
-                let close_id = item.tab.id.clone();
-                let on_click = &item.tab.on_click;
-                let close_click = &item.tab.close_click;
-                let click = async move {
-                    let event = on_click.next().await;
-                    ItemEvent::Click {
-                        id: click_id,
-                        index,
-                        event,
-                    }
-                };
-                let close = async move {
-                    close_click.next().await;
-                    ItemEvent::Close { id: close_id }
-                };
-                race = race.or(close).or(click).boxed_local();
+                race = race.or(item.tab().step()).boxed_local();
             }
         }
         race
     }
 }
 
-/// Internal intermediate event type. `item_events` can't move `T` or `P`
-/// out of entries, so it produces this lightweight signal. `StepMut` then
-/// does the actual removal and constructs the public [`TabListEvent`].
-enum ItemEvent<V: View, T> {
-    Click {
-        id: Id<T>,
-        index: usize,
-        event: V::Event,
-    },
-    Close {
-        id: Id<T>,
-    },
-}
+/// [`Step`] for [`TabPanel`]: races all tab click/close events (via
+/// [`TabListItem::step`]). Reports events without side effects — does not
+/// auto-select or auto-remove. The [`User`](TabPanelEvent::User) variant is
+/// unreachable.
+impl<V: View, P: ViewChild<V> + 'static, T: ViewChild<V> + 'static, S: ViewChild<V> + 'static> Step
+    for TabPanel<V, P, T, S>
+{
+    type Output = TabPanelEvent<V, P, T, S>;
 
-/// [`StepMut`] for [`TabPanel`]: races all tab click and close-click events.
-///
-/// On a tab click, auto-selects the clicked tab. On a close click, auto-removes
-/// the tab (reselecting the nearest neighbor) and returns the inner content `T`
-/// and pane `P` for cleanup. Use [`StepWithMut`] when pane content has its own
-/// `step` to drive.
-impl<V: View, T: ViewChild<V> + 'static, P: ViewChild<V> + 'static> StepMut for TabPanel<V, T, P> {
-    type Output = TabListEvent<V, T, P>;
-    async fn step_mut(&mut self) -> TabListEvent<V, T, P> {
+    async fn step(&self) -> Self::Output {
         let ev = self.item_events().await;
         match ev {
-            ItemEvent::Click { id, index, event } => {
-                self.select(&id);
-                TabListEvent::ItemClicked { id, index, event }
+            TabListItemEvent::Click(data) => TabPanelEvent::ItemCloseClicked {
+                id: data.id,
+                index: data.index,
+                event: data.event,
+            },
+            TabListItemEvent::Close(data) => TabPanelEvent::ItemCloseClicked {
+                id: data.id,
+                index: data.index,
+                event: data.event,
+            },
+            TabListItemEvent::User(()) => {
+                unreachable!("item_events only returns click or close variants")
             }
-            ItemEvent::Close { id } => {
-                let (removal, pane) = match self.remove_by_id(&id) {
+        }
+    }
+}
+
+/// [`StepMut`] for [`TabPanel`]: races all tab click/close events (via
+/// [`TabListItem::step`]). On a click, auto-selects the clicked tab. On a
+/// close, auto-removes the tab (reselecting the nearest neighbor) and returns
+/// the inner content `T` and pane `P` for cleanup. The
+/// [`User`](TabPanelEvent::User) variant is unreachable.
+impl<V: View, P: ViewChild<V> + 'static, T: ViewChild<V> + 'static, S: ViewChild<V> + 'static>
+    StepMut for TabPanel<V, P, T, S>
+{
+    type Output = TabPanelEvent<V, P, T, S>;
+
+    async fn step_mut(&mut self) -> TabPanelEvent<V, P, T, S> {
+        let ev = self.item_events().await;
+        match ev {
+            TabListItemEvent::Click(data) => {
+                self.select(&data.id);
+                TabPanelEvent::ItemClicked {
+                    id: data.id,
+                    index: data.index,
+                    event: data.event,
+                }
+            }
+            TabListItemEvent::Close(data) => {
+                let (removal, pane) = match self.remove_by_id(&data.id) {
                     Some(RemovedEntry::Tab(removal, pane)) => (removal, pane),
                     _ => unreachable!("close click on non-existent tab"),
                 };
-                TabListEvent::CloseClicked {
+                TabPanelEvent::ItemClosed {
                     id: removal.id,
                     index: removal.index,
                     item: removal.item,
                     pane,
                 }
             }
+            TabListItemEvent::User(()) => {
+                unreachable!("item_events only returns click or close variants")
+            }
         }
     }
 }
 
-/// [`StepWithMut`] for [`TabPanel`]: drives per-pane event loops.
-///
-/// The closure `f` is called once per [`TabPanelEntry`] (spacers are skipped
-/// and produce perpetually-pending futures that never win the race). All
-/// returned futures are raced together via [`mogwai::future::race_all`], and
-/// the first to resolve wins.
-///
-/// The closure receives `&mut `[`TabPanelEntry`] with [`TabPanelEntry::tab`]
-/// and [`TabPanelEntry::pane`] accessors. It is the closure's responsibility
-/// to race the tab's click event against the pane's own `step` if both need
-/// to be driven. The impl does **not** wrap the result in
-/// [`TabPanelEvent::Panes`]; the return type is `Ev` directly, so the
-/// caller's `Ev` is typically `TabPanelEvent<V, T, PaneEvent>` to
-/// distinguish tab clicks from pane events.
-impl<V: View, T: ViewChild<V> + 'static, P: ViewChild<V>> StepWithMut<TabPanelEntry<V, T, P>>
-    for TabPanel<V, T, P>
+/// [`StepWithMut<TabOrSpacer<V, P, T, S>>`] for [`TabPanel`]: calls the closure
+/// once per entry (including spacers), racing all returned futures via
+/// [`mogwai::future::race_all`]. The closure receives `&mut TabOrSpacer` and
+/// delegates to each child's own step impls. The return type is `Ev` directly
+/// (typically wrapped in [`TabPanelEvent::User`]).
+impl<V: View, P, T: ViewChild<V> + 'static, S: ViewChild<V> + 'static>
+    StepWithMut<TabOrSpacer<V, P, T, S>> for TabPanel<V, P, T, S>
 {
     type Output<Ev: 'static> = Ev;
+
     async fn step_with_mut<Ev>(
         &mut self,
-        f: impl for<'a> FnMut(&'a mut TabPanelEntry<V, T, P>) -> Pin<Box<dyn Future<Output = Ev> + 'a>>,
+        f: impl for<'a> FnMut(&'a mut TabOrSpacer<V, P, T, S>) -> Pin<Box<dyn Future<Output = Ev> + 'a>>,
     ) -> Ev
     where
         Ev: 'static,
     {
-        let mut f = f;
-        // Race all entry closures together. Spacers produce pending futures
-        // that never resolve.
-        let entry_futs: Vec<Pin<Box<dyn Future<Output = Ev> + '_>>> = self
-            .entries
-            .iter_mut()
-            .map(|entry| match entry {
-                TabOrSpacer::Item(item_entry) => f(item_entry),
-                TabOrSpacer::Spacer(_) => std::future::pending().boxed_local(),
-            })
-            .collect();
+        let entry_futs: Vec<Pin<Box<dyn Future<Output = Ev> + '_>>> =
+            self.entries.iter_mut().map(f).collect();
 
         mogwai::future::race_all(entry_futs).await
     }
-}
-
-/// Discriminates tab-click events from pane events.
-///
-/// When using [`StepWithMut`] on [`TabPanel`], the closure typically races a
-/// tab click against the pane's own `step`. The closure returns
-/// `TabPanelEvent<V, T, P, PaneEvent>` so the caller can match:
-///
-/// ```ignore
-/// match panel.step_with_mut(|entry| { ... }).await {
-///     TabPanelEvent::Tabs(TabListEvent::ItemClicked { id, .. }) => {
-///         panel.select(&id);
-///     }
-///     TabPanelEvent::Panes(pane_event) => { /* handle pane event */ }
-/// }
-/// ```
-pub enum TabPanelEvent<V: View, T, P, Ev> {
-    /// A tab event (click or close).
-    Tabs(TabListEvent<V, T, P>),
-    /// A pane produced an event.
-    Panes(Ev),
 }
 
 /// Component gallery sandbox for [`TabPanel`].
@@ -995,7 +823,7 @@ pub mod library {
     pub struct TabListLibraryItem<V: View> {
         #[child]
         pub div: V::Element,
-        panel: TabPanel<V, V::Element, Widget<V, ()>>,
+        panel: TabPanel<V, Widget<V, ()>>,
     }
 
     impl<V: View> Default for TabListLibraryItem<V> {
@@ -1104,48 +932,16 @@ pub mod library {
 
     impl<V: View> StepMut for TabListLibraryItem<V> {
         type Output = ();
+
         async fn step_mut(&mut self) {
-            // The closure receives &mut TabPanelEntry and races the tab's
-            // click event against the pane's step. On a tab click, we select
-            // that tab.
-            let ev = self
-                .panel
-                .step_with_mut(|entry| {
-                    let (tab, pane) = entry.split_tab_pane();
-                    let id = tab.id().clone();
-                    let on_click = tab.on_click();
-                    async {
-                        let tab_fut = async {
-                            let event = on_click.next().await;
-                            TabPanelEvent::<V, V::Element, Widget<V, ()>, ()>::Tabs(
-                                TabListEvent::ItemClicked {
-                                    id,
-                                    index: 0,
-                                    event,
-                                },
-                            )
-                        };
-                        let pane_fut = async {
-                            pane.step_mut().await;
-                            TabPanelEvent::<V, V::Element, Widget<V, ()>, ()>::Panes(())
-                        };
-                        tab_fut.or(pane_fut).await
-                    }
-                    .boxed_local()
-                })
-                .await;
+            let ev = self.panel.step_mut().await;
             match ev {
-                TabPanelEvent::Tabs(TabListEvent::ItemClicked {
-                    id,
-                    index: _,
-                    event: _,
-                }) => {
+                TabPanelEvent::ItemClicked { id, .. } => {
                     self.panel.select(&id);
                 }
-                TabPanelEvent::Tabs(TabListEvent::CloseClicked { .. }) => {
-                    // Close handled by StepMut internally; nothing to do.
-                }
-                TabPanelEvent::Panes(()) => {}
+                TabPanelEvent::ItemClosed { .. } => {}
+                TabPanelEvent::ItemCloseClicked { .. } => {}
+                TabPanelEvent::User(()) => {}
             }
         }
     }
