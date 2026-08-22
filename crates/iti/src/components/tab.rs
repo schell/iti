@@ -15,9 +15,9 @@
 //! TabPanel<V, P, T, S>
 //! └── Vec<TabOrSpacer<V, P, T, S>>
 //!     ├── Item ── TabPanelEntry<V, P, T>
-//!     │            ├── TabListItem<V, T, S>  (the clickable tab header)
+//!     │            ├── TabListItem<V, T, S> (the clickable tab header)
 //!     │            │             └── T      (tab label content)
-//!     │            └── TabbedPane<V, P>      (pane wrapper + slot div)
+//!     │            └── TabbedPane<V, P>     (pane wrapper + slot div)
 //!     │                          └── P      (pane content)
 //!     └── Spacer ── TabSpacer<V, T, S>      (flex spacer, optional inner S)
 //! ```
@@ -785,9 +785,42 @@ impl<V: View, P: ViewChild<V> + 'static, T: ViewChild<V> + 'static, S: ViewChild
 
 /// [`StepWithMut<TabOrSpacer<V, P, T, S>>`] for [`TabPanel`]: calls the closure
 /// once per entry (including spacers), racing all returned futures via
-/// [`mogwai::future::race_all`]. The closure receives `&mut TabOrSpacer` and
-/// delegates to each child's own step impls. The return type is `Ev` directly
-/// (typically wrapped in [`TabPanelEvent::User`]).
+/// [`mogwai::future::race_all`].
+///
+/// This impl has **no intrinsic events** — it only races the closure futures.
+/// Tab click/close events are intrinsic to [`TabListItem`], but this level
+/// can't race them directly because the closure borrows the entire
+/// `&mut TabOrSpacer` (including the tab's event listeners). Racing
+/// `tab.step()` here would double-consume the listeners.
+///
+/// Instead, the closure delegates to each child's own step impl, which
+/// operates at the right borrow granularity:
+///
+/// - [`TabOrSpacer::Item`]: call [`TabPanelEntry::step_with_mut`], which
+///   internally races [`TabListItem::step`] (intrinsic click/close) against a
+///   user-supplied future over `&mut P` (the pane content). Returns a
+///   [`TabPanelEntryEvent`].
+/// - [`TabOrSpacer::Spacer`]: call [`TabSpacer::step_with`] /
+///   [`TabSpacer::step_with_mut`], which delegates to the spacer's inner
+///   content. Returns `Ev` directly.
+///
+/// The closure is responsible for unifying both branches into a single `Ev`.
+/// The return type is `Ev` directly (not wrapped by this impl).
+///
+/// ```ignore
+/// panel.step_with_mut(|entry| match entry {
+///     TabOrSpacer::Item(item) => {
+///         item.step_with_mut(|pane| pane.step_mut().boxed_local())
+///             .map(MyEv::Item)
+///             .boxed_local()
+///     }
+///     TabOrSpacer::Spacer(spacer) => {
+///         spacer.step_with(|s| /* user domain */)
+///             .map(MyEv::Spacer)
+///             .boxed_local()
+///     }
+/// }).await;
+/// ```
 impl<V: View, P, T: ViewChild<V> + 'static, S: ViewChild<V> + 'static>
     StepWithMut<TabOrSpacer<V, P, T, S>> for TabPanel<V, P, T, S>
 {
